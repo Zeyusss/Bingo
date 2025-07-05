@@ -27,10 +27,10 @@ window.addEventListener("scroll",handleScroll)
 return()=> window.removeEventListener("scroll",handleScroll)
 },[])
     return (
-    <div className={`w-full transition-all duration-300 ${isSticky ? "fixed top-0 left-0 z-[100]" : "relative"}`} style={{ background: isSticky ? 'var(--background)' : undefined }}>
-    <div className={`w-[80%] relative m-auto flex items-center justify-between ${isSticky ? "pt-3" : "py-0"}`} style={{ padding: 'var(--content-padding)' }}>
+    <div className={`w-full transition-all duration-300 ${isSticky ? "fixed top-0 left-0 z-[100]" : "relative"}`}>
+    <div className={`w-[80%] relative m-auto flex items-center justify-between ${isSticky ? "pt-3" : "py-0"}`}>
 {/* {All DropDowns} */}
-<div className={`w-[260px] ${isSticky && '-mb-2'} cursor-pointer flex items-center justify-between px-5 h-[50px]'`} style={{ background: 'var(--primary)', borderRadius: 'var(--input-radius)' }}
+<div className={`w-[260px] ${isSticky && '-mb-2'} cursor-pointer flex items-center justify-between px-5 h-[50px] bg-black rounded`}
 onClick={()=> setShow(!show)}
 >
 <div className='flex items-center gap-2'>
@@ -41,14 +41,14 @@ onClick={()=> setShow(!show)}
 </div>
 {/* {Drop Down Menu} */}
 {show && (
-    <div className={`absolute left-0 ${isSticky ? "top-[70px]" : "top-[50px]"} w-[260px] h-[400px]'`} style={{ background: 'var(--heading)' }}>
+    <div className={`absolute left-0 ${isSticky ? "top-[70px]" : "top-[50px]"} w-[260px] h-[400px] bg-black`}>
 
     </div>
 )}
 {/* {Nav Links} */}
 <div className='flex items-center'>
 {navItems.map((i:NavItemsTypes,index:number)=>(
-    <Link className='px-5 font-medium text-lg' style={{ color: 'var(--heading)' }} href={i.href} key={index}>
+    <Link className='px-5 font-medium text-lg text-black' href={i.href} key={index}>
 {i.title}
     </Link>
 )
@@ -61,25 +61,24 @@ onClick={()=> setShow(!show)}
     {!isLoading && user ? (
         <>
         <Link href={"/profile"}
-        className='border-2 w-[50px] h-[50px] flex items-center justify-center rounded-full'
-        style={{ borderColor: 'var(--border)', color: 'var(--primary)' }}
+        className='border-2 w-[50px] h-[50px] flex items-center justify-center rounded-full border-gray-300'
         >
             <ProfileIcon/>
 </Link>
 <Link href={"/login"} >
-<span className='block font-medium' style={{ color: 'var(--text)' }}>Hello,</span>
-<span className='font-semibold' style={{ color: 'var(--heading)' }}>{user?.name?.split(" ")[0]}</span>
+<span className='block font-medium text-gray-600'>Hello,</span>
+<span className='font-semibold text-black'>{user?.name?.split(" ")[0]}</span>
 </Link>
         </> 
     ) : (
         <>
         <Link href={"/login"}
-    className='border-2 w-[50px] h-[50px] flex items-center justify-center rounded-full' style={{ borderColor: 'var(--border)', color: 'var(--primary)' }}>
+    className='border-2 w-[50px] h-[50px] flex items-center justify-center rounded-full border-gray-300'>
 <ProfileIcon/>
 </Link>
 <Link href={"/login"} >
-<span className='block font-medium' style={{ color: 'var(--text)' }}>Hello,</span>
-<span className='font-semibold' style={{ color: 'var(--heading)' }}>{isLoading ? "..." : "Sign In"}</span>
+<span className='block font-medium text-gray-600'>Hello,</span>
+<span className='font-semibold text-black'>{isLoading ? "..." : "Sign In"}</span>
 </Link>
 </>
     )}
@@ -88,13 +87,13 @@ onClick={()=> setShow(!show)}
 <div className='flex items-center gap-5'>
 <Link href={"/wishlist"} className='relative'>
 <HeartIcon/>
-<div className='w-6 h-6 border-2 rounded-full flex items-center justify-center absolute top-[-10px] right-[-10px]' style={{ borderColor: 'var(--background)', background: 'var(--primary)' }}>
+<div className='w-6 h-6 border-2 rounded-full flex items-center justify-center absolute top-[-10px] right-[-10px] border-white bg-black'>
 <span className='text-white font-medium text-sm'>0</span>
 </div>
 </Link>
 <Link href={"/cart"} className='relative'>
 <CartBagIconComponent/>
-<div className='w-6 h-6 border-2 rounded-full flex items-center justify-center absolute top-[-10px] right-[-10px]' style={{ borderColor: 'var(--background)', background: 'var(--primary)' }}>
+<div className='w-6 h-6 border-2 rounded-full flex items-center justify-center absolute top-[-10px] right-[-10px] border-white bg-black'>
 <span className='text-white font-medium text-sm'>0</span>
 </div>
 </Link>

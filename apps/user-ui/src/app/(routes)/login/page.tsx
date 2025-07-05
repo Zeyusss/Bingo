@@ -48,11 +48,11 @@ loginMutation.mutate(data);
   };
 
   return (
-    <div className="w-full py-10 min-h-[85vh]" style={{ background: 'var(--background)' }}>
-      <h1 className="text-4xl font-Poppins font-semibold text-center" style={{ color: 'var(--heading)' }}>
+    <div className="w-full py-10 min-h-[85vh]">
+      <h1 className="text-4xl font-Poppins font-semibold text-center">
         Login
       </h1>
-      <p className="text-center text-lg font-medium py-3" style={{ color: 'var(--text)' }}>
+      <p className="text-center text-lg font-medium py-3">
         Home . Login
       </p>
       <div className="w-full flex justify-center">
