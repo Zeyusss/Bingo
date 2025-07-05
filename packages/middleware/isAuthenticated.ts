@@ -1,12 +1,12 @@
 import jwt from 'jsonwebtoken';
 import { NextFunction, Response } from "express";
 import prisma from '@packages/libs/prisma';
-import { ObjectId } from 'mongodb';
+
 
 
 const isAuthenticated = async (req:any,res:Response,next:NextFunction) => {
     try {
-        const token = req.cookies.access_Token || req.headers.authorization?.split(" ")[1];
+        const token = req.cookies["access_Token"] || req.cookies["seller-access-token"] || req.headers.authorization?.split(" ")[1];
 
         if (!token) {
 
@@ -29,14 +29,27 @@ const isAuthenticated = async (req:any,res:Response,next:NextFunction) => {
         }
 
 
-        const account = await prisma.users.findUnique({
-            where: { id: decoded.id }
-        });
+        let account;
+        if(decoded.role === "user"){
+            account = await prisma.users.findUnique({
+                where:{ id: decoded.id},
+            })
+            req.user = account;
+        }else if(decoded.role === "seller"){
+            account = await prisma.sellers.findUnique({
+                where:{ id: decoded.id},
+                include:{shop:true}
+            })
+            req.seller = account;
+        }
 
-        req.user = account;
+        
+
         if (!account) {
             return res.status(401).json({ message: "Forbidden ! User/Seller not found." });
         }
+
+        req.role = decoded.role;
         return next();
     } catch (error) {
         return res.status(401).json({ message: "Unauthorized ! Token Invalid." });
