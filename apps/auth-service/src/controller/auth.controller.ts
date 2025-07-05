@@ -91,6 +91,10 @@ const isMatch = await bcrypt.compare(password, user.password!);
     if (!isMatch) {
       return next(new AuthError("Invalid email or password"));
     }
+
+res.clearCookie("seller-access-token")
+res.clearCookie("seller-refresh-token")
+
   const accessToken = jwt.sign(
       { id: user.id, role:"user" },
       process.env.ACCESS_TOKEN_SECRET as string,
@@ -117,31 +121,49 @@ setCookie(res, "refresh_Token", refreshToken);
 }
 
 
-// refresh user token
-export const refreshToken = async ( req:Request,res:Response ,next:NextFunction) =>{
+// refresh token
+export const refreshToken = async ( req:any,res:Response ,next:NextFunction) =>{
   try {
-    const refreshToken = req.cookies.refresh_Token;
-    if(!refreshToken){
-      return new ValidationError("Unathorized ! No refresh token provided");
-    }
+    const refreshToken = req.cookies["refresh_token"] || req.cookies["seller-refresh-token"] || req.headers.authorization?.split(" ")[1];
+if(!refreshToken){
+  return next(new ValidationError("Unauthorized! No refresh token provided"));
+}
     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET as string) as { id: string, role: string };
     if(!decoded || !decoded.id || !decoded.role){
       return new JsonWebTokenError("Invalid refresh token");
     }
-    // let account;
-    // if(decoded.role === "user"){
-      const user =await prisma.users.findUnique({
-        where: { id: decoded.id }
-      });
-      if(!user){
+
+    let account;
+
+    if(decoded.role === "user"){
+      
+      account =await prisma.users.findUnique({where: { id: decoded.id }})
+    } else if (decoded.role === "seller"){
+      account = await prisma.sellers.findUnique({
+                where:{ id: decoded.id},
+                include:{shop:true}
+            })
+    };
+
+
+      if(!account){
         return new AuthError("Forbidden ! User/Seller not found");
       }
+
       const newAccessToken = jwt.sign(
-        { id: user.id, role: decoded.role },
+        { id: decoded.id, role: decoded.role },
         process.env.ACCESS_TOKEN_SECRET as string,
         { expiresIn: "15m" }
       );
-setCookie(res, "access_Token", newAccessToken);
+
+
+if(decoded.role === "user"){
+  setCookie(res, "access_Token", newAccessToken);
+}else if (decoded.role === "seller"){
+    setCookie(res, "seller-access-token", newAccessToken);
+}
+
+req.role = decoded.role;
 return res.status(201).json({success:true})
   } catch (error) {
     return next(error);
@@ -364,7 +386,8 @@ export const loginSeller = async (req:Request, res:Response,next:NextFunction) =
     if (!isMatch) {
       return next(new ValidationError("Invalid email or password"));
     }
-
+res.clearCookie("access_Token");
+res.clearCookie("refresh_token")
     const accessToken = jwt.sign(
       { id: seller.id, role:"seller" },
       process.env.ACCESS_TOKEN_SECRET as string,
