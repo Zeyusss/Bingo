@@ -130,15 +130,13 @@ const connectStripe = async ()=>{
   }
 }
   return (
-<div className="w-full flex flex-col items-center pt-10 min-h-screen">
+<div className="w-full flex flex-col items-center pt-10 min-h-screen" style={{ background: 'var(--background)' }}>
     {/* {Stepper} */}
     <div className='relative flex items-center justify-between md:w-[50%] w-[90%] mb-8'>
     {[1,2,3].map((step)=>(
         <div key={step} className="flex flex-col items-center text-center w-1/3">
-        <div className={`w-10 h-10 flex items-center justify-center rounded-full text-white font-bold ${step<= activeStep ? "bg-blue-600" : "bg-gray-300"}`}>
-        {step}
-        </div>
-        <span className='mt-2 text-sm font-medium text-gray-700'>
+        <div className={`w-10 h-10 flex items-center justify-center rounded-full font-bold ${step<= activeStep ? "bg-[var(--primary)] text-white" : "bg-[var(--disabled)] text-white"}`}>{step}</div>
+        <span className='mt-2 text-sm font-semibold' style={{ color: 'var(--heading)' }}>
         {step === 1 ? "Create Account" : step === 2 ? "Setup Shop" : "Bank Details" }
         </span>
         </div>
@@ -146,35 +144,35 @@ const connectStripe = async ()=>{
     </div>
     
     {/* {step content} */}
-    <div className='md:w-[480px] p-8 bg-white shadow rounded-lg'>
+    <div className='md:w-[480px] p-10 bg-[var(--background)] border border-[var(--border)] shadow-lg rounded-2xl'>
     {activeStep === 1 && (
         <>
         {!showOtp ? (          
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <h3 className='text-2xl font-semibold text-center mb-4'>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                <h3 className='text-2xl font-bold text-center mb-4' style={{ color: 'var(--heading)' }}>
                     Create Account
                 </h3>
             <div>
-              <label className="block text-gray-700 mb-1">Name</label>
+              <label className="block" style={{ color: 'var(--heading)', fontWeight: 600, marginBottom: 4 }}>Name</label>
               <input
                 type="text"
                 placeholder="Full Name"
-                className="w-full p-2 border border-gray-300 outline-0 rounded"
+                className="w-full p-[var(--input-padding)] border border-[var(--input-border)] rounded-[var(--input-radius)] outline-none focus:border-[var(--primary)] text-[var(--heading)] placeholder-[var(--text)] transition"
                 {...register("name", {
                   required: "Name is required",
                   
                 })}
               />
               {errors.email && (
-                <p className="text-red-500 text-sm mt-1">{String(errors.email.message)}</p>
+                <p className="text-sm mt-1" style={{ color: 'var(--error)' }}>{String(errors.email.message)}</p>
               )}
             </div>
             <div>
-              <label className="block text-gray-700 mb-1">Email</label>
+              <label className="block" style={{ color: 'var(--heading)', fontWeight: 600, marginBottom: 4 }}>Email</label>
               <input
                 type="email"
                 placeholder="Email Address"
-                className="w-full p-2 border border-gray-300 outline-0 rounded"
+                className="w-full p-[var(--input-padding)] border border-[var(--input-border)] rounded-[var(--input-radius)] outline-none focus:border-[var(--primary)] text-[var(--heading)] placeholder-[var(--text)] transition"
                 {...register("email", {
                   required: "Email is required",
                   pattern: {
@@ -184,15 +182,15 @@ const connectStripe = async ()=>{
                 })}
               />
               {errors.email && (
-                <p className="text-red-500 text-sm mt-1">{String(errors.email.message)}</p>
+                <p className="text-sm mt-1" style={{ color: 'var(--error)' }}>{String(errors.email.message)}</p>
               )}
             </div>
             <div>
-            <label className="block text-gray-700 mb-1">Phone Number</label>
+            <label className="block" style={{ color: 'var(--heading)', fontWeight: 600, marginBottom: 4 }}>Phone Number</label>
 <input
                 type="tel"
                 placeholder="Mobile Number"
-                className="w-full p-2 border border-gray-300 outline-0 rounded"
+                className="w-full p-[var(--input-padding)] border border-[var(--input-border)] rounded-[var(--input-radius)] outline-none focus:border-[var(--primary)] text-[var(--heading)] placeholder-[var(--text)] transition"
                 {...register("phone_number", {
                   required: "Phone Number is required",
                   pattern: {
@@ -204,13 +202,13 @@ const connectStripe = async ()=>{
                 })}
               />
               {errors.phone_number && (
-                <p className="text-red-500 text-sm mt-1">{String(errors.phone_number.message)}</p>
+                <p className="text-sm mt-1" style={{ color: 'var(--error)' }}>{String(errors.phone_number.message)}</p>
               )}
             </div>
             <div>
-            <label className="block text-gray-700 mb-1">Country</label>
+            <label className="block" style={{ color: 'var(--heading)', fontWeight: 600, marginBottom: 4 }}>Country</label>
             <select
-                className="w-full p-2 border border-gray-300 outline-0 rounded"
+                className="w-full p-[var(--input-padding)] border border-[var(--input-border)] rounded-[var(--input-radius)] outline-none focus:border-[var(--primary)] text-[var(--heading)] placeholder-[var(--text)] transition"
                 {...register("country", {
                   required: "Country is required",
                 })}
@@ -223,16 +221,16 @@ const connectStripe = async ()=>{
                 ))}
               </select>
               {errors.country && (
-                <p className="text-red-500 text-sm mt-1">{String(errors.country.message)}</p>
+                <p className="text-sm mt-1" style={{ color: 'var(--error)' }}>{String(errors.country.message)}</p>
               )}
             </div>
             <div>
-              <label className="block text-gray-700 mb-1">Password</label>
+              <label className="block" style={{ color: 'var(--heading)', fontWeight: 600, marginBottom: 4 }}>Password</label>
               <div className='relative'>
               <input
                 type={passwordVisible ? "text" : "password"}
                 placeholder="Your Password"
-                className="w-full p-2 border border-gray-300 outline-0 rounded"
+                className="w-full p-[var(--input-padding)] border border-[var(--input-border)] rounded-[var(--input-radius)] outline-none focus:border-[var(--primary)] text-[var(--heading)] placeholder-[var(--text)] transition"
                 {...register("password", {
                   required: "Password is required",
                   minLength: {
@@ -241,29 +239,29 @@ const connectStripe = async ()=>{
                   },
                 })}
               />
-              <button type='button' onClick={()=> setPasswordVisible(!passwordVisible)} className='absolute inset-y-0 right-3 flex items-center text-gray-400'>
+              <button type='button' onClick={()=> setPasswordVisible(!passwordVisible)} className='absolute inset-y-0 right-3 flex items-center text-[var(--disabled)]'>
               {passwordVisible?<Eye/> : <EyeOff/>}
               </button>
 </div>
               {errors.password && (
-                <p className="text-red-500 text-sm mt-1">{String(errors.password.message)}</p>
+                <p className="text-sm mt-1" style={{ color: 'var(--error)' }}>{String(errors.password.message)}</p>
               )}
             </div>
             <button
               type="submit"
               disabled =  {signUpMutation.isPending}
-              className="w-full mt-4 bg-black text-white p-2 rounded hover:bg-blue-600"
+              className={`w-full mt-4 rounded-[var(--button-radius)] font-semibold transition p-[var(--button-padding)] ${signUpMutation.isPending ? "bg-[var(--disabled)] text-white cursor-not-allowed" : "bg-[var(--primary)] text-white hover:bg-[#8c0e2d]"}`}
             >
               {signUpMutation.isPending ? "Signing Up..." : "Sign Up"}
             </button>
             {signUpMutation?.isError && signUpMutation.error instanceof AxiosError && (
-              <p className='text-red-500 text-sm mt-1'>{String(signUpMutation.error.response?.data?.message || signUpMutation.error.message)}</p>
+              <p className='text-sm mt-1' style={{ color: 'var(--error)' }}>{String(signUpMutation.error.response?.data?.message || signUpMutation.error.message)}</p>
             )}
-                          <p className='pt-3 text-center'>
-                Already have an account? <Link href="/login" className='text-blue-500'>Login</Link>
+                          <p className='pt-3 text-center' style={{ color: 'var(--text)' }}>
+                Already have an account? <Link href="/login" className='text-[var(--primary)] font-semibold hover:underline'>Login</Link>
               </p>
           </form>) : ( <div>
-            <h3 className='text-xl font-semibold text-center mb-4'>
+            <h3 className='text-xl font-bold text-center mb-4' style={{ color: 'var(--heading)' }}>
             Enter OTP
             </h3>
             <div className='flex justify-center gap-6'>
@@ -272,7 +270,7 @@ const connectStripe = async ()=>{
                     if(el) inputRefs.current[index] = el;
                 }}
                 maxLength={1}
-                className='w-12 h-12 text-center border  border-gray-300 outline-none !rounded'
+                className='w-12 h-12 text-center border border-[var(--input-border)] rounded-[var(--input-radius)] outline-none focus:border-[var(--primary)] text-[var(--heading)] text-xl font-bold transition'
                 value={digit}
                 onChange={(e)=> handleOtpChange(index,e.target.value)}
                 onKeyDown={(e)=>handleOtpKeyDown(index,e)}
@@ -280,18 +278,18 @@ const connectStripe = async ()=>{
             ))}
             </div>
 <button
-  className='w-full mt-4 text-lg cursor-pointer bg-blue-500 text-white py-2 rounded-lg'
+  className={`w-full mt-4 text-lg cursor-pointer rounded-[var(--button-radius)] font-semibold transition p-[var(--button-padding)] ${verifyOtpMutation.isPending ? "bg-[var(--disabled)] text-white cursor-not-allowed" : "bg-[var(--primary)] text-white hover:bg-[#8c0e2d]"}`}
   disabled={verifyOtpMutation.isPending}
   onClick={() => verifyOtpMutation.mutate()}
 >
  {verifyOtpMutation.isPending ? "Verifying..." : "Verify OTP"}
 </button>
 
-            <p className='text-center text-sm mt-4'>
+            <p className='text-center text-sm mt-4' style={{ color: 'var(--text)' }}>
                 {canResend ? (
                     <button
                     onClick={resendOtp}
-                    className='text-blue-500 cursor-pointer'
+                    className='text-[var(--primary)] font-semibold hover:underline'
                     >Resend OTP</button>
                 ):(
 `Resend OTP ${timer}s`
@@ -300,7 +298,7 @@ const connectStripe = async ()=>{
             </p>
             {
               verifyOtpMutation?.isError && verifyOtpMutation.error instanceof AxiosError &&  (
-                <p className='text-red-500 text-sm mt-1'>{String(verifyOtpMutation.error.response?.data?.message||verifyOtpMutation.error.message)}</p>
+                <p className='text-sm mt-1' style={{ color: 'var(--error)' }}>{String(verifyOtpMutation.error.response?.data?.message||verifyOtpMutation.error.message)}</p>
               )}
 
           </div>)}
@@ -311,9 +309,9 @@ const connectStripe = async ()=>{
     )}
     {activeStep ===3 && (
       <div className='text-center'>
-      <h3 className='text-xl font-semibold'>Withdraw Method</h3>
+      <h3 className='text-xl font-bold' style={{ color: 'var(--heading)' }}>Withdraw Method</h3>
       <br />
-      <button onClick={connectStripe} className='w-full m-auto flex items-center justify-center gap-3 text-lg bg-[#334155] text-white py-2 rounded-lg'>
+      <button onClick={connectStripe} className='w-full m-auto flex items-center justify-center gap-3 text-lg bg-[var(--primary)] text-white py-2 rounded-[var(--button-radius)] font-semibold hover:bg-[#8c0e2d] transition'>
       Connect Stripe <StripeSIcon/>
       </button>
   
