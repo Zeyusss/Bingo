@@ -28,12 +28,14 @@
       ]
     },
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": "../../",
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
   },
   "include": [
     "../../apps/seller-ui/.next/types/**/*.ts",
+    "../../packages/**/*.tsx",
     "../../dist/apps/seller-ui/.next/types/**/*.ts",
+    
     "next-env.d.ts",
     "src/**/*.js",
     "src/**/*.jsx",

@@ -5,6 +5,8 @@ module.exports = {
     './app/**/*.{ts,tsx,js,jsx,html}',
     './pages/**/*.{ts,tsx,js,jsx,html}',
     './components/**/*.{ts,tsx,js,jsx,html}',
+    '../seller-ui/src/**/*.{ts,tsx,js,jsx,html}',
+    '../../packages/components/**/*.{ts,tsx,js,jsx,html}',
     '!./src/**/*.{stories,spec}.{ts,tsx,js,jsx,html}',
     '!./app/**/*.{stories,spec}.{ts,tsx,js,jsx,html}',
     '!./pages/**/*.{stories,spec}.{ts,tsx,js,jsx,html}',
