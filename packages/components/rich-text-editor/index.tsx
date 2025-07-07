@@ -22,7 +22,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   value,
   onChange,
   placeholder = "Write a detailed product description here...",
-  minHeight = 300, 
+  minHeight = 250, 
   maxWords,
   autoSave = false,
   autoSaveInterval = 30000,
@@ -244,6 +244,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           placeholder={placeholder}
           style={{
             minHeight: `${minHeight}px`,
+            height: `${minHeight}px`
           }}
         />
       </div>
@@ -270,7 +271,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         }
 
         .rich-text-editor-container .ql-editor {
-          min-height: ${minHeight - 80}px;
           padding: 20px;
           color: #1e293b;
         }
