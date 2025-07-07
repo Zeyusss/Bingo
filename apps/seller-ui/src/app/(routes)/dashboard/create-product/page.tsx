@@ -1,14 +1,17 @@
 'use client';
 
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { ChevronRight } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import ImagePlaceHolder from 'apps/seller-ui/src/shared/components/image-placeholder';
 import Input from 'packages/components/inputs';
 import { error } from 'console';
 import ColorSelector from 'packages/components/color-selector';
 import CustomSpecifications from 'packages/components/custom-specifications';
 import CustomProperties from 'packages/components/custom-properties';
+import { useQuery } from '@tanstack/react-query';
+import axiosInstance from 'apps/seller-ui/src/utils/axiosInstance';
+import RichTextEditor from 'packages/components/rich-text-editor';
 
 const Page = () => {
 
@@ -18,6 +21,34 @@ const Page = () => {
     const [isChanged,setIsChanged] = useState(false);
     const [images,setImages] = useState<(File | null)[]>([null]);
     const [loading,setLoading]= useState(false);
+    const {data,isLoading,isError} =useQuery({
+      queryKey:["categories"],
+      queryFn : async ()=>{
+        try {
+          const res = await axiosInstance.get("/product/api/get-categories");
+          return res.data;
+        } catch (error) {
+          console.log(error)
+        }
+      },
+      staleTime : 1000 * 60 * 5,
+      retry : 2,
+    })
+    
+
+    const categories = data?.categories || [];
+    const subCategoriesData = data?.subCategories || {};
+
+    const selectedCategory = watch("category");
+    const regularPrice = watch("regular_price");
+
+    const subcategories = useMemo(()=>{
+    return selectedCategory ? subCategoriesData[selectedCategory] || [] :[];
+    },[selectedCategory,subCategoriesData])
+
+
+    console.log(categories,subCategoriesData)
+
 
 const onSubmit = (data:any)=>{
   console.log(data);
@@ -98,7 +129,7 @@ setValue("images",images)
         {errors.title && (
           <p className='text-red-500 text-xs mt-1'>{errors.title.message as string}</p>
         )}
-</div>
+        </div>
         <div className='mt-2'>
         <Input
         type='textarea'
@@ -122,8 +153,6 @@ setValue("images",images)
           </p>
         )}
         </div>
-        
-
         <div className='mt-2'>
           <Input
           label='Tags *'
@@ -140,7 +169,6 @@ setValue("images",images)
           )}
 
         </div>
-
         <div className='mt-2'>
           <Input
           label='Warranty *'
@@ -156,7 +184,6 @@ setValue("images",images)
           )}
 
         </div>
-
         <div className='mt-2'>
           <Input
           label='Slug *'
@@ -184,7 +211,6 @@ setValue("images",images)
           )}
 
         </div>
-
         <div className='mt-2'>
           <Input
           label='Brand'
@@ -198,35 +224,150 @@ setValue("images",images)
           )}
 
         </div>
-
         <div className='mt-2'>
           <ColorSelector control={control} errors={errors}/>
 
         </div>
-
-
         <div className='mt-2'>
         <CustomSpecifications control={control} errors={errors}/>
 
         </div>
-
-
         <div className='mt-2'>
         <CustomProperties control={control} errors={errors}/>
 
         </div>
+      <div className='mt-2'>
+      <label className='block font-semibold text-gray-600 mb-1'>
+        Cash On Delivery *
+      </label>
+      <select
+      {...register("cash_on_delivery",{
+        required:"Cash on Delivery is required",
+      })}
+      defaultValue="yes"
+      className='w-full border border-gray-600 rounded-md p-2 bg-transparent text-black outline-none'
+      >
+        <option value="yes" className='bg-blac'>
+        Yes
+        </option>
+        <option value="no" className='bg-blac'>
+        No
+        </option>
+      </select>
+      {errors.cash_on_delivery && (
+        <p className='text-red-500 text-xs mt-1'>
+        {errors.cash_on_delivery.message as string}
+        </p>
+      )}
+      </div>
+        </div>
+        <div className='w-2/4'>
+        <div>
+          <label className='block font-semibold text-gray-600 mb-1'>
+            Category *
+          </label>
+          {
+            isLoading? (
+              <p className='text-gray-600'>
+              Loading Categories...
+              </p>
+            ) : isError ? (
+              <p className='text-red-500'>
+              Failed to Load Categories...
+              </p>
+            ) : (
+              <Controller
+              name="category"
+              control={control}
+              rules={{required:"Category is required"}}
+              render={({field})=>(
+                <select 
+                {...field}
+                className='w-full border border-gray-600 rounded-md p-2 bg-transparent text-black outline-none'
+                >
+                <option value="" className='bg-transparent'>
+                  Select Category
+                </option>
+                {categories?.map((category:string)=>(
+                  <option className='bg-transparent' value={category} key={category}>
+                    {category}
+                  </option>
+                ))}
+                </select>
+              )}
+              />
+            )
+          }
+          {errors.category &&(
+            <p className='text-red-500 text-xs mt-1'>
+            {errors.category.message as string}
+            </p>
+          )}
 
+          <div className='mt-2'>
+            <label className='block font-semibold text-gray-600 mb-1'>
+              Subcategory *
+            </label>
+            <Controller
+            name="subCategory"
+            control={control}
+            rules={{required : "Subcategory is required"}}
+            render={({field})=>(
+              <select
+              {...field}
+              className='w-full border border-gray-600 rounded-md p-2 bg-transparent text-black outline-none'
+              >
+              <option value="" className='bg-transparent'>
+              Select Subcategory
+              
+              </option>
+              {subcategories?.map((subcategory:string)=>(
+                <option
+                key={subcategory}
+                value={subcategory}
+                className='bg-transparent'
+                >
+                {subcategory}
+                </option>
+              ))}
+              </select>
+            )}
+            />
+            {errors.subcategory && (
+              <p className='text-red-500 text-xs mt-1'>
+                {errors.subcategory.message as string}
+              </p>
+            )}
+          </div>
 
+          <div className='mt-2'>
+          <label className='block font-semibold text-gray-600 mb-1'>
+            Detailed Description * (Min 100 words)
+          </label>
+          <Controller
+          name="detailed_description"
+          control={control}
+          rules={{
+            required : "Detailed description is required!",
+            validate:(value) =>{
+              const wordCount = value?.split(/\s+/).filter((word:string)=>word).length;
+              return(
+                wordCount >= 100 || "Description must be at least 100 words!"
+              );
+            },
+          }}
+          render={({field})=>(
+            <RichTextEditor
+  value={field.value}
+  onChange={field.onChange}
+/>
 
-
-
-
-
-
-
+          )}
+          />
+          </div>
+        </div>
         </div>
       </div>
-
     </div>
     </div>
     </form>
