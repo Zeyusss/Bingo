@@ -12,13 +12,15 @@ import CustomProperties from 'packages/components/custom-properties';
 import { useQuery } from '@tanstack/react-query';
 import axiosInstance from 'apps/seller-ui/src/utils/axiosInstance';
 import RichTextEditor from 'packages/components/rich-text-editor';
+import SizeSelector from 'packages/components/size-selector';
+import Link from 'next/link';
 
 const Page = () => {
 
 
     const {register,control,watch,setValue,handleSubmit,formState:{errors}} = useForm();
     const [openImageModal,setOpenImageModal] = useState(false);
-    const [isChanged,setIsChanged] = useState(false);
+    const [isChanged,setIsChanged] = useState(true);
     const [images,setImages] = useState<(File | null)[]>([null]);
     const [loading,setLoading]= useState(false);
     const {data,isLoading,isError} =useQuery({
@@ -80,6 +82,10 @@ setImages((prevImages)=>{
 setValue("images",images)
 }
 
+const handleSaveDraft = ()=>{
+
+}
+
   return (
     <div>
       <h1
@@ -98,7 +104,7 @@ setValue("images",images)
         }}
     />
         <div className='flex items-center mb-3'>
-    <span className='text-[#80Deea] cursor-pointer'>Dashboard</span>
+    <Link href={"/dashboard"} className='text-[#80Deea] cursor-pointer'>Dashboard</Link>
     <ChevronRight size={20} className='opacity-[.8]'/>
     <span>Create Product</span>
     </div>
@@ -303,7 +309,6 @@ setValue("images",images)
             {errors.category.message as string}
             </p>
           )}
-
           <div className='mt-2'>
             <label className='block font-semibold text-gray-600 mb-1'>
               Subcategory *
@@ -339,37 +344,183 @@ setValue("images",images)
               </p>
             )}
           </div>
+          <div className="mt-2">
+  <label className='block font-semibold text-gray-600 mb-1'>
+    Detailed Description * (Min 100 words)
+  </label>
+  <Controller
+    name="detailed_description"
+    control={control}
+    rules={{
+      required : "Detailed description is required!",
+      validate:(value) =>{
+        const wordCount = value?.split(/\s+/).filter((word:string)=>word).length;
+        return(
+          wordCount >= 100 || "Description must be at least 100 words!"
+        );
+      },
+    }}
+    render={({field})=>(
+      <div className="border border-gray-300 rounded-md overflow-hidden">
+        <RichTextEditor
+          value={field.value}
+          onChange={field.onChange}
+        />
+      </div>
+    )}
+  />
+  {errors.detailed_description && (
+    <p className='text-red-500 text-xs mt-1'>
+      {errors.detailed_description.message as string}
+    </p>
+  )}
+          </div>
+          <div className='mt-2'>
+          <Input
+          label='Video URL'
+          placeholder='https://www.yotube.com/embed/xyz123'
+          {...register("video_url",{
+            pattern:{
+              value : /^https:\/\/(www\.)?youtube\.com\/embed\/[a-zA-Z0-9_-]+$/,
+              message:"Invalid Youtube embed URL! use format :https://www.yotube.com/embed/xyz123"
+            },
+          })}
+          />
+          {errors.video_url && (
+            <p className='text-red-500 text-xs mt-1'>
+              {errors.video_url.message as string}
+            </p>
+          )}
+          </div>
+          <div className='mt-2'>
+  <Input
+    label='Regular Price'
+    placeholder='e.g., 20$'
+    type='number'
+    {...register("regular_price", {
+      valueAsNumber: true,
+      validate: (value) => {
+        if (value === undefined || value === null || value === "") return true;
+        if (isNaN(value)) {
+          return "Only numbers are allowed";
+        }
+        if (value < 1) {
+          return "Price must be at least 1$";
+        }
+        return true;
+      },
+    })}
+  />
+  {errors.regular_price && (
+    <p className='text-red-500 text-xs mt-1'>
+      {errors.regular_price.message as string}
+    </p>
+  )}
+          </div>
+          <div className='mt-2'>
+          <Input
+    label='Sale Price *'
+    placeholder='e.g., 15$'
+    type='number'
+    {...register("sale_price", {
+      required: "Sale Price is required",
+      valueAsNumber: true,
+      min: {
+        value: 1,
+        message: "Sale Price must be at least 1"
+      },
+      validate: (value) => {
+        if (isNaN(value)) return "Only numbers are allowed";
+        if (regularPrice && value >= regularPrice) {
+          return "Sale Price must be less than Regular Price";
+        }
+        return true;
+      }
+    })}
+  />
+  {errors.sale_price && (
+    <p className='text-red-500 text-xs mt-1'>
+      {errors.sale_price.message as string}
+    </p>
+          )}
+          </div>
+          
+          <div className='mt-2'>
+          <Input
+    label='Stock *'
+    placeholder='e.g., 100'
+    {...register("stock", {
+      required: "Stock is required",
+      valueAsNumber: true,
+      min: {
+        value: 1,
+        message: "Stock must be at least 1"
+      },
+      max : {
+        value: 5000,
+        message : "Stock cannot exceed 5,000"
+      },
+      validate: (value) => {
+        if (isNaN(value)) return "Only numbers are allowed";
+        if (!Number.isInteger(value)) {
+          return "Stock must be a whole number!";
+        }
+        return true;
+      }
+    })}
+  />
+  {errors.stock && (
+    <p className='text-red-500 text-xs mt-1'>
+      {errors.stock.message as string}
+    </p>
+          )}
+          </div>
+          
 
           <div className='mt-2'>
-          <label className='block font-semibold text-gray-600 mb-1'>
-            Detailed Description * (Min 100 words)
-          </label>
-          <Controller
-          name="detailed_description"
-          control={control}
-          rules={{
-            required : "Detailed description is required!",
-            validate:(value) =>{
-              const wordCount = value?.split(/\s+/).filter((word:string)=>word).length;
-              return(
-                wordCount >= 100 || "Description must be at least 100 words!"
-              );
-            },
-          }}
-          render={({field})=>(
-            <RichTextEditor
-  value={field.value}
-  onChange={field.onChange}
-/>
 
-          )}
-          />
+          <SizeSelector control={control} errors={errors}/>
+
           </div>
+
+          <div className='mt-3'>
+            <label className='block font-semibold text-gray-600 mb-1'>
+              Select Discount Codes (optional)
+            </label>
+            
+          </div>
+
+          
+          
+
+          
+          
+          
         </div>
         </div>
       </div>
+      
     </div>
     </div>
+            <div className='mt-6 flex justify-end gap-3'>
+          {isChanged && (
+            <button 
+            type='button'
+            onClick={handleSaveDraft}
+            className='px-4 py-2 bg-gray-600 text-white rounded-md'
+            >
+              Save Draft
+            </button>
+          )}
+          <button 
+          type='submit'
+          className='px-4 py-2 bg-blue-600 text-white rounded-md'
+          disabled={loading}
+          >
+            {loading ? "Creating..." : "Create"}
+          </button>
+
+        </div>
     </form>
 
     </div>
