@@ -3,7 +3,7 @@ import React from 'react'
 
 const DeleteConfirmationModal = ({product,onClose,onConfirm,onRestore}:any) => {
   return (
-    <div className='fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center'>
+    <div className='fixed top-0 left-0 w-full h-full bg-opacity-50 flex items-center justify-center'>
     <div className='bg-gray-800 p-6 rounded-lg md:w-[450px] shadow-lg'>
     {/* header */}
     <div className='flex justify-between items-center border-b border-gray-700 pb-3'>
