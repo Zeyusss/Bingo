@@ -2,7 +2,7 @@ import { Pencil, WandSparkles, X } from 'lucide-react';
 import Image from 'next/image';
 import React, { useState } from 'react'
 
-const ImagePlaceHolder = ({size,small,onImageChange,onRemove,defaultImage = null , index= null,setOpenImageModal}:{
+const ImagePlaceHolder = ({size,small,onImageChange,onRemove,defaultImage = null , index= null,setOpenImageModal,setSelectedImage,images,pictureUploadingLoader}:{
     size: string;
     small?:boolean
     onImageChange: (file:File | null,index:number)=> void;
@@ -10,6 +10,9 @@ const ImagePlaceHolder = ({size,small,onImageChange,onRemove,defaultImage = null
     defaultImage?: string | null;
     setOpenImageModal:(openImageModa:boolean)=> void;
     index?:any;
+    setSelectedImage : (e:string)=>void;
+    images:any;
+    pictureUploadingLoader : boolean;
 
 }) => {
     const [imagePreview,setImagePreview] = useState<string | null>(defaultImage);
@@ -25,8 +28,8 @@ const ImagePlaceHolder = ({size,small,onImageChange,onRemove,defaultImage = null
     <input type="file" accept='image/*' className='hidden' id={`image-upload-${index}`} onChange={handleFileChange} />
     {imagePreview?(
         <>
-        <button className='absolute top-3 right-3 p-2 rounded bg-red-600 shadow-lg' type='button' onClick={()=>onRemove?.(index!)}> <X size={16}/> </button>
-        <button className="absolute top-3 right-[70px] p-2 !rounded bg-blue-500 shadow-lg cursor-pointer" onClick={()=>setOpenImageModal(true)}> <WandSparkles size={16}/> </button>
+        <button disabled={pictureUploadingLoader} className='absolute top-3 right-3 p-2 rounded bg-red-600 shadow-lg' type='button' onClick={()=>onRemove?.(index!)}> <X size={16}/> </button>
+        <button disabled={pictureUploadingLoader} className="absolute top-3 right-[70px] p-2 !rounded bg-blue-500 shadow-lg cursor-pointer" onClick={()=>{setOpenImageModal(true); setSelectedImage(images[index].file_url);}}> <WandSparkles size={16}/> </button>
         </>
     ):(
         <label className='absolute top-3 right-3 p-2 !rounded bg-[#AF1239] shadow-lg cursor-pointer' htmlFor={`image-upload-${index}`}> <Pencil size={16} color='#ffffff'/></label>
