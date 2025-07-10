@@ -1,0 +1,24 @@
+{
+  "name": "chatbot-service",
+  "projectType": "application",
+  "sourceRoot": "apps/chatbot-service/src",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "apps/chatbot-service/out-tsc/chatbot-service",
+        "main": "apps/chatbot-service/src/main.ts",
+        "tsConfig": "apps/chatbot-service/tsconfig.app.json"
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "options": {
+        "buildTarget": "chatbot-service:build",
+        "watch": true
+      }
+    }
+  },
+  "tags": []
+}

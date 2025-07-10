@@ -3,7 +3,7 @@ import './global.css';
 import {Poppins,Roboto} from "next/font/google";
 import Providers from './providers';
 import { Toaster } from 'react-hot-toast';
-
+import Chatbot from '../shared/components/chatbot/chatbot';
 export const metadata = {
   title: 'Bingo',
   description: 'Bingo',
@@ -32,6 +32,7 @@ export default function RootLayout({
         <Providers>
         <Header/>
         {children}
+        <Chatbot />
         <Toaster />
         </Providers>
         </body>

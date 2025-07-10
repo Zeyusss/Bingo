@@ -9,7 +9,8 @@
     "auth-docs": "node apps/auth-service/src/swagger.js",
     "product-docs": "node apps/product-service/src/swagger.js",
     "user-ui": "npx nx run-many --target=dev --all --projects=user-ui",
-    "seller-ui": "npx nx run-many --target=dev --all --projects=seller-ui"
+    "seller-ui": "npx nx run-many --target=dev --all --projects=seller-ui",
+    "dev:chatbot-service": "npx nx serve chatbot-service"
   },
   "private": true,
   "dependencies": {
@@ -34,6 +35,7 @@
     "morgan": "^1.10.0",
     "next": "~15.2.4",
     "nodemailer": "^7.0.3",
+    "openai": "^5.8.3",
     "prisma": "^6.10.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",
@@ -50,9 +52,9 @@
     "@nx/esbuild": "21.2.1",
     "@nx/express": "^21.2.1",
     "@nx/jest": "21.2.1",
-    "@nx/js": "21.2.1",
+    "@nx/js": "^21.2.1",
     "@nx/next": "^21.2.1",
-    "@nx/node": "21.2.1",
+    "@nx/node": "^21.2.1",
     "@nx/web": "21.2.1",
     "@nx/webpack": "21.2.1",
     "@nx/workspace": "21.2.1",
@@ -86,7 +88,7 @@
     "react-refresh": "^0.10.0",
     "tailwindcss": "3.4.3",
     "ts-jest": "^29.1.0",
-    "ts-node": "10.9.1",
+    "ts-node": "^10.9.1",
     "tslib": "^2.3.0",
     "typescript": "~5.8.2",
     "webpack-cli": "^5.1.4"
