@@ -165,7 +165,7 @@ try {
     const {
         title,short_description,detailed_description,warranty,custom_specifications,
         slug,tags,cash_on_delivery,brand,video_url,category,colors =[],sizes = [],
-        discountCodes,stock,sale_price,regular_price,subCategory,customProperties = {},
+        discountCodes = [],stock,sale_price,regular_price,subCategory,customProperties = {},
         images=[],
     } = req.body;
 
