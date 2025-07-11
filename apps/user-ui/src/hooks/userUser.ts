@@ -3,8 +3,12 @@ import axiosInstance from "../utils/axiosInstance";
 
 // fetch user data
 const fetchUser = async ()=>{
-    const response = await axiosInstance.get("/api/logged-in-user")
-    return response.data.user;
+  try {
+      const response = await axiosInstance.get("/api/logged-in-user")
+    return response.data.user ?? null;
+  } catch (error) {
+    return null;
+  }
 }
 
 const useUser= ()=>{
