@@ -4,8 +4,12 @@ import Link from "next/link";
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { MapPin, MessageCircle, ShoppingBag, X } from "lucide-react";
-
 import Ratings from "../ratings";
+import { useStore } from "apps/user-ui/src/store";
+import useDeviceTracking from "apps/user-ui/src/hooks/useDeviceTracking";
+import useUser from "apps/user-ui/src/hooks/useUser";
+import useLocationTracking from "apps/user-ui/src/hooks/useLocationTracking";
+
 
 
 const ProductDetailsCard = ({
@@ -18,8 +22,16 @@ const ProductDetailsCard = ({
   const [activeImage, setActiveImage] = useState(0);
   const [isSelected, setIsSelected] = useState(data?.colors?.[0] || "");
   const [isSizeSelected, setIsSizeSelected] = useState(data?.sizes?.[0] || "");
+  const [quantity, setQuantity] = useState(1);
   const router = useRouter();
   const modalRef = useRef<HTMLDivElement>(null);
+
+
+    const { user } = useUser();
+  const location = useLocationTracking()
+  const deviceInfo = useDeviceTracking();
+  const addToCart = useStore((state: any) => state.addToCart);
+
 
 
   useEffect(() => {
@@ -118,10 +130,36 @@ const ProductDetailsCard = ({
             )}
             <span className="ml-2"><Ratings rating={typeof data?.ratings === 'number' ? data.ratings : 5} /></span>
           </div>
+
+          <div className="flex items-center gap-2 mt-4">
+            <span className="font-medium">Quantity:</span>
+            <button
+              type="button"
+              className="px-2 py-1 rounded border border-gray-300 bg-gray-100 hover:bg-gray-200"
+              onClick={() => setQuantity(q => Math.max(1, q - 1))}
+              aria-label="Decrease quantity"
+            >
+              -
+            </button>
+            <input
+              type="number"
+              min={1}
+              value={quantity}
+              onChange={e => setQuantity(Math.max(1, Number(e.target.value)))}
+              className="w-14 text-center border rounded"
+            />
+            <button
+              type="button"
+              className="px-2 py-1 rounded border border-gray-300 bg-gray-100 hover:bg-gray-200"
+              onClick={() => setQuantity(q => q + 1)}
+              aria-label="Increase quantity"
+            >
+              +
+            </button>
+          </div>
           <p className="mt-2 text-gray-700 whitespace-pre-wrap w-full text-base">
             {data?.short_description}
           </p>
-          {/* Color & Size Selectors */}
           <div className="flex flex-col md:flex-row items-start gap-5 mt-4">
             {data?.colors?.length > 0 && (
               <div>
@@ -164,7 +202,21 @@ const ProductDetailsCard = ({
             >
               <MessageCircle size={18} /> Chat With Seller
             </button>
-            <button className="flex items-center gap-2 px-5 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold shadow transition">
+            <button
+             onClick={ ()=> addToCart({
+              ...data,
+              quantity,
+              selectedOptions:{
+              color:isSelected,
+                size: isSizeSelected
+              },
+             },
+            user,
+            location,
+            deviceInfo
+            )
+             }
+            className="flex items-center gap-2 px-5 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold shadow transition">
               <ShoppingBag size={18} /> Add to Cart
             </button>
           </div>
