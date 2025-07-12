@@ -1,11 +1,12 @@
 "use client"
 import Image from "next/image";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin } from "lucide-react";
+import { MapPin, MessageCircle, ShoppingBag, X } from "lucide-react";
 
 import Ratings from "../ratings";
+
 
 const ProductDetailsCard = ({
   data,
@@ -14,77 +15,160 @@ const ProductDetailsCard = ({
   data: any;
   setOpen: (open: boolean) => void;
 }) => {
-    const [activeImage,setActiveImage] = useState(0);
-    const router =  useRouter();
+  const [activeImage, setActiveImage] = useState(0);
+  const [isSelected, setIsSelected] = useState(data?.colors?.[0] || "");
+  const [isSizeSelected, setIsSizeSelected] = useState(data?.sizes?.[0] || "");
+  const router = useRouter();
+  const modalRef = useRef<HTMLDivElement>(null);
+
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [setOpen]);
+
+
+  useEffect(() => {
+    modalRef.current?.focus();
+  }, []);
+
   return (
     <div
-      className="fixed flex items-center justify-center top-0 left-0 h-screen w-full bg-[#0000001d] z-50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-all animate-fadeIn"
       onClick={() => setOpen(false)}
+      aria-modal="true"
+      role="dialog"
+      tabIndex={-1}
     >
-      <div className="w-[90%] md:w-[70%] md:mt-14 2xl:mt-0 h-max overflow-scroll min-h-[70vh] p-4 md:p-6 bg-white shadow-md rounded-lg"
-      onClick={(e)=> e.stopPropagation()}
+      <div
+        ref={modalRef}
+        className="relative w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-6 md:p-10 flex flex-col md:flex-row gap-8 animate-scaleIn"
+        onClick={e => e.stopPropagation()}
+        tabIndex={0}
       >
-      <div className="w-full flex flex-col md:flex-row">
-      <div className="w-full md:w-1/2 h-full">
-        <Image
-          src={data?.images?.[activeImage]?.url}
-          alt={data?.images?.[activeImage]?.url}
-          width={400}
-          height={400}
-          className="w-full rounded-lg object-contain"
-        />
-        <div className="flex gap-2 mt-4">
-        {data?.images?.map((img:any,index:number)=>(
-            <div className={`cursor-pointer border rounded-md ${activeImage === index ? "border-gray-500 p-1" : "border-transparent"}`
-            
-            } onClick={()=> setActiveImage(index)} key={index}>
-            <Image
-            src={img?.url}
-             alt={`Thumbnail ${index}`}
-            width={60}
-            height={80}
-            className="rounded-md"
-            />
-            </div>
-        ))}
-        </div>
-      </div>
-      <div className="w-full md:w-1/2 md:pl-8 mt-6 md:mt-0">
-      <div className="border-b relative pb-3 border-gray-200 flex items-center justify-between">
-      <div className="flex items-start gap-3">
-      <Image
-      src={data?.Shops?.avatar}
-      alt="Shop Logo"
-      width={60}
-      height={60}
-      className="rounded-full w-[60px] h-[60px] object-cover"
-      />
-      <div>
-        <Link 
-        href={`/shop/${data?.Shop?.id}`}
-        className="text-lg font-medium"
+        <button
+          className="absolute top-4 right-4 p-2 rounded-full bg-gray-100 hover:bg-gray-200 shadow transition focus:outline-none focus:ring-2 focus:ring-blue-500 z-10"
+          onClick={() => setOpen(false)}
+          aria-label="Close product details"
         >
-            {data?.Shop?.name}
-        </Link>
-        <span className="block mt-1">
-            <Ratings rating={data?.Shop?.ratings}/>
-        </span>
-        <p className="text-gray-600 mt-1 flex items-center ">
-            <MapPin size={20}/> {" "}
-            {data?.Shop?.address || "Location Not Available"}
-        </p>
-      </div>
-      </div>
-
-      {/* <button className="flex cursor-pointer items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium"
-      onClick={()=> router.push(`/inbox?shopId=${data?.Shop?.id}`)}
-      >
-      Chat With Seller
-      </button> */}
-
-      </div>
-      </div>
-      </div>
+          <X size={24} />
+        </button>
+        <div className="flex-1 flex flex-col items-center">
+          <div className="w-full flex justify-center">
+            <Image
+              src={data?.images?.[activeImage]?.url}
+              alt={data?.title}
+              width={400}
+              height={400}
+              className="rounded-xl object-contain border border-gray-200 shadow-md max-h-[350px] bg-gray-50"
+            />
+          </div>
+          <div className="flex gap-2 mt-4 flex-wrap justify-center">
+            {data?.images?.map((img: any, index: number) => (
+              <button
+                key={img?.url || index}
+                className={`border-2 rounded-md p-1 transition-all duration-150 ${activeImage === index ? "border-blue-500 bg-blue-50 scale-105" : "border-transparent"}`}
+                onClick={() => setActiveImage(index)}
+                aria-label={`Show image ${index + 1}`}
+              >
+                <Image
+                  src={img?.url}
+                  alt={`Thumbnail ${index}`}
+                  width={60}
+                  height={60}
+                  className="rounded-md object-cover w-12 h-12"
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex-1 flex flex-col gap-4 min-w-[250px]">
+          <div className="flex items-center gap-3 mb-2">
+            <Image
+              src={data?.Shop?.avatar}
+              alt="Shop Logo"
+              width={48}
+              height={48}
+              className="rounded-full w-12 h-12 object-cover border border-gray-200"
+            />
+            <div>
+              <Link
+                href={`/shop/${data?.Shop?.id}`}
+                className="text-lg font-semibold text-blue-700 hover:underline"
+              >
+                {data?.Shop?.name}
+              </Link>
+              <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
+                <Ratings rating={data?.Shop?.ratings} />
+                <span className="ml-2 flex items-center"><MapPin size={16} className="mr-1" />{data?.Shop?.address || "Location Not Available"}</span>
+              </div>
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 leading-tight">{data?.title}</h2>
+          {data?.brand && (
+            <p className="text-sm text-gray-500"><strong>Brand:</strong> {data.brand}</p>
+          )}
+          <div className="flex items-center gap-4 mt-2">
+            <span className="text-2xl font-bold text-green-600">${data?.sale_price}</span>
+            {data?.regular_price && data.regular_price > data.sale_price && (
+              <span className="text-lg text-gray-400 line-through">${data.regular_price}</span>
+            )}
+            <span className="ml-2"><Ratings rating={typeof data?.ratings === 'number' ? data.ratings : 5} /></span>
+          </div>
+          <p className="mt-2 text-gray-700 whitespace-pre-wrap w-full text-base">
+            {data?.short_description}
+          </p>
+          {/* Color & Size Selectors */}
+          <div className="flex flex-col md:flex-row items-start gap-5 mt-4">
+            {data?.colors?.length > 0 && (
+              <div>
+                <strong>Color:</strong>
+                <div className="flex gap-2 mt-1">
+                  {data.colors.map((color: string) => (
+                    <button
+                      key={color}
+                      className={`w-8 h-8 cursor-pointer rounded-full border-2 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 ${isSelected === color ? "border-blue-500 scale-110 shadow-md" : "border-gray-200"}`}
+                      onClick={() => setIsSelected(color)}
+                      style={{ backgroundColor: color }}
+                      aria-label={`Select color ${color}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            {data?.sizes?.length > 0 && (
+              <div>
+                <strong>Size:</strong>
+                <div className="flex gap-2 mt-1">
+                  {data.sizes.map((size: string) => (
+                    <button
+                      key={size}
+                      className={`px-3 py-1 rounded border-2 text-sm font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 ${isSizeSelected === size ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-700"}`}
+                      onClick={() => setIsSizeSelected(size)}
+                      aria-label={`Select size ${size}`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="flex gap-3 mt-6">
+            <button
+              className="flex items-center gap-2 px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow transition"
+              onClick={() => router.push(`/inbox?shopId=${data?.Shop?.id}`)}
+            >
+              <MessageCircle size={18} /> Chat With Seller
+            </button>
+            <button className="flex items-center gap-2 px-5 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold shadow transition">
+              <ShoppingBag size={18} /> Add to Cart
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
