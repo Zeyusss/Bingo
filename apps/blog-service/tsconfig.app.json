@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "types": ["node", "express"],
+    "rootDir": "../../",
+    "tsBuildInfoFile": "dist/tsconfig.app.tsbuildinfo",
+    "typeRoots": ["./types", "../../node_modules/@types"]
+  },
+  "include": ["src/**/*.ts", "../../packages/**/*.ts", "types/**/*.d.ts"],
+  "exclude": []
+}

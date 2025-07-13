@@ -10,7 +10,8 @@
     "product-docs": "node apps/product-service/src/swagger.js",
     "user-ui": "npx nx run-many --target=dev --all --projects=user-ui",
     "seller-ui": "npx nx run-many --target=dev --all --projects=seller-ui",
-    "dev:chatbot-service": "npx nx serve chatbot-service"
+    "dev:chatbot-service": "npx nx serve chatbot-service",
+    "dev:blog-service": "npx nx serve blog-service"
   },
   "private": true,
   "dependencies": {

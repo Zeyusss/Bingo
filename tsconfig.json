@@ -29,6 +29,15 @@
     },
     {
       "path": "./apps/chatbot-service"
+    },
+    {
+      "path": "./apps/blog-service-e2e"
+    },
+    {
+      "path": "./apps/blog-service"
+    },
+    {
+      "path": "./apps/blog-ui"
     }
   ]
 }

@@ -1,0 +1,26 @@
+{
+  "name": "@auth-service/blog-service-e2e",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "implicitDependencies": [
+      "@auth-service/blog-service"
+    ],
+    "targets": {
+      "e2e": {
+        "executor": "@nx/jest:jest",
+        "outputs": [
+          "{projectRoot}/test-output/jest/coverage"
+        ],
+        "options": {
+          "jestConfig": "apps/blog-service-e2e/jest.config.ts",
+          "passWithNoTests": true
+        },
+        "dependsOn": [
+          "@auth-service/blog-service:build",
+          "@auth-service/blog-service:serve"
+        ]
+      }
+    }
+  }
+}
