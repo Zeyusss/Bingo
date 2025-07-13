@@ -108,9 +108,9 @@ try {
     if(event.action === "remove_from_cart")
         updateFields.cartAdds = {decrement : 1};
     if(event.action === "add_to_wishlist")
-        updateFields.wishlistAdds = {increment : 1};
+        updateFields.wishListAdds = {increment : 1};
     if(event.action === "remove_from_wishlist")
-        updateFields.wishlistAdds = {decrement : 1};
+        updateFields.wishListAdds = {decrement : 1};
     if(event.action === "purchase") updateFields.purchases = {increment : 1};
 
     await prisma.productAnalytics.upsert({
