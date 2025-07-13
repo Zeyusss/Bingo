@@ -158,6 +158,7 @@ model userAnalytics {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   userId      String   @unique @db.ObjectId
   lastVisited DateTime
+  lastTrained DateTime?
   actions     Json
   country     String?
   city        String?
