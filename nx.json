@@ -42,7 +42,8 @@
       "exclude": [
         "apps/auth-service-e2e/**/*",
         "apps/api-gateway-e2e/**/*",
-        "apps/product-service-e2e/**/*"
+        "apps/product-service-e2e/**/*",
+        "apps/kafka-service-e2e/**/*"
       ]
     },
     {
