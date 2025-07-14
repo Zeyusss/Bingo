@@ -37,8 +37,6 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
   const [recommendedProducts, setRecommendedProducts] = useState([]);
 
   const addToCart = useStore((state: any) => state.addToCart);
-  const cart = useStore((state: any) => state.cart);
-  const isInCart = cart.some((item: any) => item.id === productDetails.id);
   const addToWishlist = useStore((state: any) => state.addToWishlist);
   const removeFromWishlist = useStore((state: any) => state.removeFromWishlist);
   const wishlist = useStore((state: any) => state.wishlist);
