@@ -192,31 +192,37 @@ export const togglePublish = async (req: Request, res: Response) => {
 // Add comment
 export const addComment = async (req: Request, res: Response) => {
   try {
-    const { blogId } = req.params; 
-    const { name, content, avatarUrl } = req.body;
-    const userId = req.user?.id;
+    const { blogId } = req.params;
+    const { name, content } = req.body;
+    const userId = req.user?.id ?? null;
 
-    if (!userId) {
-      return res.status(401).json({ state: false, message: "Unauthorized" });
+    if (!name || !content) {
+      return res
+        .status(400)
+        .json({ state: false, message: "Name and content are required" });
     }
 
     const comment = await prisma.comment.create({
       data: {
         blogId,
         name,
-        avatarUrl,
         content,
-        userId,
+        userId, 
         isApproved: false,
       },
     });
 
-    res.json({ state: true, message: "Comment submitted for review", comment });
+    res.json({
+      state: true,
+      message: "Comment submitted and awaiting admin approval.",
+      comment,
+    });
   } catch (error: unknown) {
     const err = error instanceof Error ? error.message : "Unknown error";
     res.status(500).json({ state: false, message: err });
   }
 };
+
 
 
 

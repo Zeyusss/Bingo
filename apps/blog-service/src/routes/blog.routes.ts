@@ -24,7 +24,7 @@ router.post("/", blog_Authenticated, addBlog);
 router.put("/:blogId", blog_Authenticated, updateBlog);
 router.delete("/:blogId", blog_Authenticated, deleteBlog);
 router.patch("/:blogId/publish", blog_Authenticated, togglePublish);
-router.post("/:blogId/comments", blog_Authenticated, addComment);
+router.post("/:blogId/comments", addComment);
 router.patch("/:blogId/like", blog_Authenticated, toggleLike);
 
 export default router;
