@@ -1,6 +1,6 @@
 import {create} from "zustand";
 import {persist} from "zustand/middleware";
-// Removed direct import of sendKafkaEvent
+
 
 
 type Product = {
@@ -113,7 +113,7 @@ export const useStore = create<Store>()(
                     return{wishlist:[...state.wishlist,product]}
                 });
 
-                            //send analytics event via API
+                            
                 if(user?.id && location && deviceInfo){
                     fetch('/api/track', {
                         method: 'POST',
