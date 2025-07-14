@@ -131,26 +131,20 @@ const ProductDetailsCard = ({
             <span className="ml-2"><Ratings rating={typeof data?.ratings === 'number' ? data.ratings : 5} /></span>
           </div>
 
-          <div className="flex items-center gap-2 mt-4">
-            <span className="font-medium">Quantity:</span>
+          <div className="flex items-center  mt-4">
+            <span className="font-medium mr-2">Quantity :</span>
             <button
               type="button"
-              className="px-2 py-1 rounded border border-gray-300 bg-gray-100 hover:bg-gray-200"
+              className="px-3 py-1 cursor-pointer rounded-md border border-gray-300 bg-gray-300 hover:bg-gray-200"
               onClick={() => setQuantity(q => Math.max(1, q - 1))}
               aria-label="Decrease quantity"
             >
               -
             </button>
-            <input
-              type="number"
-              min={1}
-              value={quantity}
-              onChange={e => setQuantity(Math.max(1, Number(e.target.value)))}
-              className="w-14 text-center border rounded"
-            />
+            <span className="px-4 bg-gray-100 py-1">{quantity}</span>
             <button
               type="button"
-              className="px-2 py-1 rounded border border-gray-300 bg-gray-100 hover:bg-gray-200"
+              className="px-2 py-1 rounded-md  border border-gray-300 cursor-pointer bg-gray-300 hover:bg-gray-200"
               onClick={() => setQuantity(q => q + 1)}
               aria-label="Increase quantity"
             >

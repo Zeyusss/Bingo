@@ -5,16 +5,24 @@ import useUser from "apps/user-ui/src/hooks/useUser";
 import { useStore } from "apps/user-ui/src/store";
 import Image from "next/image";
 import Link from "next/link";
-import React from "react";
+import React, { useEffect } from "react";
+import { useRouter } from 'next/navigation';
 
 const WishlistPage = () => {
-  const { user } = useUser();
+  const { user, isLoading } = useUser();
+  const router = useRouter();
   const location = useLocationTracking();
   const deviceInfo = useDeviceTracking();
   const addToCart = useStore((state: any) => state.addToCart);
   const removeFromWishlist = useStore((state: any) => state.removeFromWishlist);
   const wishlist = useStore((state: any) => state.wishlist);
   
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/login');
+    }
+  }, [isLoading, user, router]);
+
   const decreaseQuantity = (id: string) => {
     useStore.setState((state: any) => ({
       wishlist: state.wishlist.map((item: any) =>

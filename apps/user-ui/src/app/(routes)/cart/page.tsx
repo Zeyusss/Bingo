@@ -7,11 +7,11 @@ import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
 const CartPage = () => {
     const router = useRouter();
-    const {user} = useUser();
+    const {user, isLoading} = useUser();
     const location = useLocationTracking();
     const deviceInfo = useDeviceTracking();
 const cart = useStore((state:any)=> state.cart);
@@ -50,6 +50,12 @@ const decreaseQuantity = (id: string) => {
     (total:number,item:any)=> total + item.quantity * item.sale_price,0
 
   )
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/login');
+    }
+  }, [isLoading, user, router]);
 
 
   return (
