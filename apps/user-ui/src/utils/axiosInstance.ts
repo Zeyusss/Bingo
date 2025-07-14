@@ -26,6 +26,20 @@ const onRefreshSuccess = ()=>{
     refreshSubscribers= [];
 };
 
+// List of protected routes that require authentication
+const protectedRoutes = [
+  "/cart",
+  "/wishlist",
+  "/profile",
+  "/account",
+  "/checkout"
+];
+
+const isProtectedRoute = () => {
+  const path = window.location.pathname;
+  return protectedRoutes.some(route => path.startsWith(route));
+};
+
 // handle api requests
 axiosInstance.interceptors.request.use(
     (config)=> config,
@@ -59,11 +73,14 @@ axiosInstance.interceptors.response.use(
             } catch (error) {
                 isRefreshing = false;
                 refreshSubscribers = [];
-                handleLogout();
+                // Only redirect if on a protected route
+                if (isProtectedRoute()) {
+                  handleLogout();
+                }
                 return Promise.reject(error);
             }
         }
-            return Promise.reject(error);  
+        return Promise.reject(error);  
     }
 )
 export default axiosInstance;

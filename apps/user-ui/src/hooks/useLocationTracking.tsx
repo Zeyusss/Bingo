@@ -17,10 +17,15 @@ const getStoredLocation = ()=>{
 }
 
 const useLocationTracking = ()=> {
-    const [location , setLocation] = useState<{country:string; city : string} | null>(getStoredLocation());
+    const [location , setLocation] = useState<{country:string; city : string} | null>(null);
 
     useEffect(()=>{
-        if(location) return;
+        // Only run on client
+        const stored = getStoredLocation();
+        if(stored) {
+            setLocation(stored);
+            return;
+        }
 
         fetch("http://ip-api.com/json/").then((res)=> res.json()).then((data)=>{
             const newLocation = {

@@ -32,6 +32,7 @@ model users {
   updatedAt DateTime  @updatedAt
   shopReviews shopReviws[]
   images    images[]  @relation("UserImages")
+  followedShops ShopFollower[] // explicit relation
 }
 
 
@@ -68,6 +69,7 @@ model shops {
   updatedAt     DateTime @updatedAt
   products      products[]
   images        images[]  @relation("ShopImages")
+  followers     ShopFollower[] // explicit relation
 }
 
 
@@ -165,4 +167,30 @@ model userAnalytics {
   device      String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model ShopFollower {
+  id      String   @id @default(auto()) @map("_id") @db.ObjectId
+  shop    shops    @relation(fields: [shopId], references: [id])
+  shopId  String   @db.ObjectId
+  user    users    @relation(fields: [userId], references: [id])
+  userId  String   @db.ObjectId
+  createdAt DateTime @default(now())
+}
+
+model orders {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  shopId        String   @db.ObjectId
+  userId        String   @db.ObjectId
+  products      String[] // array of product IDs
+  total         Float
+  status        String
+  address       String?
+  paymentMethod String?
+  couponCode    String?
+  discount      Float?
+  shippingFee   Float?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
