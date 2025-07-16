@@ -58,6 +58,7 @@ model shops {
   avatar        images?  @relation("ShopAvatar", fields: [avatarId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   coverBanner   String?
   address       String
+  country       String // ADDED: for country-based filtering. Run a migration and backfill this field from seller if needed.
   opening_hours String?
   website       String?
   socialLinks   Json[]
