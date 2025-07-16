@@ -595,61 +595,52 @@ export const getFilteredShops = async (
     next:NextFunction
 )=>{
     try {
-         const {
-        categories = [],
-        countries = [],
-        page = 1,
-        limit = 12,
-    } = req.query;
+        let { category = [], country = [], page = 1, limit = 12 } = req.query;
 
-    const parsedPage = Number(page);
-    const parsedLimit = Number(limit);
-    const skip = (parsedPage - 1 ) * parsedLimit;
+        // Parse category and country as arrays
+        if (typeof category === 'string') category = category.split(',');
+        if (typeof country === 'string') country = country.split(',');
 
-    const filters: Record<string,any> = {};
+        const parsedPage = Number(page);
+        const parsedLimit = Number(limit);
+        const skip = (parsedPage - 1 ) * parsedLimit;
 
-    if(categories && String(categories).length > 0){
-        filters.category = {
-            in:Array.isArray(categories)
-            ? categories
-            : String(categories).split(","),
-        };
-    }
-    
-    if(countries && String(countries).length > 0){
-        filters.country = {
-        in : Array.isArray(countries) ? countries : String(countries).split(","),
+        const filters: Record<string,any> = {};
+
+        if (Array.isArray(category) && category.length > 0 && category[0] !== "") {
+            filters.category = { hasSome: category };
         }
-    }
+        if (Array.isArray(country) && country.length > 0 && country[0] !== "") {
+            filters.country = { in: country };
+        }
 
-    const [shops , total] = await Promise.all([
-        prisma.shops.findMany({
-            where:filters,
-            skip,
-            take : parsedLimit,
-            include : {
-                sellers:true,
-                followers:true,
-                products:true,
-            }
-        }),
-        prisma.shops.count({where:filters})
-    ])
+        const [shops , total] = await Promise.all([
+            prisma.shops.findMany({
+                where:filters,
+                skip,
+                take : parsedLimit,
+                include : {
+                    sellers:true,
+                    followers:true,
+                    products:true,
+                }
+            }),
+            prisma.shops.count({where:filters})
+        ])
 
-    const totalPages = Math.ceil(total/parsedLimit);
+        const totalPages = Math.ceil(total/parsedLimit);
 
-    res.json({
-        shops,
-        pagination:{
-            total,
-            page:parsedPage,
-            totalPages,
-        },
-    });
+        res.json({
+            shops,
+            pagination:{
+                total,
+                page:parsedPage,
+                totalPages,
+            },
+        });
     } catch (error) {
         return next(error);
     }
-
 }
 
 // search Products

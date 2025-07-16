@@ -8,8 +8,8 @@ export const navItems:NavItemsTypes[]= [
         href:"/products",
     },
     {
-        title:"Shop",
-        href:"/shop",
+        title:"Artists",
+        href:"/shops",
     },
     {
         title:"Offers",

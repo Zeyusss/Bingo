@@ -47,7 +47,7 @@ const Page = () => {
       params.set("colors", selectedColors.join(","));
     if (selectedSizes.length > 0) params.set("sizes", selectedSizes.join(","));
     params.set("page", page.toString());
-    router.replace(`/products?${decodeURIComponent(params.toString())}`);
+    router.replace(`/offers?${decodeURIComponent(params.toString())}`);
   };
 
   const fetchFilteredProducts = async () => {
@@ -65,13 +65,13 @@ const Page = () => {
         query.set("limit", "12");
 
         const res = await axiosInstance.get(
-          `/product/api/get-filtered-products?${query.toString()}`
+          `/product/api/get-filtered-offers?${query.toString()}`
         );
         setProducts(res.data.products);
         setTotalPages(res.data.pagination.totalPages);
       
     } catch (error) {
-      console.error("Failed to fetch filtered products", error);
+      console.error("Failed to fetch filtered offers", error);
     } finally {
       setIsProductLoading(false);
     }
@@ -82,13 +82,13 @@ const Page = () => {
     fetchFilteredProducts();
   }, [priceRange, selectedCategories, selectedColors, selectedSizes, page]);
 
-
+  // Debounce product search input
   useEffect(() => {
     const handler = setTimeout(() => setDebouncedProductSearch(productSearch), 300);
     return () => clearTimeout(handler);
   }, [productSearch]);
 
-
+  // Real-time filtered products by name (offers only)
   const displayedProducts = useMemo(() => {
     if (debouncedProductSearch.trim().length === 0) return products;
     return products.filter((product: any) =>
@@ -135,13 +135,13 @@ const toggleSize = (size: string) => {
       <div className="w-[90%] lg:w-[80%] m-auto">
         <div className="pb-[50px]">
           <h1 className="md:pt-[40px] font-semibold text-[44px] leading-1 mb-[14px] font-jost">
-            All Products
+            All Offers
           </h1>
           <Link href={"/"} className="text-[#55585b] hover:underline">
             Home
           </Link>
           <span className="inline-block p-[1.5px] mx-1 bg-[#a8acb0] rounded-full"></span>
-          <span className="text-[#55585b]">All Products</span>
+          <span className="text-[#55585b]">All Offers</span>
         </div>
 
         <div className="w-full flex flex-col lg:flex-row gap-8">
@@ -157,7 +157,7 @@ const toggleSize = (size: string) => {
               </span>
               <input
                 type="text"
-                placeholder="Search product by name..."
+                placeholder="Search offer by name..."
                 value={productSearch}
                 onChange={e => setProductSearch(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 rounded-lg bg-gray-50 border border-gray-200 shadow-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm transition placeholder-gray-400"
@@ -287,6 +287,7 @@ const toggleSize = (size: string) => {
     </li>
   ))}
 </ul>
+
           </aside>
           {/* Product Grid */}
           <div className="flex-1 px-2 lg:px-3">
@@ -301,7 +302,7 @@ const toggleSize = (size: string) => {
                 ))}
 
              </div>
-            ) : products.length === 0 ? (
+            ) : displayedProducts.length === 0 ? (
               <p>No Products Found!</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
