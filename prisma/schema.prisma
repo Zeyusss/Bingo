@@ -32,7 +32,7 @@ model users {
   updatedAt DateTime  @updatedAt
   shopReviews shopReviws[]
   images    images[]  @relation("UserImages")
-  followedShops ShopFollower[] // explicit relation
+  followedShops ShopFollower[] 
 }
 
 
@@ -58,7 +58,6 @@ model shops {
   avatar        images?  @relation("ShopAvatar", fields: [avatarId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   coverBanner   String?
   address       String
-  country       String // ADDED: for country-based filtering. Run a migration and backfill this field from seller if needed.
   opening_hours String?
   website       String?
   socialLinks   Json[]
@@ -70,7 +69,7 @@ model shops {
   updatedAt     DateTime @updatedAt
   products      products[]
   images        images[]  @relation("ShopImages")
-  followers     ShopFollower[] // explicit relation
+  followers     ShopFollower[] 
 }
 
 
@@ -183,7 +182,7 @@ model orders {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
   shopId        String   @db.ObjectId
   userId        String   @db.ObjectId
-  products      String[] // array of product IDs
+  products      String[] 
   total         Float
   status        String
   address       String?
@@ -194,4 +193,23 @@ model orders {
   notes         String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+enum addressType {
+  Home
+  Work
+  Other
+}
+
+model address {
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String      @db.ObjectId
+  label     addressType
+  name      String
+  street    String
+  city      String
+  zip       String
+  country   String
+  isDefault Boolean     @default(true)
+  createdAt DateTime    @default(now())
 }
