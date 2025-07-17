@@ -83,7 +83,7 @@ const Header = () => {
                 >
                   <ProfileIcon />
                 </Link>
-                <Link href={"/login"}>
+                <Link href={"/profile"}>
                   <span className="block font-medium text-gray-600">
                     Hello,
                   </span>

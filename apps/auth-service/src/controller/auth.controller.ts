@@ -1,4 +1,4 @@
-import { AuthError, ValidationError } from '@packages/error-handler/index';
+import { AuthError, NotFoundError, ValidationError } from '@packages/error-handler/index';
 import { NextFunction, Request, Response } from "express";
 import { checkOtpRestrictions, handleForgetPassword, sendOtp, trackOtpRequests, validateRegistrationData, verifyForgetPasswordOtp, verifyUserRegistrationOtp as verifyOtp } from "../utils/auth.helper";
 import prisma from "@packages/libs/prisma";
@@ -423,3 +423,189 @@ export const getSeller = async (req:any, res:Response,next:NextFunction) => {
     return next(error);
   }
 }
+
+// add new address
+export const addUserAddress = async(
+  req:any, 
+  res:Response,
+  next:NextFunction
+)=>{
+try {
+  const userId = req.user?.id;
+  const {label,name,street,city,state,zip,country,isDefault} = req.body;
+  if(!label || !name||!street||!city||!state||!zip||!country){
+    return next (new ValidationError("All fields are required"));
+  }
+  // Limit to 3 addresses
+  const count = await prisma.address.count({ where: { userId } });
+  if (count >= 3) {
+    return next(new ValidationError("You can only have up to 3 addresses."));
+  }
+  if(isDefault){
+    await prisma.address.updateMany({
+      where : {
+        userId,
+        isDefault:true,
+      },
+      data:{
+        isDefault:false,
+      },
+    })
+  }
+  const newAddress = await prisma.address.create({
+    data : {
+      userId,label,
+      name,street,
+      city,
+      zip,
+      country,isDefault: !!isDefault
+    },
+  });
+  res.status(200).json({
+    success : true,
+    address:newAddress,
+  })
+} catch (error) {
+  return next (error)
+}
+};
+
+// edit user address 
+export const editUserAddress = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user?.id;
+    const { addressId } = req.params;
+    const { label, name, street, city,  zip, country, isDefault } = req.body;
+
+    if (!userId) return next(new ValidationError("User not authenticated"));
+    if (!addressId) return next(new ValidationError("Address ID is required"));
+
+    // Check if address exists and belongs to user
+    const address = await prisma.address.findFirst({ where: { id: addressId, userId } });
+    if (!address) return next(new NotFoundError("Address not found or unauthorized"));
+
+    // If setting as default, unset all others
+    if (isDefault) {
+      await prisma.address.updateMany({
+        where: { userId, isDefault: true },
+        data: { isDefault: false },
+      });
+    }
+
+    const updated = await prisma.address.update({
+      where: { id: addressId },
+      data: {
+        label, name, street, city,  zip, country, isDefault: !!isDefault,
+      },
+    });
+
+    res.status(200).json({ success: true, address: updated });
+  } catch (error) {
+    return next(error);
+}
+};
+
+// delete user address
+export const deleteUserAddress = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user?.id;
+    const { addressId } = req.params;
+    if (!addressId) {
+      return next(new ValidationError("Address ID is required"));
+    }
+    const existingAddress = await prisma.address.findFirst({
+      where: {
+        id:addressId,
+        userId
+      }
+    })
+    if(!existingAddress){
+      return next(new NotFoundError("Address not found or unauthorized"))
+    }
+    await prisma.address.delete({
+      where: { id: addressId },
+    });
+    res.status(200).json({
+      success: true,
+      message: "Address deleted successfully",
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// get user addresses
+export const getUserAddresses = async(
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return next(new ValidationError("User not authenticated"));
+    }
+    const addresses = await prisma.address.findMany({
+      where: { userId },
+      orderBy: [
+        { isDefault: 'desc' }, // default addresses first
+        { createdAt: 'desc' }, // most recent first
+      ],
+    });
+    res.status(200).json({
+      success: true,
+      addresses,
+    });
+} catch (error) {
+    return next(error);
+}
+};
+
+// set default user address 
+export const setDefaultUserAddress = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user?.id;
+    const { addressId } = req.params;
+    if (!userId) {
+      return next(new ValidationError("User not authenticated"));
+    }
+    if (!addressId) {
+      return next(new ValidationError("Address ID is required"));
+    }
+    // Check if address exists and belongs to user
+    const address = await prisma.address.findFirst({
+      where: { id: addressId, userId },
+    });
+    if (!address) {
+      return next(new NotFoundError("Address not found or unauthorized"));
+    }
+    // Unset all other default addresses for this user
+    await prisma.address.updateMany({
+      where: { userId, isDefault: true },
+      data: { isDefault: false },
+    });
+    // Set this address as default
+    await prisma.address.update({
+      where: { id: addressId },
+      data: { isDefault: true },
+    });
+    res.status(200).json({
+      success: true,
+      message: "Default address set successfully",
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
