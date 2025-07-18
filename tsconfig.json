@@ -32,6 +32,12 @@
     },
     {
       "path": "./apps/kafka-service"
+    },
+    {
+      "path": "./order-service-e2e"
+    },
+    {
+      "path": "./order-service"
     }
   ]
 }

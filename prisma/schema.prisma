@@ -178,6 +178,27 @@ model ShopFollower {
   createdAt DateTime @default(now())
 }
 
+model order_items {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId   String   @db.ObjectId
+  productId String   @db.ObjectId
+  quantity  Int
+  price     Float
+  selectedOptions Json?
+  order     orders   @relation(fields: [orderId], references: [id])
+}
+
+model notifications {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  message      String
+  creatorId    String   @db.ObjectId
+  receiverId   String   @db.ObjectId
+  redirect_link String
+  read         Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}
+
 model orders {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
   shopId        String   @db.ObjectId
@@ -191,8 +212,11 @@ model orders {
   discount      Float?
   shippingFee   Float?
   notes         String?
+  shippingAddressId String?
+  discountAmount Float?  @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  items         order_items[]
 }
 
 enum addressType {
