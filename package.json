@@ -14,6 +14,7 @@
   "private": true,
   "dependencies": {
     "@prisma/client": "^6.10.1",
+    "@stripe/stripe-js": "^7.5.0",
     "@tanstack/react-query": "^5.81.5",
     "@tanstack/react-table": "^8.21.3",
     "axios": "^1.10.0",
@@ -91,12 +92,15 @@
     "react-refresh": "^0.10.0",
     "tailwindcss": "3.4.3",
     "ts-jest": "^29.1.0",
-    "ts-node": "10.9.1",
+    "ts-node": "^10.9.1",
+    "tsconfig-paths": "^4.2.0",
     "tslib": "^2.3.0",
     "typescript": "~5.8.2",
     "webpack-cli": "^5.1.4"
   },
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "order-service",
+    "order-service-e2e"
   ]
 }

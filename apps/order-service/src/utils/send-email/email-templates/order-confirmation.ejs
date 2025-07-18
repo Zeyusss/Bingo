@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Order Confirmation - Bingo</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f4f4;
+      color: #333;
+    }
+
+    a {
+      color: #0070f3;
+      text-decoration: none;
+    }
+
+    .email-wrapper {
+      max-width: 600px;
+      margin: 40px auto;
+      background-color: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .email-header {
+      background-color: #0070f3;
+      padding: 32px 24px;
+      text-align: center;
+      color: #ffffff;
+    }
+
+    .email-header h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .email-body {
+      padding: 24px;
+    }
+
+    .email-body p {
+      margin-bottom: 16px;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .email-body h2 {
+      font-size: 24px;
+      font-weight: 600;
+      text-align: center;
+      margin: 24px 0;
+      color: #0070f3;
+    }
+
+    .order-details {
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .order-info {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .order-info:last-child {
+      border-bottom: none;
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    .order-info .label {
+      font-weight: 600;
+      color: #555;
+    }
+
+    .order-info .value {
+      color: #333;
+    }
+
+    .product-item {
+      background-color: #ffffff;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 16px;
+      margin: 12px 0;
+    }
+
+    .product-title {
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .product-details {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .button {
+      display: inline-block;
+      margin-top: 24px;
+      padding: 12px 24px;
+      background-color: #0070f3;
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 16px;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 6px;
+    }
+
+    .email-footer {
+      background-color: #f9f9f9;
+      padding: 20px 24px;
+      font-size: 14px;
+      text-align: center;
+      color: #666;
+    }
+
+    .email-footer a {
+      color: #0070f3;
+    }
+
+    .success-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="email-header">
+      <h1>Order Confirmed! 🎉</h1>
+    </div>
+    <div class="email-body">
+      <p>Hello <%= customerName %>,</p>
+      <p>Thank you for your order! We're excited to confirm that your order has been successfully placed and is being processed.</p>
+      
+      <div class="order-details">
+        <h3 style="margin-top: 0; color: #0070f3;">Order Details</h3>
+        
+        <div class="order-info">
+          <span class="label">Order ID:</span>
+          <span class="value">#<%= orderId %></span>
+        </div>
+        
+        <div class="order-info">
+          <span class="label">Order Date:</span>
+          <span class="value"><%= orderDate %></span>
+        </div>
+        
+        <div class="order-info">
+          <span class="label">Payment Method:</span>
+          <span class="value"><%= paymentMethod %></span>
+        </div>
+        
+        <div class="order-info">
+          <span class="label">Shipping Address:</span>
+          <span class="value"><%= shippingAddress %></span>
+        </div>
+        
+        <% if (couponCode) { %>
+        <div class="order-info">
+          <span class="label">Coupon Applied:</span>
+          <span class="value"><%= couponCode %></span>
+        </div>
+        <% } %>
+        
+        <div class="order-info">
+          <span class="label">Subtotal:</span>
+          <span class="value">$<%= subtotal.toFixed(2) %></span>
+        </div>
+        
+        <% if (discountAmount > 0) { %>
+        <div class="order-info">
+          <span class="label">Discount:</span>
+          <span class="value">-$<%= discountAmount.toFixed(2) %></span>
+        </div>
+        <% } %>
+        
+        <% if (shippingFee > 0) { %>
+        <div class="order-info">
+          <span class="label">Shipping Fee:</span>
+          <span class="value">$<%= shippingFee.toFixed(2) %></span>
+        </div>
+        <% } %>
+        
+        <div class="order-info">
+          <span class="label">Total:</span>
+          <span class="value">$<%= total.toFixed(2) %></span>
+        </div>
+      </div>
+
+      <h3 style="color: #0070f3; margin-top: 30px;">Order Items</h3>
+      <% orderItems.forEach(function(item) { %>
+        <div class="product-item">
+          <div class="product-title"><%= item.title %></div>
+          <div class="product-details">
+            <span>Quantity: <%= item.quantity %></span>
+            <span>Price: $<%= item.price.toFixed(2) %></span>
+          </div>
+          <% if (item.selectedOptions && Object.keys(item.selectedOptions).length > 0) { %>
+            <div style="font-size: 12px; color: #888; margin-top: 8px;">
+              <% if (item.selectedOptions.color) { %>
+                <span style="margin-right: 12px;">Color: <%= item.selectedOptions.color %></span>
+              <% } %>
+              <% if (item.selectedOptions.size) { %>
+                <span>Size: <%= item.selectedOptions.size %></span>
+              <% } %>
+            </div>
+          <% } %>
+        </div>
+      <% }); %>
+
+      <p style="margin-top: 30px;"><strong>What's Next?</strong></p>
+      <ul style="line-height: 1.8;">
+        <li>We'll send you a shipping confirmation once your order is on its way</li>
+        <li>You can track your order status in your account dashboard</li>
+        <li>Expected delivery: 3-5 business days</li>
+      </ul>
+
+      <div style="text-align: center; margin-top: 30px;">
+        <a href="<%= orderTrackingUrl %>" class="button">Track My Order</a>
+      </div>
+
+      <p style="margin-top: 30px;">If you have any questions about your order, please don't hesitate to contact our customer support team.</p>
+    </div>
+    <div class="email-footer">
+      <p>Thank you for choosing <strong>Bingo</strong>!</p>
+      <p>If you have any questions, contact us at
+        <a href="mailto:support@bingo.com">support@bingo.com</a>
+      </p>
+      <p>Order ID: #<%= orderId %></p>
+    </div>
+  </div>
+</body>
+</html>
+
