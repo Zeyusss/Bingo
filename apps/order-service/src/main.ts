@@ -13,12 +13,11 @@ app.use(
     credentials:true,
   })
 )
-app.post("api/create-order",bodyParser.raw({type:"application/json"}),(req,res,next)=>{
+app.post("/api/create-order", bodyParser.raw({type:"application/json"}), (req,res,next)=>{
   (req as any).rawBody = req.body;
   next();
 },
 createOrder
-
 )
 app.use(express.json());
 app.use(cookieParser())

@@ -4,14 +4,13 @@ import Stripe from "stripe";
 import redis from "@packages/libs/redis";
 import { ValidationError } from "@packages/error-handler";
 import prisma from "@packages/libs/prisma";
-import { timeStamp } from "console";
 import { Prisma } from "@prisma/client";
 import { sendEmail } from "../utils/send-email";
 
 interface AuthenticatedRequest extends Request {
   user?: any;
 }
-// Use a valid Stripe API version and currency
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!,{
     apiVersion : "2025-06-30.basil"
 });
@@ -32,7 +31,7 @@ export const createPaymentIntent = async (
             payment_method_types: ["card"],
             application_fee_amount: platformFee,
             transfer_data: {
-                destination: sellerStripeAccountId,
+                destination: sellerStripeAccountId ,
             },
             metadata: {
                 sessionId,
@@ -323,17 +322,49 @@ export const createOrder = async (
                 }
 
                 // send email for user
+                // Calculate order summary fields
+                const orderId = sessionId;
+                const orderDate = new Date().toLocaleDateString();
+                const paymentMethod = "Credit Card"; // or get from payment intent if available
+                let shippingAddress = "N/A";
+                if (shippingAddressId) {
+                  const addressRecord = await prisma.address.findUnique({ where: { id: shippingAddressId } });
+                  if (addressRecord) {
+                    shippingAddress = `${addressRecord.name}, ${addressRecord.street}, ${addressRecord.city}, ${addressRecord.country}, ${addressRecord.zip}`;
+                  }
+                }
+                const couponCode = coupon?.code || null;
+                const subtotal = cart.reduce((sum: number, item: any) => sum + item.sale_price * item.quantity, 0);
+                const discountAmount = coupon?.discountAmount || 0;
+                const shippingFee = 0; // Set to actual shipping fee if available
+                const total = subtotal - discountAmount + shippingFee;
+                const orderItemsForEmail = cart.map((item: any) => ({
+                  title: item.title,
+                  quantity: item.quantity,
+                  price: item.sale_price,
+                  selectedOptions: item.selectedOptions || {}
+                }));
+                const orderTrackingUrl = `https://bingo.com/order/${sessionId}`;
+
                 await sendEmail(
                     email,
                     "Your Bingo Order Confirmation",
                     "order-confirmation",
                     {
                         name,
-                        cart,
-                        totalAmount:coupon?.discountAmout ? totalAmount - coupon?.discountAmout : totalAmount,
-                        trackingUrl : `https://bingo.com/order/${sessionId}`,
+                    orderId,
+                    orderDate,
+                    paymentMethod,
+                    shippingAddress,
+                    couponCode,
+                    subtotal,
+                    discountAmount,
+                    shippingFee,
+                    total,
+                    orderItems: orderItemsForEmail,
+                    orderTrackingUrl
                     }
-                )
+                );
                 // create notifications for sellers
                 const createdShopIds = Object.keys(shopGrouped);
                 const sellerShops = await prisma.shops.findMany({
