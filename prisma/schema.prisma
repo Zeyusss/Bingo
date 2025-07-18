@@ -15,7 +15,7 @@ model images {
   users   users?  @relation("UserImages", fields: [userId], references:[id])
   shops   shops?  @relation("ShopImages", fields: [shopId], references:[id])
   userAvatarOf users? @relation("UserAvatar")
-  shopAvatarOf shops? @relation("ShopAvatar")
+  shopAvatarOf shops[]
   products products? @relation(fields: [productsId], references:[id])
   productsId String? @db.ObjectId
 }
@@ -54,8 +54,8 @@ model shops {
   name          String
   bio           String?
   category      String[]
-  avatarId      String?   @db.ObjectId @unique
-  avatar        images?  @relation("ShopAvatar", fields: [avatarId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  avatarId      String?   @db.ObjectId
+  avatar        images?  @relation(fields: [avatarId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   coverBanner   String?
   address       String
   opening_hours String?

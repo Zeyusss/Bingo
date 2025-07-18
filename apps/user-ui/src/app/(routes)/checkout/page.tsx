@@ -1,10 +1,13 @@
 'use client'
 import {loadStripe,Appearance} from "@stripe/stripe-js";
+import {Elements} from "@stripe/react-stripe-js"
 import axiosInstance from "apps/user-ui/src/utils/axiosInstance";
 import { XCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import CheckoutForm from "apps/user-ui/src/shared/components/checkout/checkoutForm";
+
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
 const Page = () => {
@@ -27,12 +30,12 @@ const Page = () => {
             }
 
             try {
-                const verifyRes = await axiosInstance.get(`/order/api/verifying-payment-session?sessionId=${sessionId}`);
+                const verifyRes = await axiosInstance.get(`/order/api/verify-payment-session?sessionId=${sessionId}`);
 
-                const {totaleAmount, sellers,cart,coupon} = verifyRes.data.session;
+                const {totalAmount, sellers,cart,coupon} = verifyRes.data.session;
 
-                if(!sellers || sellers.length === 0 || totaleAmount === undefined || totaleAmount === null){
-                    throw new Error("Invalid payment session date.")
+                if(!sellers || sellers.length === 0 || totalAmount === undefined || totalAmount === null){
+                    throw new Error("Invalid payment session data.")
                 }
                 setCartItems(cart);
                 setCoupon(coupon);
@@ -40,7 +43,9 @@ const Page = () => {
 
                 const intentRes = await axiosInstance.post("/order/api/create-payment-intent",
                     {
-                        amount : coupon?.discountAmount ,totaleAmount,sellerStripeAccountId,sessionId
+                        amount : totalAmount,
+                        sellerStripeAccountId,
+                        sessionId
                     }
                 )
                 setClientSecret(intentRes.data.clientSecret);
@@ -90,9 +95,19 @@ Back to Cart
         )
     }
   return (
-    <div>
-      
-    </div>
+clientSecret &&(
+    <Elements
+    stripe={stripePromise}
+    options={{clientSecret,appearance}}
+    >
+    <CheckoutForm
+    clientSecret = {clientSecret}
+    cartItems = {cartItems}
+    coupon = {coupon}
+    sessionId= {sessionId}
+    />
+    </Elements>
+)
   )
 }
 
