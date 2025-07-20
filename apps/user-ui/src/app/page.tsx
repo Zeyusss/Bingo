@@ -14,6 +14,7 @@ import CategoryScroller from "../shared/components/homepage/CategoryScroller";
 import LatestProductsCarousel from "../shared/components/homepage/LatestProductsCarousel";
 import ShopOfTheWeek from "../shared/components/homepage/ShopOfTheWeek";
 import TopOffersSection from "../shared/components/homepage/TopOffersSection";
+import CategoryGrid from "../shared/components/cards/CategoryGrid";
 
 const Page = () => {
   const {
@@ -52,7 +53,7 @@ const Page = () => {
   const featuredShop = shops?.[0];
   return (
     <div className="bg-[#f5f5f5]">
-      <Hero />
+      <CategoryGrid />
       <div className="md:w-[80%] w-[90%] my-10 m-auto">
         <WhyHandmade />
         <CategoryScroller />

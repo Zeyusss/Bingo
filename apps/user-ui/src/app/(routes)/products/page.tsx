@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useState, useMemo } from "react";
 import { Range } from "react-range";
 import { Search } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 const MIN = 0;
 const MAX = 1199;
@@ -24,7 +25,8 @@ const Page = () => {
   const [tempPriceRange, setTempPriceRange] = useState([0, 1199]);
   const [productSearch, setProductSearch] = useState("");
   const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
-
+  const searchParams = useSearchParams();
+  const initialCategory = searchParams.get("category");
 
   const colors = [
     {name : "Black", code : "#000000"},
@@ -87,6 +89,20 @@ const Page = () => {
     const handler = setTimeout(() => setDebouncedProductSearch(productSearch), 300);
     return () => clearTimeout(handler);
   }, [productSearch]);
+
+useEffect(() => {
+  if (initialCategory) {
+    setSelectedCategories([initialCategory]);
+  } else {
+    fetchFilteredProducts();
+  }
+}, [initialCategory]);
+useEffect(() => {
+  if (selectedCategories.length > 0) {
+    updateURL();
+    fetchFilteredProducts();
+  }
+}, [selectedCategories, priceRange, selectedColors, selectedSizes, page]);
 
 
   const displayedProducts = useMemo(() => {

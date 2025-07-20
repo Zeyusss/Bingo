@@ -802,3 +802,38 @@ try {
     return next(error);
 }
 }
+
+export const getCategoriesWithCount = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const config = await prisma.site_config.findFirst();
+
+    if (!config) {
+      return res.status(404).json({ message: "Config not found" });
+    }
+
+    const categoryCounts = await Promise.all(
+      config.categories.map(async (category: string) => {
+        const count = await prisma.products.count({
+          where: {
+            category,
+            isDeleted: false,
+          },
+        });
+        return {
+          name: category,
+          count,
+        };
+      })
+    );
+
+    return res.status(200).json({
+      categories: categoryCounts,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
