@@ -1,9 +1,11 @@
 'use client'
-import { useQueryClient } from '@tanstack/react-query';
-import useUser from 'apps/user-ui/src/hooks/useUser'
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import useRequireAuth from 'apps/user-ui/src/hooks/useRequiredAuth';
 import QuickActionCard from 'apps/user-ui/src/shared/components/cards/quick-action.card';
 import StatCard from 'apps/user-ui/src/shared/components/cards/stat.card';
+import ChangePassword from 'apps/user-ui/src/shared/components/change-password';
 import ShippingAddressSection from 'apps/user-ui/src/shared/components/shippingAddress';
+import OrdersTable from 'apps/user-ui/src/shared/components/tables/orders-table';
 
 import axiosInstance from 'apps/user-ui/src/utils/axiosInstance';
 import { BadgeCheck, Bell, CheckCircle, Clock, Gift, Inbox, Loader2, Lock, LogOut, MapPin, Pencil, PhoneCall, Receipt, Settings, ShoppingBag, Truck, User } from 'lucide-react';
@@ -13,13 +15,25 @@ import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react'
 
 const Page = () => {
-    const {user,isLoading} = useUser();
+    const {user,isLoading} = useRequireAuth();
     const router = useRouter();
     const queryClient = useQueryClient();
     const searchParams = useSearchParams();
     const queryTab = searchParams.get("active") || "Profile";
     const [activeTab,setActiveTab] = useState(queryTab);
+    const {data:orders = []} = useQuery({
+        queryKey:["user-orders"],
+        queryFn: async()=>{
+            const res = await axiosInstance.get(`/order/api/get-user-orders`);
+            return res.data.orders;
+        },
+    });
+    const totalOrders = orders.length;
+    const processingOrders = orders.filter((o:any)=> o?.deliveryStatus !== "Delivered" && o?.deliveryStatus !== "Cancelled").length;
+    const completedOrders = orders.filter((o:any)=> o?.deliveryStatus === "Delivered").length;
 
+
+    
     useEffect(()=>{
         if(activeTab !== queryTab){
             const newParams = new URLSearchParams(searchParams);
@@ -54,17 +68,17 @@ const Page = () => {
 {/* Profile overview */}
  <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6'>
     <StatCard
-    count={10}
+    count={totalOrders}
     Icon={Clock}
     title="Total Orders"
     />
         <StatCard
-    count={4}
+    count={processingOrders}
     Icon={Truck}
     title="Processing Orders"
     />
         <StatCard
-    count={6}
+    count={completedOrders}
     Icon={CheckCircle}
     title="Completed Orders"
     />
@@ -145,7 +159,11 @@ className='w-16 h-16 rounded-full border border-gray-200'
     </div>
 ):activeTab === "Shipping Address" ? (
     <ShippingAddressSection/>
-):(<></>)}
+):activeTab === "My Orders" ? (
+    <OrdersTable/>
+): activeTab === "Change Password" ? (
+    <ChangePassword/>
+) : <></>}
 </div>
 {/* Right Quick Panel */}
 <div className='w-full md:w-1/4 space-y-4'>

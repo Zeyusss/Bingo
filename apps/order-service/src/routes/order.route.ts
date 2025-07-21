@@ -8,7 +8,8 @@ import {
   getSellerOrders,
   getOrderDetails,
   updateDeliveryStatus,
-  verifyCouponCode
+  verifyCouponCode,
+  getUserOrders
 } from "../controllers/order.controller";
 import { isSeller } from "@packages/middleware/authorizeRoles";
 
@@ -24,4 +25,5 @@ router.get("/get-seller-orders",isAuthenticated,isSeller,getSellerOrders)
 router.get("/get-order-details/:id",isAuthenticated,getOrderDetails)
 router.put("/update-status/:orderId",isAuthenticated,updateDeliveryStatus,isSeller)
 router.put("/verify-coupon",isAuthenticated,verifyCouponCode);
+router.get("/get-user-orders",isAuthenticated,getUserOrders);
 export default router;
