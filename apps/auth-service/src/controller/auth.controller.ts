@@ -609,3 +609,44 @@ export const setDefaultUserAddress = async (
     return next(error);
   }
 };
+
+// seller forget password 
+export const sellerForgetPassword = async (req:Request, res:Response,next:NextFunction) =>{
+  await handleForgetPassword(req, res, next, "seller");
+}
+
+// verify seller forget password OTP
+export const verifySellerForgetPasswordOtp = async (req: Request, res: Response, next: NextFunction) => {
+  await verifyForgetPasswordOtp(req, res, next);
+}
+
+// reset seller password
+export const sellerResetPassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email, newPassword } = req.body;
+    if (!email || !newPassword) {
+      return next(new ValidationError("Email and new password are required"));
+    }
+    const seller = await prisma.sellers.findUnique({
+      where: { email }
+    });
+    if (!seller) {
+      return next(new ValidationError("Seller not found"));
+    }
+    const isSamePassword = await bcrypt.compare(newPassword, seller.password!);
+    if (isSamePassword) {
+      return next(new ValidationError("New password cannot be the same as the old password"));
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.sellers.update({
+      where: { email },
+      data: { password: hashedPassword }
+    });
+    return res.status(200).json({
+      status: "success",
+      message: "Password reset successfully"
+    });
+  } catch (error) {
+    return next(error);
+  }
+}

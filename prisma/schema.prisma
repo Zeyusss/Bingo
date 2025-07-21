@@ -33,6 +33,7 @@ model users {
   shopReviews shopReviws[]
   images    images[]  @relation("UserImages")
   followedShops ShopFollower[] 
+  orders    orders[]
 }
 
 
@@ -203,6 +204,7 @@ model orders {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
   shopId        String   @db.ObjectId
   userId        String   @db.ObjectId
+  user          users    @relation(fields: [userId], references: [id])
   products      String[] 
   total         Float
   status        String
