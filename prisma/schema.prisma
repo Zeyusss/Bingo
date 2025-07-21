@@ -20,11 +20,16 @@ model images {
   productsId String? @db.ObjectId
 }
 
+enum UserRole {
+  user
+  admin
+}
 model users {
   id        String    @id @default (auto()) @map("_id") @db.ObjectId
   name      String
   email     String    @unique
-  password  String?
+  password  String
+  role      UserRole  @default(user)
   following String[]
   avatarId  String?   @db.ObjectId @unique
   avatar    images?   @relation("UserAvatar", fields: [avatarId], references: [id], onDelete: NoAction, onUpdate: NoAction)
