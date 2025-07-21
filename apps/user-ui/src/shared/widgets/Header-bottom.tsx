@@ -19,14 +19,14 @@ const Headerbottom = () => {
     const cart = useStore ((state:any)=> state.cart)
     const totalCartItems = cart.reduce((sum: number, item: any) => sum + (item.quantity ?? 1), 0);
   
-    // const {data} = useQuery({
-    //   queryKey:["categories"],
-    //   queryFn : async ()=>{
-    //     const rest = await axiosInstance.get("/product/api/get-categories")
-    //     return res.data;
-    //   },
-    //   staleTime : 1000 * 60 * 10
-    // })
+    const {data} = useQuery({
+      queryKey:["categories"],
+      queryFn : async ()=>{
+        const res = await axiosInstance.get("/product/api/get-categories")
+        return res.data;
+      },
+      staleTime : 1000 * 60 * 10
+    })
   
   useEffect(() => {
     const handleScroll = () => {
