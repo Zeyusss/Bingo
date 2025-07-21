@@ -144,9 +144,7 @@ const applyTransformation = async (transformation:string)=>{
   setProcessing(true);
   setActiveEffect(transformation);
   try {
-    // remove any existing tr= transformation from the URL
     let [baseUrl, queryString] = selectedImage.split('?');
-    // if there are other query params (not tr=)
     let params = new URLSearchParams(queryString || '');
     params.delete('tr');
     const newQuery = params.toString();
