@@ -76,6 +76,7 @@ model shops {
   products      products[]
   images        images[]  @relation("ShopImages")
   followers     ShopFollower[] 
+    orders        orders[]
 }
 
 
@@ -90,12 +91,16 @@ model sellers {
   shop          shops?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  isDeleted     Boolean  @default(false)
+  deletedAt     DateTime?
 }
 
 model site_config {
   id            String  @id @default(auto()) @map("_id") @db.ObjectId
   categories    String[]
   subCategories Json
+  logo          String?
+  banner        String?
 }
 
 model discount_codes {
@@ -166,8 +171,9 @@ model userAnalytics {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   userId      String   @unique @db.ObjectId
   lastVisited DateTime
-  lastTrained DateTime?
-  actions     Json
+  lastTrained DateTime  @default(now())
+  actions     Json?
+  recommendations Json?
   country     String?
   city        String?
   device      String?
@@ -192,17 +198,20 @@ model order_items {
   price     Float
   selectedOptions Json?
   order     orders   @relation(fields: [orderId], references: [id])
+  createdAt  DateTime @default(now())
 }
 
 model notifications {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  title        String
-  message      String
   creatorId    String   @db.ObjectId
   receiverId   String   @db.ObjectId
-  redirect_link String
-  read         Boolean  @default(false)
+  redirect_link String?
+  title        String
+  message      String
+  status       String @default("Unread")
+
   createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model orders {
@@ -225,6 +234,8 @@ model orders {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   items         order_items[]
+  shop shops @relation(fields: [shopId], references: [id])
+
 }
 
 enum addressType {
@@ -244,4 +255,28 @@ model address {
   country   String
   isDefault Boolean     @default(true)
   createdAt DateTime    @default(now())
+}
+
+model uniqueShopVisitors {
+   id        String      @id @default(auto()) @map("_id") @db.ObjectId
+   shopId    String      @db.ObjectId
+   userId    String      @db.ObjectId
+   visitedAt  DateTime   @default(now())
+
+   @@unique([shopId,userId])
+}
+
+model shopAnalytics {
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  totalVisitors Int   @default(0)
+
+  countryStats    Json?
+  cityStats       Json?
+  deviceStats     Json?
+
+  lastVisitedAt    DateTime
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
 }

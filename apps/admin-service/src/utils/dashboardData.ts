@@ -10,11 +10,11 @@ import {
 } from "date-fns";
 import os from "os";
 
-// Example service URLs (update as needed)
+
 const ORDER_SERVICE = process.env.ORDER_SERVICE_URL || "http://localhost:4002";
 const USER_SERVICE = process.env.USER_SERVICE_URL || "http://localhost:4001";
 
-// Static country coordinates for demo (should use a real geocoding service in production)
+
 const COUNTRY_COORDS: Record<string, { lat: number; lng: number }> = {
   USA: { lat: 37.7749, lng: -122.4194 },
   Egypt: { lat: 30.0444, lng: 31.2357 },
@@ -24,7 +24,6 @@ const COUNTRY_COORDS: Record<string, { lat: number; lng: number }> = {
 };
 
 export async function fetchRevenueData() {
-  // Aggregate monthly revenue for the last 6 months
   const now = new Date();
   const months = Array.from({ length: 6 }).map((_, i) => {
     const date = subMonths(now, 5 - i);
@@ -62,7 +61,6 @@ export async function fetchRevenueData() {
 }
 
 export async function fetchDeviceUsage() {
-  // Aggregate device usage from userAnalytics
   const analytics = await prisma.userAnalytics.findMany({
     select: { device: true },
   });
@@ -94,7 +92,6 @@ export async function fetchDeviceUsage() {
 }
 
 export async function fetchWorldActivity() {
-  // Aggregate user and seller geolocation activity
   const userAnalytics = await prisma.userAnalytics.findMany({
     select: { country: true },
   });
@@ -112,7 +109,6 @@ export async function fetchWorldActivity() {
     if (!countryMap[c]) countryMap[c] = { users: 0, sellers: 0 };
     countryMap[c].sellers++;
   }
-  // Map to coordinates (demo: only countries in COUNTRY_COORDS)
   return Object.entries(countryMap)
     .filter(([country]) => COUNTRY_COORDS[country])
     .map(([country, counts]) => ({
@@ -125,7 +121,6 @@ export async function fetchWorldActivity() {
 }
 
 export async function fetchSystemStats() {
-  // Aggregate user, seller, order counts, uptime, latency
   const [totalUsers, activeSellers, ordersToday] = await Promise.all([
     prisma.users.count(),
     prisma.sellers.count(),
@@ -138,7 +133,6 @@ export async function fetchSystemStats() {
       },
     }),
   ]);
-  // TODO: Replace with real uptime and latency monitoring
   const uptime = 99.98;
   const apiLatency = 120;
   return {
@@ -151,16 +145,14 @@ export async function fetchSystemStats() {
 }
 
 export async function fetchResourceMonitor() {
-  // System resource stats
-  const cpuLoad = os.loadavg()[0]; // 1-minute load average
+  
+  const cpuLoad = os.loadavg()[0];
   const cpuCount = os.cpus().length;
   const cpu = Math.min(100, Math.round((cpuLoad / cpuCount) * 100));
   const totalMem = os.totalmem();
   const freeMem = os.freemem();
   const memory = Math.round(((totalMem - freeMem) / totalMem) * 100);
-  // Disk usage: Node.js does not provide this natively, so mock for now
-  const disk = 55; // TODO: Replace with real disk usage
-  // Kafka health/lag: mock for now
+  const disk = 55; 
   const kafkaHealth = "healthy";
   const kafkaLag = 3;
   return {

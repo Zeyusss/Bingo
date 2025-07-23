@@ -6,7 +6,7 @@ import { NotFoundError, ValidationError } from "@packages/error-handler";
 import prisma from "@packages/libs/prisma";
 import { Prisma } from "@prisma/client";
 import { sendEmail } from "../utils/send-email";
-import { error } from "console";
+
 
 interface AuthenticatedRequest extends Request {
   user?: any;
@@ -669,7 +669,10 @@ export const getUserOrders = async (
   }
 };
 
-export const getRecentOrders = async (req, res, next) => {
+// get recent orders
+export const getRecentOrders = async (  req: any,
+  res: Response,
+  next: NextFunction) => {
   try {
     const orders = await prisma.orders.findMany({
       orderBy: { createdAt: "desc" },
@@ -685,3 +688,24 @@ export const getRecentOrders = async (req, res, next) => {
     return next(error);
   }
 };
+
+// get admin orders
+export const getAdminOrders = async(req:any,res:Response,next:NextFunction)=>{
+  try {
+    const orders = await prisma.orders.findMany({
+      include:{
+        user:true,
+        shop:true,
+      },orderBy:{
+        createdAt:"desc",
+      }
+    })
+
+    res.status(200).json({
+      success:true,
+      orders,
+    })
+  } catch (error) {
+    return next(error)
+  }
+}

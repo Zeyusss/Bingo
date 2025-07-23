@@ -24,8 +24,7 @@
     ],
     "paths": {
       "@packages/*": [
-        "packages/*",
-        
+        "packages/*"
       ]
     }
   }
