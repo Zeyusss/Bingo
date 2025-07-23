@@ -12,9 +12,9 @@ model images {
   url     String
   userId  String? @db.ObjectId
   shopId  String? @db.ObjectId
-  users   users?  @relation("UserImages", fields: [userId], references:[id])
+  users   users?  @relation("UserImages", fields: [userId], references:[id], onDelete: NoAction, onUpdate: NoAction)
   shops   shops?  @relation("ShopImages", fields: [shopId], references:[id])
-  userAvatarOf users? @relation("UserAvatar")
+  userAvatars users[] @relation("UserAvatar")
   shopAvatarOf shops[]
   products products? @relation(fields: [productsId], references:[id])
   productsId String? @db.ObjectId
@@ -31,7 +31,7 @@ model users {
   password  String
   role      UserRole  @default(user)
   following String[]
-  avatarId  String?   @db.ObjectId @unique
+  avatarId  String?   @db.ObjectId
   avatar    images?   @relation("UserAvatar", fields: [avatarId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -213,6 +213,7 @@ model orders {
   products      String[] 
   total         Float
   status        String
+  deliveryStatus String?
   address       String?
   paymentMethod String?
   couponCode    String?

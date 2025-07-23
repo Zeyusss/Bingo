@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import "react-quill-new/dist/quill.snow.css";
 import ReactQuill from "react-quill-new";
-import { Save, FileText, Hash, AlertCircle, CheckCircle, Type, AlignLeft, List, Link, Image, Video, Code, Quote } from "lucide-react";
+import { Save, FileText, Hash, AlertCircle, CheckCircle} from "lucide-react";
 
 interface RichTextEditorProps {
   value: string;
