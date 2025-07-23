@@ -1,0 +1,21 @@
+:root {
+  --primary: #AF1239;
+  --background: #ffffff;
+  --heading: #070000;
+  --text: #8E8E8E;
+  --button: #AF1239;
+  --disabled: #A4A4A4;
+  --error: #AF1239;
+  --border: #E5E5E5;
+  --input-border: #E5E5E5;
+  --input-radius: 0.5rem;
+  --input-padding: 0.75rem;
+  --sidebar-hover: #F8F8F8;
+  --sidebar-active-bg: #AF1239;
+  --sidebar-active-text: #fff;
+  --sidebar-radius: 0.75rem;
+  --sidebar-padding: 0.75rem;
+  --button-radius: 0.5rem;
+  --button-padding: 0.75rem 1.5rem;
+  --content-padding: 2rem;
+} 

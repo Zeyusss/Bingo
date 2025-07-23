@@ -1,9 +1,10 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
 
 :root {
   --font-poppins: 'Poppins', sans-serif;
 }
-
+@import "../styles/root.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -385,6 +386,65 @@
       display: inline;
       margin-top: -0.25rem;
     }
+    /* Glassmorphism card style */
+    .glassy-card {
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(16px) saturate(180%);
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+      border-radius: 20px;
+      border: 1px solid #e5e7eb;
+      transition: box-shadow 0.2s, background 0.2s;
+    }
+    .glassy-card:hover {
+      box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.12);
+      background: rgba(255,255,255,0.85);
+    }
+
+    /* Dashboard background gradient */
+    .dashboard-bg {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%);
+      animation: gradientMove 8s ease-in-out infinite alternate;
+    }
+    @keyframes gradientMove {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
+    }
+
+    /* Section heading accent bar */
+    .section-accent {
+      height: 3px;
+      width: 48px;
+      background: var(--primary, #60a5fa);
+      border-radius: 2px;
+      margin-bottom: 1.5rem;
+    }
+
+    /* Dashboard section spacing */
+    .dashboard-section {
+      margin-bottom: 2.5rem;
+    }
+
+    /* Responsive tweaks */
+    @media (max-width: 768px) {
+      .glassy-card { border-radius: 12px; padding: 1rem; }
+      .dashboard-section { margin-bottom: 1.5rem; }
+    }
+    @keyframes fadein {
+      from { opacity: 0; transform: translateY(40px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+    .animate-fadein { animation: fadein 0.8s cubic-bezier(.4,0,.2,1) both; }
+    @keyframes blob1 {
+      0%, 100% { transform: translate(0,0) scale(1);}
+      50% { transform: translate(40px, 60px) scale(1.1);}
+    }
+    @keyframes blob2 {
+      0%, 100% { transform: translate(0,0) scale(1);}
+      50% { transform: translate(-30px, -50px) scale(1.05);}
+    }
+    .animate-blob1 { animation: blob1 12s infinite ease-in-out; }
+    .animate-blob2 { animation: blob2 14s infinite ease-in-out; }
     @media screen and (min-width: 768px) {
       #hero {
         grid-template-columns: repeat(2, minmax(0, 1fr));
