@@ -7,10 +7,10 @@ import {useReactTable,getCoreRowModel,
 import {Search, ChevronRight} from "lucide-react";
 import { useQuery } from '@tanstack/react-query';
 import Link from "next/link";
-import axiosInstance from 'apps/seller-ui/src/utils/axiosInstance';
+import axiosInstance from 'apps/admin-ui/src/utils/axiosInstance';
 
 const fetchOrders = async()=>{
-    const res = await axiosInstance.get("order/api/get-seller-orders");
+    const res = await axiosInstance.get("order/api/get-admin-orders");
     return res.data.orders;
 }
 
@@ -19,7 +19,7 @@ const OrdersTable = () => {
     const [globalFilter,setGlobalFilter] = useState("");
     
     const {data:orders =[],isLoading} = useQuery({
-        queryKey: [ "seller-orders"],
+        queryKey: [ "admin-orders"],
         queryFn : fetchOrders,
         staleTime: 1000 * 60 * 5
     });
@@ -31,6 +31,15 @@ const OrdersTable = () => {
             cell: ({row} : any)=>(
                 <span className='text-gray-900 text-sm truncate'>
                 #{row.original.id.slice(-6).toUpperCase()}
+                </span>
+            ),
+        },
+        {
+            accessorKey : "shop.name",
+            header : "Shop",
+            cell: ({row} : any)=>(
+                <span className='text-gray-900 text-sm truncate'>
+                {row.original.shop?.name ?? "Unknow Shop"}
                 </span>
             ),
         },
@@ -112,7 +121,7 @@ const OrdersTable = () => {
           className="text-3xl font-extrabold mt-8 mb-1 text-gray-900 drop-shadow-lg"
           style={{ letterSpacing: '-0.02em' }}
         >
-          Orders
+          All Orders
         </h1>
         <div
           className="mb-3"
@@ -126,7 +135,7 @@ const OrdersTable = () => {
         <div className='flex items-center mb-4'>
           <Link href="/dashboard" className='text-[#80Deea] cursor-pointer hover:underline'>Dashboard</Link>
           <ChevronRight size={20} className='opacity-[.8]'/>
-          <span className='text-gray-800'>Orders</span>
+          <span className='text-gray-800'>All Orders</span>
         </div>
         <div className='w-full max-w-6xl flex flex-col items-center'>
           <div className='w-full glassy-card border border-gray-200 bg-white/60 rounded-2xl shadow-2xl p-4 sm:p-8 flex flex-col items-center'>
@@ -177,6 +186,7 @@ const OrdersTable = () => {
                   </tbody>
                 </table>
               )}
+
             </div>
                           {!isLoading && orders?.length === 0 && (
                 <p className='text-center py-10 text-gray-500 text-lg'>
