@@ -1,16 +1,14 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from "@tanstack/react-query";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SERVER_URI || "http://localhost:8080";
 
-
 const fetcher = async (url: string) => {
-  const response = await fetch(url);
+  const response = await fetch(url, { credentials: "include" });
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
   }
   return response.json();
 };
-
 
 export interface RevenueData {
   id: string;
@@ -58,23 +56,21 @@ export interface RecentOrdersData {
   }[];
 }
 
-
 export const QUERY_KEYS = {
-  REVENUE: ['dashboard', 'revenue'] as const,
-  DEVICE_USAGE: ['dashboard', 'device-usage'] as const,
-  WORLD_ACTIVITY: ['dashboard', 'world-activity'] as const,
-  RECENT_ORDERS: ['dashboard', 'recent-orders'] as const,
-  SYSTEM_STATS: ['dashboard', 'system-stats'] as const,
-  RESOURCE_MONITOR: ['dashboard', 'resource-monitor'] as const,
+  REVENUE: ["dashboard", "revenue"] as const,
+  DEVICE_USAGE: ["dashboard", "device-usage"] as const,
+  WORLD_ACTIVITY: ["dashboard", "world-activity"] as const,
+  RECENT_ORDERS: ["dashboard", "recent-orders"] as const,
+  SYSTEM_STATS: ["dashboard", "system-stats"] as const,
+  RESOURCE_MONITOR: ["dashboard", "resource-monitor"] as const,
 };
-
 
 export function useRevenueData() {
   return useQuery({
     queryKey: QUERY_KEYS.REVENUE,
     queryFn: () => fetcher(`${BASE_URL}/admin/api/dashboard/revenue`),
-    staleTime: 5 * 60 * 1000, 
-    refetchInterval: 10 * 60 * 1000, 
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 }
@@ -83,8 +79,8 @@ export function useDeviceUsage() {
   return useQuery({
     queryKey: QUERY_KEYS.DEVICE_USAGE,
     queryFn: () => fetcher(`${BASE_URL}/admin/api/dashboard/device-usage`),
-    staleTime: 10 * 60 * 1000, 
-    refetchInterval: 15 * 60 * 1000, 
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 }
@@ -93,8 +89,8 @@ export function useWorldMapActivity() {
   return useQuery({
     queryKey: QUERY_KEYS.WORLD_ACTIVITY,
     queryFn: () => fetcher(`${BASE_URL}/admin/api/dashboard/world-activity`),
-    staleTime: 15 * 60 * 1000, 
-    refetchInterval: 30 * 60 * 1000, 
+    staleTime: 15 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 }
@@ -103,8 +99,8 @@ export function useRecentOrders() {
   return useQuery({
     queryKey: QUERY_KEYS.RECENT_ORDERS,
     queryFn: () => fetcher(`${BASE_URL}/order/api/get-recent-orders`),
-    staleTime: 2 * 60 * 1000, 
-    refetchInterval: 5 * 60 * 1000, 
+    staleTime: 2 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 }
@@ -113,8 +109,8 @@ export function useSystemStats() {
   return useQuery({
     queryKey: QUERY_KEYS.SYSTEM_STATS,
     queryFn: () => fetcher(`${BASE_URL}/admin/api/dashboard/system-stats`),
-    staleTime: 1 * 60 * 1000, 
-    refetchInterval: 2 * 60 * 1000, 
+    staleTime: 1 * 60 * 1000,
+    refetchInterval: 2 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 }
@@ -123,8 +119,8 @@ export function useResourceMonitor() {
   return useQuery({
     queryKey: QUERY_KEYS.RESOURCE_MONITOR,
     queryFn: () => fetcher(`${BASE_URL}/admin/api/dashboard/resource-monitor`),
-    staleTime: 30 * 1000, 
-    refetchInterval: 60 * 1000, 
+    staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
     refetchOnWindowFocus: false,
   });
 }

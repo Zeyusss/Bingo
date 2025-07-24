@@ -20,6 +20,7 @@ const Login = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
+  const [showRestrictedModal, setShowRestrictedModal] = useState(false);
   const router = useRouter();
 
   const {
@@ -38,8 +39,11 @@ onSuccess: (data)=>{
   router.push("/");
 },
 onError: (error: AxiosError) =>{
-  const errorMessage = (error.response?.data as {message?:string})?.message ||"Invalid Email or Password.";
+  const errorMessage = (error.response?.data as {message?:string, restricted?:boolean})?.message ||"Invalid Email or Password.";
   setServerError(errorMessage);
+  if ((error.response?.data as {restricted?:boolean})?.restricted) {
+    setShowRestrictedModal(true);
+  }
 }
   })
 
@@ -152,6 +156,20 @@ loginMutation.mutate(data);
           </form>
         </div>
       </div>
+      {showRestrictedModal && (
+  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-40">
+    <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+      <h2 className="text-lg font-semibold mb-2">Account Restricted</h2>
+      <p className="mb-4">Your account is currently restricted. Please contact support or the site administration for assistance.</p>
+      <button
+        className="px-4 py-2 bg-blue-600 text-white rounded"
+        onClick={() => setShowRestrictedModal(false)}
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
     </div>
   );
 };

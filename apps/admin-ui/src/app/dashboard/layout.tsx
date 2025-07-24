@@ -9,7 +9,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         className="flex h-full min-h-screen"
         style={{ background: "var(--background)" }}
       >
-        {/* Sidebar */}
         <aside
           className="w-[280px] min-w-[250px] max-w-[300px]"
           style={{

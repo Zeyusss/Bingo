@@ -39,6 +39,9 @@ model users {
   images    images[]  @relation("UserImages")
   followedShops ShopFollower[] 
   orders    orders[]
+  isBlocked Boolean  @default(false)
+  isDeleted Boolean  @default(false)
+  deletedAt DateTime?
 }
 
 
@@ -77,6 +80,8 @@ model shops {
   images        images[]  @relation("ShopImages")
   followers     ShopFollower[] 
     orders        orders[]
+    isDeleted Boolean? @default(false)
+    deletedAt DateTime?
 }
 
 
@@ -93,6 +98,7 @@ model sellers {
   updatedAt     DateTime @updatedAt
   isDeleted     Boolean  @default(false)
   deletedAt     DateTime?
+  isBlocked     Boolean  @default(false)
 }
 
 model site_config {
@@ -235,6 +241,8 @@ model orders {
   updatedAt     DateTime @updatedAt
   items         order_items[]
   shop shops @relation(fields: [shopId], references: [id])
+    isDeleted Boolean @default(false)
+    deletedAt DateTime?
 
 }
 
