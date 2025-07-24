@@ -1,24 +1,23 @@
 "use client";
 
-import { useMutation } from '@tanstack/react-query';
-import axios, { AxiosError } from 'axios';
-import { Eye, EyeOff } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import React, { useState } from 'react';
+import { useMutation } from "@tanstack/react-query";
+import axios, { AxiosError } from "axios";
+import { Eye, EyeOff } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 
-  type FormData = {
-    email: string;
-    password: string;
-  };
+type FormData = {
+  email: string;
+  password: string;
+};
 
 const Login = () => {
-
-
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
+  const [showRestrictedModal, setShowRestrictedModal] = useState(false);
   const router = useRouter();
 
   const {
@@ -27,23 +26,32 @@ const Login = () => {
     formState: { errors },
   } = useForm<FormData>();
 
-  const loginMutation = useMutation ({
-mutationFn: async (data: FormData)=>{
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/login-seller`, data, {withCredentials:true});
-       return response.data;
-},
-onSuccess: (data)=>{
-  setServerError(null);
-  router.push("/");
-},
-onError: (error: AxiosError) =>{
-  const errorMessage = (error.response?.data as {message?:string})?.message ||"Invalid Email or Password.";
-  setServerError(errorMessage);
-}
-  })
+  const loginMutation = useMutation({
+    mutationFn: async (data: FormData) => {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/api/login-seller`,
+        data,
+        { withCredentials: true }
+      );
+      return response.data;
+    },
+    onSuccess: (data) => {
+      setServerError(null);
+      router.push("/");
+    },
+    onError: (error: AxiosError) => {
+      const errorMessage =
+        (error.response?.data as { message?: string; restricted?: boolean })
+          ?.message || "Invalid Email or Password.";
+      setServerError(errorMessage);
+      if ((error.response?.data as { restricted?: boolean })?.restricted) {
+        setShowRestrictedModal(true);
+      }
+    },
+  });
 
   const onSubmit = (data: FormData) => {
-loginMutation.mutate(data);
+    loginMutation.mutate(data);
   };
 
   return (
@@ -65,7 +73,6 @@ loginMutation.mutate(data);
               Sign Up
             </Link>
           </p>
-
 
           <div className="flex items-center my-5 text-gray-400 text-sm">
             <div className="flex-1 border-t border-gray-300" />
@@ -89,54 +96,65 @@ loginMutation.mutate(data);
                 })}
               />
               {errors.email && (
-                <p className="text-red-500 text-sm mt-1">{String(errors.email.message)}</p>
+                <p className="text-red-500 text-sm mt-1">
+                  {String(errors.email.message)}
+                </p>
               )}
             </div>
 
             <div>
               <label className="block text-gray-700 mb-1">Password</label>
-              <div className='relative'>
-              <input
-                type={passwordVisible ? "text" : "password"}
-                placeholder="Your Password"
-                className="w-full p-2 border border-gray-300 outline-0 rounded"
-                {...register("password", {
-                  required: "Password is required",
-                  minLength: {
-                    value: 6,
-                    message: "Password must be at least 6 characters",
-                  },
-                })}
-              />
-              <button type='button' onClick={()=> setPasswordVisible(!passwordVisible)} className='absolute inset-y-0 right-3 flex items-center text-gray-400'>
-              {passwordVisible?<Eye/> : <EyeOff/>}
-              </button>
-</div>
+              <div className="relative">
+                <input
+                  type={passwordVisible ? "text" : "password"}
+                  placeholder="Your Password"
+                  className="w-full p-2 border border-gray-300 outline-0 rounded"
+                  {...register("password", {
+                    required: "Password is required",
+                    minLength: {
+                      value: 6,
+                      message: "Password must be at least 6 characters",
+                    },
+                  })}
+                />
+                <button
+                  type="button"
+                  onClick={() => setPasswordVisible(!passwordVisible)}
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-400"
+                >
+                  {passwordVisible ? <Eye /> : <EyeOff />}
+                </button>
+              </div>
               {errors.password && (
-                <p className="text-red-500 text-sm mt-1">{String(errors.password.message)}</p>
+                <p className="text-red-500 text-sm mt-1">
+                  {String(errors.password.message)}
+                </p>
               )}
             </div>
 
-
-<div className="flex justify-between items-center">
-  <div className="flex items-center gap-2">
-    <input
-      id="rememberMe"
-      type="checkbox"
-      checked={rememberMe}
-      onChange={() => setRememberMe(!rememberMe)}
-      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-    />
-    <label htmlFor="rememberMe" className="text-sm text-gray-600 cursor-pointer">
-      Remember me
-    </label>
-  </div>
-  <Link href="/forgot-password" className="text-sm text-blue-500 hover:underline">
-    Forgot Password?
-  </Link>
-</div>
-
-
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <input
+                  id="rememberMe"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={() => setRememberMe(!rememberMe)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label
+                  htmlFor="rememberMe"
+                  className="text-sm text-gray-600 cursor-pointer"
+                >
+                  Remember me
+                </label>
+              </div>
+              <Link
+                href="/forgot-password"
+                className="text-sm text-blue-500 hover:underline"
+              >
+                Forgot Password?
+              </Link>
+            </div>
 
             <button
               type="submit"
@@ -146,10 +164,29 @@ loginMutation.mutate(data);
               {loginMutation.isPending ? "Logging in..." : "Login"}
             </button>
 
-            {serverError && <p className="text-red-500 text-sm">{serverError}</p>}
+            {serverError && (
+              <p className="text-red-500 text-sm">{serverError}</p>
+            )}
           </form>
         </div>
       </div>
+      {showRestrictedModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+            <h2 className="text-lg font-semibold mb-2">Account Restricted</h2>
+            <p className="mb-4">
+              Your account is currently restricted. Please contact support or
+              the site administration for assistance.
+            </p>
+            <button
+              className="px-4 py-2 bg-blue-600 text-white rounded"
+              onClick={() => setShowRestrictedModal(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import express, { Router } from 'express';
-import { addUserAddress, createShop, createStripeConnectLink, deleteUserAddress, editUserAddress, getSeller, getUser, getUserAddresses, loginSeller, refreshToken, registerSeller, sellerForgetPassword, sellerResetPassword, setDefaultUserAddress, updateUserPassword, userForgetPassword, userLogin, userRegistration,userResetPassword,verifySeller,verifySellerForgetPasswordOtp,verifyUserForgetPasswordOtp,verifyUserRegistrationOtp, loginAdmin, getLoggedInAdmin } from '../controller/auth.controller';
+import { addUserAddress, createShop, createStripeConnectLink, deleteUserAddress, editUserAddress, getSeller, getUser, getUserAddresses, loginSeller, refreshToken, registerSeller, sellerForgetPassword, sellerResetPassword, setDefaultUserAddress, updateUserPassword, userForgetPassword, userLogin, userRegistration,userResetPassword,verifySeller,verifySellerForgetPasswordOtp,verifyUserForgetPasswordOtp,verifyUserRegistrationOtp, loginAdmin, getLoggedInAdmin, logoutUser } from '../controller/auth.controller';
 import isAuthenticated from '@packages/middleware/isAuthenticated';
 import { isSeller } from '@packages/middleware/authorizeRoles';
 
@@ -31,4 +31,5 @@ router.put("/edit-address/:addressId",isAuthenticated,editUserAddress)
 router.post("/change-password",isAuthenticated,updateUserPassword)
 router.post("/login-admin", loginAdmin);
 router.get("/logged-in-admin", isAuthenticated, getLoggedInAdmin);
+router.get("/logout-user", logoutUser);
 export default router;

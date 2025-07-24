@@ -35,7 +35,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <div className="mb-4">
@@ -47,7 +46,6 @@ export default function DashboardPage() {
           </div>
           <MetricsOverview />
         </div>
-        {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <div className="lg:col-span-1">
             <RevenueChart />
@@ -56,7 +54,6 @@ export default function DashboardPage() {
             <DeviceUsageDonut />
           </div>
         </div>
-        {/* World Map Section */}
         <div className="mb-8">
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
             <div className="p-6 border-b border-gray-200">
@@ -77,7 +74,6 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-        {/* Bottom Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <RecentOrdersTable />

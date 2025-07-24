@@ -110,13 +110,54 @@ export const userLogin = async (
     if (!user) {
       return next(new AuthError("User not found"));
     }
+    if (user.isBlocked || user.isDeleted) {
+      return res.status(403).json({
+        message:
+          "Your account is currently restricted. Please contact support or the site administration for assistance.",
+        restricted: true,
+      });
+    }
     const isMatch = await bcrypt.compare(password, user.password!);
     if (!isMatch) {
       return next(new AuthError("Invalid email or password"));
     }
 
-    res.clearCookie("seller-access-token");
-    res.clearCookie("seller-refresh-token");
+    res.clearCookie("access_Token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("refresh_Token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("access_token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("refresh_token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("seller-access-token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("seller-refresh-token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
 
     const accessToken = jwt.sign(
       { id: user.id, role: "user" },
@@ -314,16 +355,13 @@ export const verifySeller = async (
         )
       );
     }
-    // Check if seller already exists
     const existingSeller = await prisma.sellers.findUnique({
       where: { email },
     });
     if (existingSeller) {
       return next(new ValidationError("Seller already exists with this email"));
     }
-    // Verify OTP
     await verifyOtp(email, otp);
-    // Hash password and create seller
     const hashedPassword = await bcrypt.hash(password, 10);
     const seller = await prisma.sellers.create({
       data: { name, email, phone_number, country, password: hashedPassword },
@@ -350,7 +388,6 @@ export const createShop = async (
     if (!name || !bio || !address || !opening_hours || !category || !sellerId) {
       return next(new ValidationError("All fields are required"));
     }
-    // Ensure category is always an array
     const categoryArray = Array.isArray(category) ? category : [category];
     const shopData: any = {
       name,
@@ -452,13 +489,54 @@ export const loginSeller = async (
     if (!seller) {
       return next(new ValidationError("Seller not found"));
     }
-
+    if (seller.isBlocked || seller.isDeleted) {
+      return res.status(403).json({
+        message:
+          "Your account is currently restricted. Please contact support or the site administration for assistance.",
+        restricted: true,
+      });
+    }
     const isMatch = await bcrypt.compare(password, seller.password!);
     if (!isMatch) {
       return next(new ValidationError("Invalid email or password"));
     }
-    res.clearCookie("access_Token");
-    res.clearCookie("refresh_token");
+    res.clearCookie("access_Token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("refresh_Token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("access_token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("refresh_token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("seller-access-token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("seller-refresh-token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+
     const accessToken = jwt.sign(
       { id: seller.id, role: "seller" },
       process.env.ACCESS_TOKEN_SECRET as string,
@@ -511,7 +589,6 @@ export const addUserAddress = async (
     if (!label || !name || !street || !city || !state || !zip || !country) {
       return next(new ValidationError("All fields are required"));
     }
-    // Limit to 3 addresses
     const count = await prisma.address.count({ where: { userId } });
     if (count >= 3) {
       return next(new ValidationError("You can only have up to 3 addresses."));
@@ -561,15 +638,12 @@ export const editUserAddress = async (
 
     if (!userId) return next(new ValidationError("User not authenticated"));
     if (!addressId) return next(new ValidationError("Address ID is required"));
-
-    // Check if address exists and belongs to user
     const address = await prisma.address.findFirst({
       where: { id: addressId, userId },
     });
     if (!address)
       return next(new NotFoundError("Address not found or unauthorized"));
 
-    // If setting as default, unset all others
     if (isDefault) {
       await prisma.address.updateMany({
         where: { userId, isDefault: true },
@@ -642,10 +716,7 @@ export const getUserAddresses = async (
     }
     const addresses = await prisma.address.findMany({
       where: { userId },
-      orderBy: [
-        { isDefault: "desc" }, // default addresses first
-        { createdAt: "desc" }, // most recent first
-      ],
+      orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
     });
     res.status(200).json({
       success: true,
@@ -671,19 +742,16 @@ export const setDefaultUserAddress = async (
     if (!addressId) {
       return next(new ValidationError("Address ID is required"));
     }
-    // Check if address exists and belongs to user
     const address = await prisma.address.findFirst({
       where: { id: addressId, userId },
     });
     if (!address) {
       return next(new NotFoundError("Address not found or unauthorized"));
     }
-    // Unset all other default addresses for this user
     await prisma.address.updateMany({
       where: { userId, isDefault: true },
       data: { isDefault: false },
     });
-    // Set this address as default
     await prisma.address.update({
       where: { id: addressId },
       data: { isDefault: true },
@@ -823,30 +891,54 @@ export const loginAdmin = async (
     const user = await prisma.users.findUnique({ where: { email } });
 
     if (!user) return next(new AuthError("User doesn't exists!"));
-
+    if (user.isBlocked || user.isDeleted) {
+      return res.status(403).json({
+        message:
+          "Your account is currently restricted. Please contact support or the site administration for assistance.",
+        restricted: true,
+      });
+    }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return next(new AuthError("Invalid email or password"));
     }
 
-    const isAdmin = user.role === "admin";
-
-    // if(!isAdmin){
-    //   sendLog({
-    //     type:"error",
-    //     message : `Admin login failed fo ${email} - not an admin`,
-    //     source:"auth-service"
-    //   })
-    //   return next(new AuthError("Invalid access!"))
-    // }
-
-    // sendLog({
-    //   type:"success",
-    //   message : `Admin login successful : ${email}`
-    // })
-
-    res.clearCookie("seller-access-token");
-    res.clearCookie("seller-refresh-token");
+    res.clearCookie("access_Token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("refresh_Token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("access_token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("refresh_token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("seller-access-token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("seller-refresh-token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
 
     const accessToken = jwt.sign(
       { id: user.id, role: "admin" },
@@ -868,22 +960,77 @@ export const loginAdmin = async (
       user: { id: user.id, email: user.email, name: user.name },
     });
   } catch (error) {
-    console.error("loginAdmin error:", error); 
+    console.error("loginAdmin error:", error);
     return next(error);
   }
 };
 
-export const getLoggedInAdmin = async (req: any, res: Response, next: NextFunction) => {
+export const getLoggedInAdmin = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const user = req.user;
     if (!user || user.role !== "admin") {
       return res.status(401).json({ message: "Not authenticated as admin" });
     }
     res.status(200).json({
-      success:true,
-       user });
+      success: true,
+      user,
+    });
   } catch (error) {
     return next(error);
   }
 };
 
+// Logout user (clear cookies)
+export const logoutUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    res.clearCookie("access_Token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("refresh_Token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("access_token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("refresh_token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("seller-access-token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("seller-refresh-token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    return res
+      .status(200)
+      .json({ success: true, message: "Logged out successfully" });
+  } catch (error) {
+    return next(error);
+  }
+};

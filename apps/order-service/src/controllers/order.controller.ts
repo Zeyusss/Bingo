@@ -97,7 +97,6 @@ export const createPaymentSession = async (
         }
       }
     }
-    // fetch sellers and their stripe accounts
     const uniqueShopIds = [...new Set(cart.map((item: any) => item.shopId))];
     const shops = await prisma.shops.findMany({
       where: {
@@ -119,13 +118,9 @@ export const createPaymentSession = async (
       sellerId: shop.sellerId,
       stripeAccountId: shop?.sellers?.stripeId,
     }));
-
-    // calc total
     const totalAmount = cart.reduce((total: number, item: any) => {
       return total + item.quantity * item.sale_price;
     }, 0);
-
-    //create session payload
     const sessionId = crypto.randomUUID();
     const sessionData = {
       userId,
@@ -158,7 +153,6 @@ export const verifyingPaymentSession = async (
     if (!sessionId) {
       return res.status(400).json({ error: "Session ID is required." });
     }
-    // fetch session from redis
     const sessionKey = `payment-session:${sessionId}`;
     const sessionData = await redis.get(sessionKey);
     if (!sessionData) {
@@ -256,7 +250,6 @@ export const createOrder = async (
           }
         }
 
-        // create order
         await prisma.orders.create({
           data: {
             userId,
@@ -276,7 +269,6 @@ export const createOrder = async (
             },
           },
         });
-        // update product & analytics
         for (const item of orderItems) {
           const { id: productId, quantity } = item;
 
@@ -331,11 +323,9 @@ export const createOrder = async (
           }
         }
 
-        // send email for user
-        // Calculate order summary fields
         const orderId = sessionId;
         const orderDate = new Date().toLocaleDateString();
-        const paymentMethod = "Credit Card"; // or get from payment intent if available
+        const paymentMethod = "Credit Card"; 
         let shippingAddress = "N/A";
         if (shippingAddressId) {
           const addressRecord = await prisma.address.findUnique({
@@ -351,7 +341,7 @@ export const createOrder = async (
           0
         );
         const discountAmount = coupon?.discountAmount || 0;
-        const shippingFee = 0; // Set to actual shipping fee if available
+        const shippingFee = 0; 
         const total = subtotal - discountAmount + shippingFee;
         const orderItemsForEmail = cart.map((item: any) => ({
           title: item.title,
@@ -380,7 +370,6 @@ export const createOrder = async (
             orderTrackingUrl,
           }
         );
-        // create notifications for sellers
         const createdShopIds = Object.keys(shopGrouped);
         const sellerShops = await prisma.shops.findMany({
           where: { id: { in: createdShopIds } },
@@ -406,7 +395,6 @@ export const createOrder = async (
           });
         }
 
-        //create notification for admin
         await prisma.notifications.create({
           data: {
             title: "Platform Order Alert",
@@ -476,7 +464,6 @@ export const getOrderDetails = async (
 ) => {
   try {
     const orderId = req.params.id;
-    // Fetch order, user, and items in one go
     const order = await prisma.orders.findUnique({
       where: { id: orderId },
       include: {
@@ -487,8 +474,6 @@ export const getOrderDetails = async (
     if (!order) {
       return next(new NotFoundError("Order not found with this id!"));
     }
-
-    // Fetch address and coupon in parallel
     const [shippingAddress, coupon] = await Promise.all([
       order.shippingAddressId
         ? prisma.address.findUnique({ where: { id: order.shippingAddressId } })
@@ -500,7 +485,6 @@ export const getOrderDetails = async (
         : Promise.resolve(null),
     ]);
 
-    // Fetch all products for the order items in one query
     const productIds = order.items.map((item: any) => item.productId);
     const products =
       productIds.length > 0

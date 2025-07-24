@@ -1,6 +1,7 @@
 import './global.css';
 import Providers from './provider';
 import {Poppins} from "next/font/google"
+import ClientRestrictionWrapper from "../shared/components/ClientRestrictionWrapper";
 
 export const metadata = {
   title: 'Bingo Seller',
@@ -23,7 +24,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`min-h-screen font-sans  antialiased ${poppins.variable}`}>
         <Providers>
-          {children}
+          <ClientRestrictionWrapper>
+            {children}
+          </ClientRestrictionWrapper>
         </Providers>
         
       </body>
