@@ -60,7 +60,7 @@ const UsersPage = () => {
     country: "",
   });
   const [showDeleted, setShowDeleted] = useState(false);
-  const [showBlocked, setShowBlocked] = useState(false); 
+  const [showBlocked, setShowBlocked] = useState(false);
   const [confirmAction, setConfirmAction] = useState<null | {
     type: "block" | "delete";
     entity: any;
@@ -245,15 +245,28 @@ const UsersPage = () => {
       id,
       data,
       prevRole,
+      entity,
     }: {
       id: string;
       data: any;
       prevRole?: string;
+      entity?: any;
     }) => {
-      if (roleFilter === "seller") {
+      const isSeller =
+        entity &&
+        (entity.role === "seller" || !entity.role || entity.phone_number);
+      const isUser = entity && entity.role === "user";
+      if (isSeller) {
         if (data.role === "user" && prevRole !== "user") {
           const response = await axios.post(
             `${process.env.NEXT_PUBLIC_SERVER_URI}/admin/api/sellers/${id}/demote-to-user`,
+            {},
+            { withCredentials: true }
+          );
+          return response.data;
+        } else if (data.role === "admin" && prevRole !== "admin") {
+          const response = await axios.post(
+            `${process.env.NEXT_PUBLIC_SERVER_URI}/admin/api/sellers/${id}/promote-to-admin`,
             {},
             { withCredentials: true }
           );
@@ -266,24 +279,13 @@ const UsersPage = () => {
           );
           return response.data;
         }
-      } else if (data.role === "seller" && prevRole !== "seller") {
-        try {
-          const response = await axios.post(
-            `${process.env.NEXT_PUBLIC_SERVER_URI}/admin/api/users/${id}/promote-to-seller`,
-            {
-              phone_number: data.phone_number,
-              country: data.country,
-            },
-            { withCredentials: true }
-          );
-          toast.success("User promoted to seller!");
-          return response.data;
-        } catch (err: any) {
-          toast.error(
-            err?.response?.data?.message || "Failed to promote user to seller"
-          );
-          throw err;
-        }
+      } else if (isUser || entity?.role === "admin") {
+        const response = await axios.put(
+          `${process.env.NEXT_PUBLIC_SERVER_URI}/admin/api/users/${id}`,
+          data,
+          { withCredentials: true }
+        );
+        return response.data;
       } else {
         const response = await axios.put(
           `${process.env.NEXT_PUBLIC_SERVER_URI}/admin/api/users/${id}`,
@@ -340,7 +342,7 @@ const UsersPage = () => {
     setEditFormData({
       name: entity.name,
       email: entity.email,
-      role: entity.role || "seller",
+      role: "", 
       phone_number: entity.phone_number || "",
       country: entity.country || "",
     });
@@ -378,6 +380,7 @@ const UsersPage = () => {
         id: selectedEntity.id,
         data: editFormData,
         prevRole: selectedEntity.role,
+        entity: selectedEntity,
       });
     }
   };
@@ -520,12 +523,6 @@ const UsersPage = () => {
               </TableRow>
             ) : (
               filteredEntities.map((entity: any) => {
-                console.log(
-                  entity.name,
-                  entity.isBlocked,
-                  "Button should show",
-                  entity.isBlocked ? "Unblock" : "Block"
-                );
                 return (
                   <TableRow key={entity.id}>
                     <TableCell>
@@ -616,14 +613,17 @@ const UsersPage = () => {
                         >
                           {entity.isBlocked ? "Unblock" : "Block"}
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteEntity(entity)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 size={16} />
-                        </Button>
+                        {/* Hide delete button if already deleted */}
+                        {!entity.isDeleted && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteEntity(entity)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        )}
                         {showDeleted && entity.isDeleted && (
                           <Button
                             variant="ghost"
@@ -709,61 +709,37 @@ const UsersPage = () => {
               placeholder="User email"
             />
           </div>
-          {roleFilter !== "seller" && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Role
-              </label>
-              <select
-                value={editFormData.role}
-                onChange={(e) =>
-                  setEditFormData((prev: any) => ({
-                    ...prev,
-                    role: e.target.value as any,
-                  }))
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
+          {/* In the edit modal, update the role dropdown: */}
+          <select
+            value={editFormData.role || ""}
+            onChange={(e) =>
+              setEditFormData((prev: any) => ({
+                ...prev,
+                role: e.target.value as any,
+              }))
+            }
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="" disabled>
+              Select the role
+            </option>
+            {/* User: can only promote to admin */}
+            {selectedEntity?.role === "user" && (
+              <option value="admin">Admin</option>
+            )}
+            {/* Admin: can only demote to user */}
+            {selectedEntity?.role === "admin" && (
+              <option value="user">User</option>
+            )}
+            {/* Seller: can be demoted to user or promoted to admin */}
+            {(selectedEntity?.role === "seller" || !selectedEntity?.role) && (
+              <>
                 <option value="user">User</option>
-                <option value="seller">Seller</option>
                 <option value="admin">Admin</option>
-              </select>
-            </div>
-          )}
-          {editFormData.role === "seller" && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number
-                </label>
-                <Input
-                  value={editFormData.phone_number}
-                  onChange={(e) =>
-                    setEditFormData((prev: any) => ({
-                      ...prev,
-                      phone_number: e.target.value,
-                    }))
-                  }
-                  placeholder="Seller phone number"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Country
-                </label>
-                <Input
-                  value={editFormData.country}
-                  onChange={(e) =>
-                    setEditFormData((prev: any) => ({
-                      ...prev,
-                      country: e.target.value,
-                    }))
-                  }
-                  placeholder="Seller country"
-                />
-              </div>
-            </>
-          )}
+              </>
+            )}
+          </select>
+          {/* Remove all UI/logic for promoting user to seller (no phone/country fields, no promote-to-seller mutation) */}
           <div className="flex justify-end space-x-3 pt-4">
             <Button
               variant="outline"
@@ -854,7 +830,6 @@ const UsersPage = () => {
           <div className="py-8 text-center text-gray-500">Loading...</div>
         ) : viewDetails?.type === "seller" && viewDetails.data ? (
           ((() => {
-            console.log("Seller details modal:", viewDetails);
             const totalShopSales =
               viewDetails &&
               "totalShopSales" in viewDetails &&
@@ -907,6 +882,18 @@ const UsersPage = () => {
                       <b>Deleted:</b>{" "}
                       {viewDetails.data.isDeleted ? "Yes" : "No"}
                     </div>
+                    {viewDetails.data.blockedAt && (
+                      <div>
+                        <b>Blocked At:</b>{" "}
+                        {new Date(viewDetails.data.blockedAt).toLocaleString()}
+                      </div>
+                    )}
+                    {viewDetails.data.deletedAt && (
+                      <div>
+                        <b>Deleted At:</b>{" "}
+                        {new Date(viewDetails.data.deletedAt).toLocaleString()}
+                      </div>
+                    )}
                   </div>
                 </div>
                 {viewDetails.data.shop && (
@@ -1061,6 +1048,18 @@ const UsersPage = () => {
                 <div>
                   <b>Deleted:</b> {viewDetails.data.isDeleted ? "Yes" : "No"}
                 </div>
+                {viewDetails.data.blockedAt && (
+                  <div>
+                    <b>Blocked At:</b>{" "}
+                    {new Date(viewDetails.data.blockedAt).toLocaleString()}
+                  </div>
+                )}
+                {viewDetails.data.deletedAt && (
+                  <div>
+                    <b>Deleted At:</b>{" "}
+                    {new Date(viewDetails.data.deletedAt).toLocaleString()}
+                  </div>
+                )}
               </div>
             </div>
             <div className="mb-2">

@@ -25,7 +25,7 @@ export default function RootLayout({
       <body className={`min-h-screen font-sans  antialiased ${poppins.variable}`}>
         <Providers>
           <ClientRestrictionWrapper>
-            {children}
+          {children}
           </ClientRestrictionWrapper>
         </Providers>
         

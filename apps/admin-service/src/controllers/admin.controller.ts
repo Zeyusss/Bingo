@@ -294,6 +294,8 @@ export const getAllUsers = async (
           createdAt: true,
           isDeleted: true,
           isBlocked: true,
+          blockedAt: true,
+          deletedAt: true,
         },
       }),
       prisma.users.count({ where }),
@@ -340,6 +342,8 @@ export const getAllSellers = async (
           createdAt: true,
           isDeleted: true,
           isBlocked: true,
+          blockedAt: true,
+          deletedAt: true,
           shop: {
             select: {
               name: true,
@@ -379,7 +383,7 @@ export const blockUser = async (
 
     const user = await prisma.users.update({
       where: { id: userId },
-      data: { isBlocked },
+      data: { isBlocked, blockedAt: isBlocked ? new Date() : null },
     });
 
     res.status(200).json({
@@ -477,7 +481,7 @@ export const blockSeller = async (
 
     const seller = await prisma.sellers.update({
       where: { id: sellerId },
-      data: { isBlocked },
+      data: { isBlocked, blockedAt: isBlocked ? new Date() : null },
     });
 
     res.status(200).json({
@@ -633,7 +637,10 @@ export const demoteSellerToUser = async (
         role: "user",
       },
     });
-    await prisma.sellers.delete({ where: { id: sellerId } });
+    await prisma.sellers.update({
+      where: { id: sellerId },
+      data: { isDeleted: true, deletedAt: new Date() },
+    });
     res
       .status(200)
       .json({ success: true, message: "Seller demoted to user", user });
@@ -736,7 +743,6 @@ export const getSellerDetails = async (
 
     let totalProductValue = 0;
     if (seller.shop && seller.shop.products) {
-      console.log("Products for shop:", seller.shop.products);
       for (const prod of seller.shop.products) {
         if (!prod.isDeleted) {
           totalProductValue += prod.sale_price || 0;
@@ -769,6 +775,49 @@ export const getSellerDetails = async (
       totalProductValue,
       totalPurchasesAnalytics,
     });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Promote seller to admin
+export const promoteSellerToAdmin = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { sellerId } = req.params;
+    const seller = await prisma.sellers.findUnique({ where: { id: sellerId } });
+    if (!seller) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Seller not found" });
+    }
+    const existingUser = await prisma.users.findUnique({
+      where: { email: seller.email },
+    });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "User with this email already exists",
+      });
+    }
+    const user = await prisma.users.create({
+      data: {
+        name: seller.name,
+        email: seller.email,
+        password: seller.password,
+        role: "admin",
+      },
+    });
+    await prisma.sellers.update({
+      where: { id: sellerId },
+      data: { isDeleted: true, deletedAt: new Date() },
+    });
+    res
+      .status(200)
+      .json({ success: true, message: "Seller promoted to admin", user });
   } catch (error) {
     return next(error);
   }

@@ -33,9 +33,9 @@ export default function RootLayout({
         <Providers>
           <Header />
           <ClientRestrictionWrapper>{children}</ClientRestrictionWrapper>
-          <Toaster />
+        <Toaster />
         </Providers>
-      </body>
+        </body>
     </html>
   );
 }
