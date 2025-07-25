@@ -3,7 +3,7 @@ import React, { useMemo, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
-    getFilteredRowModel,
+  getFilteredRowModel,
   flexRender,
 } from "@tanstack/react-table";
 import { Search, ChevronRight } from "lucide-react";
@@ -22,9 +22,10 @@ import {
   TableRow,
 } from "../../shared/components/ui/table";
 
-const fetchOrders = async () => {
-    const res = await axiosInstance.get("order/api/get-admin-orders");
-    return res.data.orders;
+type OrdersApiResponse = {
+  orders: any[];
+  currentPage: number;
+  totalPages: number;
 };
 
 const OrdersPage = () => {
@@ -32,7 +33,11 @@ const OrdersPage = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const limit = 10;
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<
+    OrdersApiResponse,
+    Error,
+    OrdersApiResponse
+  >({
     queryKey: ["admin-orders", page, limit],
     queryFn: async () => {
       const res = await axiosInstance.get(
@@ -40,10 +45,13 @@ const OrdersPage = () => {
       );
       return res.data;
     },
-    keepPreviousData: true,
     staleTime: 1000 * 60 * 5,
   });
-  const orders = data?.orders || [];
+  const safeData: OrdersApiResponse =
+    data && "orders" in data && "currentPage" in data && "totalPages" in data
+      ? data
+      : { orders: [], currentPage: 1, totalPages: 1 };
+  const orders = safeData.orders;
   const filteredOrders = orders.filter(
     (order: any) =>
       (statusFilter === "all" || order.status === statusFilter) &&
@@ -129,17 +137,17 @@ const OrdersPage = () => {
                   <TableCell className="text-center">
                     <span className="text-gray-900 text-sm truncate">
                       #{order.id.slice(-6).toUpperCase()}
-                </span>
+                    </span>
                   </TableCell>
                   <TableCell className="text-center">
                     <span className="text-gray-900 text-sm truncate">
                       {order.shop?.name ?? "Unknown Shop"}
-                </span>
+                    </span>
                   </TableCell>
                   <TableCell className="text-center">
                     <span className="text-gray-900">
                       {order.user?.name ?? "Guest"}
-                </span>
+                    </span>
                   </TableCell>
                   <TableCell className="text-center">
                     <span>${order.total}</span>
@@ -153,7 +161,7 @@ const OrdersPage = () => {
                       }`}
                     >
                       {order.status}
-                </span>
+                    </span>
                   </TableCell>
                   <TableCell className="text-center">
                     <span
@@ -175,22 +183,18 @@ const OrdersPage = () => {
                   <TableCell className="text-center">
                     <span className="text-gray-700 text-sm">
                       {new Date(order.createdAt).toLocaleDateString()}
-                </span>
+                    </span>
                   </TableCell>
                   <TableCell className="text-center">
                     <Button
-                      asChild
                       variant="outline"
                       size="sm"
                       className="text-blue-600 hover:text-blue-800 border-blue-200 hover:bg-blue-50"
+                      onClick={() =>
+                        (window.location.href = `/order/${order.id}`)
+                      }
                     >
-                      <a
-                        href={`/order/${order.id}`}
-                aria-label="View and update order status"
-                title="View and update order status"
-                >
-                    Update Status
-                      </a>
+                      Update Status
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -210,13 +214,13 @@ const OrdersPage = () => {
           Previous
         </Button>
         <span>
-          Page {data?.currentPage || page} of {data?.totalPages || 1}
+          Page {safeData.currentPage} of {safeData.totalPages}
         </span>
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setPage((p) => (data?.totalPages ? Math.min(data.totalPages, p + 1) : p + 1))}
-          disabled={data?.totalPages ? page >= data.totalPages : true}
+          onClick={() => setPage((p) => Math.min(safeData.totalPages, p + 1))}
+          disabled={page >= safeData.totalPages}
           className="px-3 py-1 border rounded disabled:opacity-50"
         >
           Next

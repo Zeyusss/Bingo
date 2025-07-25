@@ -1,33 +1,7 @@
 "use client";
 import React, { useMemo, useState } from "react";
-
-import {
-  useReactTable,
-  getCoreRowModel,
-  getFilteredRowModel,
-  flexRender,
-} from "@tanstack/react-table";
-
-import {
-  Search,
-  Pencil,
-  Trash,
-  Eye,
-  BarChart,
-  Star,
-  ChevronRight,
-} from "lucide-react";
-
-import Link from "next/link";
 import axiosInstance from "apps/admin-ui/src/utils/axiosInstance";
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  UseQueryResult,
-} from "@tanstack/react-query";
-import Image from "next/image";
-import DeleteConfirmationModal from "../../shared/components/modals/delete.confirmation.modal";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../shared/components/ui/button";
 import { Input } from "../../shared/components/ui/input";
 import { Modal } from "../../shared/components/ui/modal";
@@ -39,6 +13,12 @@ import {
   TableHeader,
   TableRow,
 } from "../../shared/components/ui/table";
+
+type ProductApiResponse = {
+  data: any[];
+  currentPage: number;
+  totalPages: number;
+};
 
 const deleteProduct = async (productId: string) => {
   await axiosInstance.delete(`/product/api/delete-product/${productId}`);
@@ -56,7 +36,10 @@ const ProductsPage = () => {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const limit = 10;
   const queryClient = useQueryClient();
-  const { data: products = {}, isLoading } = useQuery({
+  const {
+    data: products = { data: [], currentPage: 1, totalPages: 1 },
+    isLoading,
+  } = useQuery<ProductApiResponse>({
     queryKey: ["all-products", page, limit],
     queryFn: async () => {
       const res = await axiosInstance.get(
@@ -64,13 +47,12 @@ const ProductsPage = () => {
       );
       return res.data;
     },
-    keepPreviousData: true,
     staleTime: 1000 * 60 * 5,
   });
   const categories = useMemo(() => {
-    if (!products.data) return [];
-    const unique = new Set(products.data.map((p: any) => p.category));
-    return Array.from(unique);
+    if (!products.data) return [] as string[];
+    const unique = new Set((products.data as any[]).map((p) => p.category));
+    return Array.from(unique) as string[];
   }, [products.data]);
   const filteredProducts = (products.data || []).filter(
     (product: any) =>
@@ -114,7 +96,10 @@ const ProductsPage = () => {
           <Input
             placeholder="Search products by name or category..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setPage(1);
+            }}
             className="pl-10"
           />
         </div>
@@ -125,12 +110,14 @@ const ProductsPage = () => {
           <select
             id="category-filter"
             value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
+            onChange={(e) => {
+              setCategoryFilter(e.target.value);
+              setPage(1);
+            }}
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All</option>
-            {/* Dynamically render categories if available */}
-            {categories.map((cat) => (
+            {categories.map((cat: string) => (
               <option key={cat} value={cat}>
                 {cat}
               </option>
@@ -241,20 +228,24 @@ const ProductsPage = () => {
                   <TableCell className="text-center">
                     <div className="flex gap-3 justify-center">
                       <Button
-                        asChild
                         variant="outline"
                         size="sm"
                         className="text-blue-600 hover:text-blue-800 border-blue-200 hover:bg-blue-50"
+                        onClick={() =>
+                          (window.location.href = `/product/${product.id}`)
+                        }
                       >
-                        <a href={`/product/${product.id}`}>View</a>
+                        View
                       </Button>
                       <Button
-                        asChild
                         variant="outline"
                         size="sm"
                         className="text-yellow-600 hover:text-yellow-800 border-yellow-200 hover:bg-yellow-50"
+                        onClick={() =>
+                          (window.location.href = `/product/edit/${product.id}`)
+                        }
                       >
-                        <a href={`/product/edit/${product.id}`}>Edit</a>
+                        Edit
                       </Button>
                       <Button
                         variant="outline"
@@ -315,13 +306,15 @@ const ProductsPage = () => {
           Previous
         </Button>
         <span>
-          Page {products.currentPage || page} of {products.totalPages || 1}
+          Page {products.currentPage || 1} of {products.totalPages || 1}
         </span>
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setPage((p) => (products.totalPages ? Math.min(products.totalPages, p + 1) : p + 1))}
-          disabled={products.totalPages ? page >= products.totalPages : true}
+          onClick={() =>
+            setPage((p) => Math.min(products.totalPages || 1, p + 1))
+          }
+          disabled={page >= (products.totalPages || 1)}
           className="px-3 py-1 border rounded disabled:opacity-50"
         >
           Next
