@@ -6,103 +6,104 @@ datasource db {
   provider = "mongodb"
   url      = env("DATABASE_URL")
 }
+
 model images {
-  id      String  @id @default(auto()) @map("_id") @db.ObjectId
-  file_id String
-  url     String
-  userId  String? @db.ObjectId
-  shopId  String? @db.ObjectId
-  users   users?  @relation("UserImages", fields: [userId], references:[id], onDelete: NoAction, onUpdate: NoAction)
-  shops   shops?  @relation("ShopImages", fields: [shopId], references:[id])
-  userAvatars users[] @relation("UserAvatar")
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  file_id      String
+  url          String
+  userId       String?   @db.ObjectId
+  shopId       String?   @db.ObjectId
+  users        users?    @relation("UserImages", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  shops        shops?    @relation("ShopImages", fields: [shopId], references: [id])
+  userAvatars  users[]   @relation("UserAvatar")
   shopAvatarOf shops[]
-  products products? @relation(fields: [productsId], references:[id])
-  productsId String? @db.ObjectId
+  products     products? @relation(fields: [productsId], references: [id])
+  productsId   String?   @db.ObjectId
 }
 
 enum UserRole {
   user
   admin
 }
-model users {
-  id        String    @id @default (auto()) @map("_id") @db.ObjectId
-  name      String
-  email     String    @unique
-  password  String
-  role      UserRole  @default(user)
-  following String[]
-  avatarId  String?   @db.ObjectId
-  avatar    images?   @relation("UserAvatar", fields: [avatarId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  shopReviews shopReviws[]
-  images    images[]  @relation("UserImages")
-  followedShops ShopFollower[] 
-  orders    orders[]
-  isBlocked Boolean  @default(false)
-  isDeleted Boolean  @default(false)
-  deletedAt DateTime?
-}
 
+model users {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  email         String         @unique
+  password      String
+  role          UserRole       @default(user)
+  following     String[]
+  avatarId      String?        @db.ObjectId
+  avatar        images?        @relation("UserAvatar", fields: [avatarId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  shopReviews   shopReviws[]
+  images        images[]       @relation("UserImages")
+  followedShops ShopFollower[]
+  orders        orders[]
+  isBlocked     Boolean        @default(false)
+  isDeleted     Boolean        @default(false)
+  deletedAt     DateTime?
+  blockedAt     DateTime?
+}
 
 model shopReviws {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   userId    String   @db.ObjectId
   user      users    @relation(fields: [userId], references: [id])
   rating    Float
-  reviews    String?
+  reviews   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  shopsId    String   @db.ObjectId
-  shops     shops?    @relation(fields: [shopsId], references: [id])
+  shopsId   String   @db.ObjectId
+  shops     shops?   @relation(fields: [shopsId], references: [id])
 }
 
-
 model shops {
-  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
   name          String
   bio           String?
   category      String[]
-  avatarId      String?   @db.ObjectId
-  avatar        images?  @relation(fields: [avatarId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  avatarId      String?        @db.ObjectId
+  avatar        images?        @relation(fields: [avatarId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   coverBanner   String?
   address       String
   opening_hours String?
   website       String?
   socialLinks   Json[]
-  ratings       Float? @default(0)
+  ratings       Float?         @default(0)
   reviews       shopReviws[]
-  sellers       sellers @relation(fields: [sellerId], references: [id])
-  sellerId      String @unique @db.ObjectId
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  sellers       sellers        @relation(fields: [sellerId], references: [id])
+  sellerId      String         @unique @db.ObjectId
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   products      products[]
-  images        images[]  @relation("ShopImages")
-  followers     ShopFollower[] 
-    orders        orders[]
-    isDeleted Boolean? @default(false)
-    deletedAt DateTime?
+  images        images[]       @relation("ShopImages")
+  followers     ShopFollower[]
+  orders        orders[]
+  isDeleted     Boolean?       @default(false)
+  deletedAt     DateTime?
 }
 
-
 model sellers {
-  id            String  @id @default(auto()) @map("_id") @db.ObjectId
-  name          String
-  email         String @unique
-  phone_number  String
-  country       String
-  password      String
-  stripeId      String?
-  shop          shops?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  isDeleted     Boolean  @default(false)
-  deletedAt     DateTime?
-  isBlocked     Boolean  @default(false)
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  email        String    @unique
+  phone_number String
+  country      String
+  password     String
+  stripeId     String?
+  shop         shops?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  isDeleted    Boolean   @default(false)
+  deletedAt    DateTime?
+  isBlocked    Boolean   @default(false)
+  blockedAt    DateTime?
 }
 
 model site_config {
-  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
   categories    String[]
   subCategories Json
   logo          String?
@@ -110,12 +111,12 @@ model site_config {
 }
 
 model discount_codes {
-  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
   public_name   String
   discountType  String
   discountValue Float
-  discountCode  String @unique
-  sellerId      String @db.ObjectId
+  discountCode  String   @unique
+  sellerId      String   @db.ObjectId
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
@@ -125,125 +126,125 @@ enum productStatus {
   Pending
   Draft
 }
+
 model products {
-  id            String  @id @default(auto()) @map("_id") @db.ObjectId
-  title         String
-  slug          String @unique
-  category      String
-  subCategory   String
-  short_description String
-  detailed_description String
-  images        images[]
-  video_url     String?
-  tags          String[]
-  brand         String?
-  colors        String[]
-  sizes         String[]
-  starting_date DateTime?
-  ending_date   DateTime?
-  stock         Int
-  sale_price    Float
-  regular_price Float
-  ratings       Float @default(5)
-  warranty      String?
+  id                    String        @id @default(auto()) @map("_id") @db.ObjectId
+  title                 String
+  slug                  String        @unique
+  category              String
+  subCategory           String
+  short_description     String
+  detailed_description  String
+  images                images[]
+  video_url             String?
+  tags                  String[]
+  brand                 String?
+  colors                String[]
+  sizes                 String[]
+  starting_date         DateTime?
+  ending_date           DateTime?
+  stock                 Int
+  sale_price            Float
+  regular_price         Float
+  ratings               Float         @default(5)
+  warranty              String?
   custom_specifications Json?
-  custom_properties Json
-  isDeleted     Boolean? @default(false)
-  cashOnDelivery String?
-  discount_codes String[] @db.ObjectId
-  status         productStatus @default(Active)
-  deletedAt      DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  shopId         String   @db.ObjectId
-  Shop           shops     @relation(fields: [shopId] , references: [id])
-  totalSales     Int     @default(0)
+  custom_properties     Json
+  isDeleted             Boolean?      @default(false)
+  cashOnDelivery        String?
+  discount_codes        String[]      @db.ObjectId
+  status                productStatus @default(Active)
+  deletedAt             DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  shopId                String        @db.ObjectId
+  Shop                  shops         @relation(fields: [shopId], references: [id])
+  totalSales            Int           @default(0)
 }
 
 model productAnalytics {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  productId     String   @unique @db.ObjectId
-  shopId        String?  @db.ObjectId
-  views         Int      @default(0)
-  cartAdds      Int      @default(0)
-  wishListAdds  Int      @default(0)
-  purchases     Int      @default(0)
-  lastViewedAt  DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  productId    String    @unique @db.ObjectId
+  shopId       String?   @db.ObjectId
+  views        Int       @default(0)
+  cartAdds     Int       @default(0)
+  wishListAdds Int       @default(0)
+  purchases    Int       @default(0)
+  lastViewedAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model userAnalytics {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String   @unique @db.ObjectId
-  lastVisited DateTime
-  lastTrained DateTime  @default(now())
-  actions     Json?
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @unique @db.ObjectId
+  lastVisited     DateTime
+  lastTrained     DateTime @default(now())
+  actions         Json?
   recommendations Json?
-  country     String?
-  city        String?
-  device      String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  country         String?
+  city            String?
+  device          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model ShopFollower {
-  id      String   @id @default(auto()) @map("_id") @db.ObjectId
-  shop    shops    @relation(fields: [shopId], references: [id])
-  shopId  String   @db.ObjectId
-  user    users    @relation(fields: [userId], references: [id])
-  userId  String   @db.ObjectId
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  shop      shops    @relation(fields: [shopId], references: [id])
+  shopId    String   @db.ObjectId
+  user      users    @relation(fields: [userId], references: [id])
+  userId    String   @db.ObjectId
   createdAt DateTime @default(now())
 }
 
 model order_items {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  orderId   String   @db.ObjectId
-  productId String   @db.ObjectId
-  quantity  Int
-  price     Float
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId         String   @db.ObjectId
+  productId       String   @db.ObjectId
+  quantity        Int
+  price           Float
   selectedOptions Json?
-  order     orders   @relation(fields: [orderId], references: [id])
-  createdAt  DateTime @default(now())
+  order           orders   @relation(fields: [orderId], references: [id])
+  createdAt       DateTime @default(now())
 }
 
 model notifications {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  creatorId    String   @db.ObjectId
-  receiverId   String   @db.ObjectId
+  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  creatorId     String  @db.ObjectId
+  receiverId    String  @db.ObjectId
   redirect_link String?
-  title        String
-  message      String
-  status       String @default("Unread")
+  title         String
+  message       String
+  status        String  @default("Unread")
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model orders {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  shopId        String   @db.ObjectId
-  userId        String   @db.ObjectId
-  user          users    @relation(fields: [userId], references: [id])
-  products      String[] 
-  total         Float
-  status        String
-  deliveryStatus String?
-  address       String?
-  paymentMethod String?
-  couponCode    String?
-  discount      Float?
-  shippingFee   Float?
-  notes         String?
+  id                String        @id @default(auto()) @map("_id") @db.ObjectId
+  shopId            String        @db.ObjectId
+  userId            String        @db.ObjectId
+  user              users         @relation(fields: [userId], references: [id])
+  products          String[]
+  total             Float
+  status            String
+  deliveryStatus    String?
+  address           String?
+  paymentMethod     String?
+  couponCode        String?
+  discount          Float?
+  shippingFee       Float?
+  notes             String?
   shippingAddressId String?
-  discountAmount Float?  @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  items         order_items[]
-  shop shops @relation(fields: [shopId], references: [id])
-    isDeleted Boolean @default(false)
-    deletedAt DateTime?
-
+  discountAmount    Float?        @default(0)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  items             order_items[]
+  shop              shops         @relation(fields: [shopId], references: [id])
+  isDeleted         Boolean       @default(false)
+  deletedAt         DateTime?
 }
 
 enum addressType {
@@ -266,25 +267,24 @@ model address {
 }
 
 model uniqueShopVisitors {
-   id        String      @id @default(auto()) @map("_id") @db.ObjectId
-   shopId    String      @db.ObjectId
-   userId    String      @db.ObjectId
-   visitedAt  DateTime   @default(now())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  shopId    String   @db.ObjectId
+  userId    String   @db.ObjectId
+  visitedAt DateTime @default(now())
 
-   @@unique([shopId,userId])
+  @@unique([shopId, userId])
 }
 
 model shopAnalytics {
-  id        String      @id @default(auto()) @map("_id") @db.ObjectId
-  totalVisitors Int   @default(0)
+  id            String @id @default(auto()) @map("_id") @db.ObjectId
+  totalVisitors Int    @default(0)
 
-  countryStats    Json?
-  cityStats       Json?
-  deviceStats     Json?
+  countryStats Json?
+  cityStats    Json?
+  deviceStats  Json?
 
-  lastVisitedAt    DateTime
+  lastVisitedAt DateTime
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

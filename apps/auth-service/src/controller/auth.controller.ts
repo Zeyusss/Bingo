@@ -960,7 +960,6 @@ export const loginAdmin = async (
       user: { id: user.id, email: user.email, name: user.name },
     });
   } catch (error) {
-    console.error("loginAdmin error:", error);
     return next(error);
   }
 };

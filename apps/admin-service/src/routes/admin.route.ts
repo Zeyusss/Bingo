@@ -24,6 +24,7 @@ import {
   restoreSeller,
   getUserDetails,
   getSellerDetails,
+  promoteSellerToAdmin,
 } from "../controllers/admin.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isAdmin } from "@packages/middleware/authorizeRoles";
@@ -57,6 +58,12 @@ router.post(
   isAuthenticated,
   isAdmin,
   demoteSellerToUser
+);
+router.post(
+  "/sellers/:sellerId/promote-to-admin",
+  isAuthenticated,
+  isAdmin,
+  promoteSellerToAdmin
 );
 router.delete("/sellers/:sellerId", isAuthenticated, isAdmin, deleteSeller);
 router.put("/sellers/:sellerId", isAuthenticated, isAdmin, updateSeller);
