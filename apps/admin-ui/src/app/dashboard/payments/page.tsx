@@ -1,200 +1,204 @@
-'use client'
-import React,{useMemo,useState} from 'react'
-import { useReactTable,getCoreRowModel,getFilteredRowModel,flexRender } from '@tanstack/react-table'
-import {Search,ChevronRight} from "lucide-react";
-import { useQuery } from '@tanstack/react-query';
-import axiosInstance from 'apps/admin-ui/src/utils/axiosInstance';
+"use client";
+import React, { useMemo, useState } from "react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getFilteredRowModel,
+  flexRender,
+} from "@tanstack/react-table";
+import { Search, ChevronRight } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import axiosInstance from "apps/admin-ui/src/utils/axiosInstance";
 import Link from "next/link";
+import { Button } from "../../shared/components/ui/button";
+import { Input } from "../../shared/components/ui/input";
+import { Modal } from "../../shared/components/ui/modal";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../shared/components/ui/table";
 
-const fetchOrders = async()=>{
-    const res =await axiosInstance.get("/order/api/get-admin-orders");
+const fetchOrders = async () => {
+  const res = await axiosInstance.get("/order/api/get-admin-orders");
     return res.data.orders;
 };
 
-const sellerPayments = ()=>{
-    const [globalFilter,setGlobalFilter] = useState("")
-    const {data:orders = [], isLoading} = useQuery({
-        queryKey:["admin-orders"],
-        queryFn:fetchOrders,
-        staleTime : 1000 * 60 *5
-    });
-
-    const columns = useMemo(
-        ()=>[
-            {
-                accessorKey : "id",
-                header:"Order ID",
-                cell : ({row}: any)=>(
-                    <span className='text-gray-900 text-sm'>
-                    #{row.original.id.slice(-6).toUpperCase()}
+const PaymentsPage = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const limit = 10;
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-orders", page, limit],
+    queryFn: async () => {
+      const res = await axiosInstance.get(
+        `/order/api/get-admin-orders?page=${page}&limit=${limit}`
+      );
+      return res.data;
+    },
+    keepPreviousData: true,
+    staleTime: 1000 * 60 * 5,
+  });
+  const orders = data?.orders || [];
+  const filteredOrders = orders.filter(
+    (order: any) =>
+      (statusFilter === "all" || order.status === statusFilter) &&
+      (order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.shop?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
+          <p className="text-gray-600 mt-1">Manage all payments</p>
+        </div>
+        <div className="text-sm text-gray-500">
+          {filteredOrders.length} payments
+        </div>
+      </div>
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Input
+            placeholder="Search payments by order ID, shop, or buyer..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <label htmlFor="status-filter" className="text-sm">
+            Status:
+          </label>
+          <select
+            id="status-filter"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All</option>
+            <option value="Paid">Paid</option>
+            <option value="Pending">Pending</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+      </div>
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-center">Order ID</TableHead>
+              <TableHead className="text-center">Shop</TableHead>
+              <TableHead className="text-center">Buyer</TableHead>
+              <TableHead className="text-center">Seller Earning</TableHead>
+              <TableHead className="text-center">Admin Fee (10%)</TableHead>
+              <TableHead className="text-center">Status</TableHead>
+              <TableHead className="text-center">Date</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8">
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    <span>Loading payments...</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : filteredOrders.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={7}
+                  className="text-center py-8 text-gray-500"
+                >
+                  No payments found
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredOrders.map((order: any) => {
+                const sellerShare = order.total * 0.9;
+                const adminFee = order.total * 0.1;
+                return (
+                  <TableRow key={order.id}>
+                    <TableCell className="text-center">
+                      <span className="text-gray-900 text-sm">
+                        #{order.id.slice(-6).toUpperCase()}
                     </span>
-                ),
-            },
-            {
-            accessorKey : "shop.name",
-            header : "Shop",
-            cell: ({row} : any)=>(
-                <span className='text-gray-900 text-sm truncate'>
-                {row.original.shop?.name ?? "Unknow Shop"}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className="text-gray-900 text-sm truncate">
+                        {order.shop?.name ?? "Unknown Shop"}
                 </span>
-            ),
-        },
-            {
-                accessorKey:"user.name",
-                header:"Buyer",
-                cell : ({row}:any)=>(
-                    <span className='text-gray-900'>
-                    {row.original.user?.name || "Guest"}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className="text-gray-900">
+                        {order.user?.name || "Guest"}
                     </span>
-                ),
-            },
-            {
-                header:"Seller Earning",
-            cell:({row}:any) =>{
-                const sellerShare = row.original.total *0.9;
-                return(
-                    <span className='text-green-600 font-semibold'>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className="text-green-600 font-semibold">
                     ${sellerShare.toFixed(2)}
                     </span>
-                )
-            }
-            },
-            {
-                header : "Admin Fee(10%)",
-                cell : ({row}:any) =>{
-                    const adminFee = row.original.total * 0.1;
-                    return(
-                        <span className='text-purple-600 font-semibold'>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className="text-purple-600 font-semibold">
                         ${adminFee.toFixed(2)}
                         </span>
-                    )
-                }
-            },
-            {
-                accessorKey:"status",
-                header : "Status",
-                cell : ({row}:any)=>(
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                        row.original.status === "Paid" ? "bg-green-600 text-white" : "bg-gray-400 text-gray-900" 
-                    }`}>
-                    {row.original.status}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                          order.status === "Paid"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {order.status}
                     </span>
-                )
-            },
-            {
-                accessorKey: "createdAt",
-                header:"Date",
-                cell:({row}:any)=>{
-                    const date = new Date(row.original.createdAt).toLocaleDateString();
-                    return <span className='text-gray-700 text-sm'>
-                    {date}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className="text-gray-700 text-sm">
+                        {new Date(order.createdAt).toLocaleDateString()}
                     </span>
-                }
-            }
-        ],
-        []
-    )
-    const table = useReactTable({
-        data:orders,
-        columns,
-        getCoreRowModel:getCoreRowModel(),
-        getFilteredRowModel:getFilteredRowModel(),
-        globalFilterFn : "includesString",
-        state : {globalFilter},
-        onGlobalFilterChange:setGlobalFilter,
-    });
-    return(
-      <div className="min-h-screen" style={{ background: '#FDFAFB' }}>
-        <div className="max-w-6xl mx-auto">
-          <h1
-            className="text-3xl font-extrabold mt-8 mb-1 text-gray-900 drop-shadow-lg"
-            style={{ letterSpacing: '-0.02em' }}
-          >
-            Payments
-          </h1>
-          <div
-            className="mb-3"
-            style={{
-              height: 3,
-              width: 48,
-              background: 'var(--primary, #60a5fa)',
-              borderRadius: 2,
-            }}
-          />
-                  <div className='flex items-center mb-4'>
-          <Link href="/dashboard" className='text-[#80Deea] cursor-pointer hover:underline'>Dashboard</Link>
-          <ChevronRight size={20} className='opacity-[.8]'/>
-          <span className='text-gray-800'>Payments</span>
-        </div>
-          <div className='w-full max-w-6xl flex flex-col items-center'>
-            <div className='w-full glassy-card border border-gray-200 bg-white/60 rounded-2xl shadow-2xl p-4 sm:p-8 flex flex-col items-center'>
-              <div className='w-full my-4 flex items-center bg-white/40 p-2 rounded-md border border-gray-200'>
-                <Search size={18} className='text-gray-500 mr-2'/>
-                <input type="text"
-                  placeholder='Search payments...'
-                  className='w-full bg-transparent text-gray-900 outline-none placeholder:text-gray-400'
-                  value={globalFilter}
-                  onChange={(e)=> setGlobalFilter(e.target.value)}
-                />
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
               </div>
-              {/* table */}
-              <div className='w-full overflow-auto rounded-lg p-0 mt-2 flex justify-center'>
-                {isLoading? (
-                  <p className='text-center text-gray-900 py-10 text-lg'>
-                    Loading payments....
-                  </p>
-                ):(
-                  <table className='w-full text-gray-900 rounded-xl overflow-hidden shadow-lg bg-white/80 border border-gray-200 text-center'>
-                    <thead className='bg-white/60'>
-                      {table.getHeaderGroups().map((headerGroup)=>(
-                         <tr className='border-b border-gray-200' key={headerGroup.id} >
-                          {headerGroup.headers.map((header)=>(
-                             <th key={header.id} className='p-4 text-sm font-semibold tracking-wide text-gray-700 text-center'>
-                              {flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                            </th>
-                          ))}
-                        </tr>
-                      ))}
-                    </thead>
-                    <tbody>
-                      {table.getRowModel().rows.map((row)=>(
-                        <tr key={row.id}
-                          className='border-b border-gray-200 hover:bg-gray-100 transition group'>
-                          {row.getVisibleCells().map((cell)=>(
-                            <td key={cell.id} className='p-4 text-sm align-middle group-hover:text-gray-900 transition text-center'>
-                              {flexRender(cell.column.columnDef.cell,
-                                cell.getContext()
-                              )}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-                {!isLoading && orders?.length === 0 && (
-                  <p className='text-center py-10 text-gray-500 text-lg'>
-                    No payments found!
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-        <style jsx global>{`
-          .glassy-card {
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-            background: rgba(255,255,255,0.7);
-            border-radius: 20px;
-            border: 1px solid #e5e7eb;
-          }
-        `}</style>
+      <div className="flex justify-center items-center gap-2 mt-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          disabled={page === 1}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          Previous
+        </Button>
+        <span>
+          Page {data?.currentPage || page} of {data?.totalPages || 1}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setPage((p) => (data?.totalPages ? Math.min(data.totalPages, p + 1) : p + 1))}
+          disabled={data?.totalPages ? page >= data.totalPages : true}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          Next
+        </Button>
       </div>
-    )
-}
+    </div>
+  );
+};
 
-
-export default sellerPayments
+export default PaymentsPage;
