@@ -1,275 +1,334 @@
-'use client'
-import React, { useMemo, useState } from 'react'
+"use client";
+import React, { useMemo, useState } from "react";
 
 import {
-    useReactTable,
-    getCoreRowModel,
-    getFilteredRowModel,
-    flexRender,
+  useReactTable,
+  getCoreRowModel,
+  getFilteredRowModel,
+  flexRender,
 } from "@tanstack/react-table";
 
 import {
-    Search,Pencil,Trash,Eye,BarChart,Star,ChevronRight
+  Search,
+  Pencil,
+  Trash,
+  Eye,
+  BarChart,
+  Star,
+  ChevronRight,
 } from "lucide-react";
 
 import Link from "next/link";
-import axiosInstance from 'apps/admin-ui/src/utils/axiosInstance';
-import { useMutation, useQuery,useQueryClient, UseQueryResult } from '@tanstack/react-query';
-import Image from 'next/image';
-import DeleteConfirmationModal from '../../shared/components/modals/delete.confirmation.modal';
+import axiosInstance from "apps/admin-ui/src/utils/axiosInstance";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  UseQueryResult,
+} from "@tanstack/react-query";
+import Image from "next/image";
+import DeleteConfirmationModal from "../../shared/components/modals/delete.confirmation.modal";
+import { Button } from "../../shared/components/ui/button";
+import { Input } from "../../shared/components/ui/input";
+import { Modal } from "../../shared/components/ui/modal";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../shared/components/ui/table";
 
+const deleteProduct = async (productId: string) => {
+  await axiosInstance.delete(`/product/api/delete-product/${productId}`);
+};
 
+const restoreProduct = async (productId: string) => {
+  await axiosInstance.put(`/product/api/restore-product/${productId}`);
+};
 
-const deleteProduct = async (productId: string) =>{
-await axiosInstance.delete(`/product/api/delete-product/${productId}`)
-}
-
-const restoreProduct = async (productId:string)=>{
-    await axiosInstance.put(`/product/api/restore-product/${productId}`)
-}
-
-const ProductList = () => {
-    const [globalFilter , setGlobalFilter] = useState("");
-    const [analyticsData,setAnalyticsData] = useState(null);
-    const [showAnalytics , setShowAnalytics]= useState(false);
-    const [showDeleteModal,setShowDeleteModal] = useState(false);
-    const [selectedProduct,setSelectedProduct] = useState<any>();
-    const [page,setPage] = useState(1);
-    const limit = 10;
-    const queryClient = useQueryClient();
-
-    const {data:products = [],isLoading}:UseQueryResult<any> = useQuery({
-        queryKey: [ "all-products",page],
-        queryFn: async ()=>{
-        const res = await axiosInstance.get(`/admin/api/get-all-products?page=${page}&limit=${limit}`);
-        return res.data;
-        },
-        placeholderData: (prev)=> prev,
-        staleTime : 1000 * 60 * 5,
-    })
-
-    const deleteMutation = useMutation({
-        mutationFn : deleteProduct,
-        onSuccess: ()=>{
-            queryClient.invalidateQueries({queryKey:["shop-products"]})
-            setShowDeleteModal(false);
-        }
-    })
-
-    const restoreMutation = useMutation({
-        mutationFn:restoreProduct,
-        onSuccess : ()=>{
-            queryClient.invalidateQueries({queryKey:["shop-products"]})
-            setShowDeleteModal(false);
-        }
-    })
-
-    const  columns = useMemo(
-        ()=> [
-            {
-                accessorkey : 'image',
-                header : "Image",
-                cell : ({row}:any) => {
-                    return(
-                      <div className='flex justify-center'>
-                        <Image
-                          src={row.original.images[0]?.url}
-                          alt={row.original.images[0]?.url}
-                          width={200}
-                          height={200}
-                          className='w-12 h-12 rounded-md object-cover'
-                        />
-                      </div>
-                    )
-                }
-            },{
-                accessorkey:"name",
-                header:"Product Name",
-                cell : ({row}:any)=>{
-                    const truncatedTitle = row.original.title.length > 25 ? `${row.original.title.substring(0,25)}...`: row.original.title;
-                    return(
-                        <div className='flex justify-center'>
-                          <Link
-                            href={`${process.env.NEXT_PUBLIC_USE_UI_LINK}/product/${row.original.slug}`}
-                            className='text-blue-400 hover:underline'
-                          >
-                            {truncatedTitle}
-                          </Link>
-                        </div>
-                    )
-                },
-            },
-            {
-                accessorkey:"price",
-                header : "Price",
-                cell : ({row}:any) => <span className='block text-center'>${row.original.sale_price}</span>
-            },
-            {
-                accessorkey:"stock",
-                header:"Stock",
-                cell : ({row}:any)=>(
-                    <span className={row.original.stock <10 ? "text-red-500 block text-center" : "text-gray-900 block text-center"}>
-                        {row.original.stock} left
-                    </span>
-                )
-            },
-            {
-                accessorkey:"category",
-                header:"Category",
-                cell : ({row}:any) => <span className='block text-center'>{row.original.category}</span>
-            },
-            {
-                accessorkey : "rating",
-                header: "Rating",
-                cell : ({row}:any)=>(
-                    <div className='flex items-center justify-center gap-1 text-yellow-400'>
-                        <Star fill='#fde04' size={18}/> {" "}
-                        <span className='text-gray-900'>{row.original.ratings || 5}</span>
-                    </div>
-                )
-            },
-            {
-            accessorKey : "shop.name",
-            header : "Shop",
-            cell: ({row} : any)=>(
-                <span className='text-gray-900 text-sm truncate'>
-                {row.original.Shop?.name ?? "Unknow Shop"}
-                </span>
-            ),
-        },
-            {
-                header: "Actions",
-                cell:({row}:any) =>(
-                    <div className='flex gap-3 justify-center'>
-                        <Link
-                        href={`/product/${row.original.id}`}
-                        className='text-blue-400 hover:text-blue-300 transition'
-                        >
-                        <Eye size={18}/>
-                        </Link>
-                        <Link
-                        href={`/product/edit/${row.original.id}`}
-                        className='text-yellow-400 hover:text-yellow-300 transition'
-                        >
-                        <Pencil size={18}/>
-                        </Link>
-                        <button className='text-green-400 hover:text-green-300 transition'>
-                        <BarChart size={18}/>
-                        </button>
-                        <button  className='text-red-400 hover:text-red-300 transition'
-                        onClick={()=>openDeleteModal(row.original)}
-                        >
-                        <Trash size={18}/>
-                        </button>
-                    </div>
-                )
-            }
-        ],
-        []
-    )
-
-    const table = useReactTable({
-        data:products.data,
-        columns,
-        getCoreRowModel:getCoreRowModel(),
-        getFilteredRowModel : getFilteredRowModel(),
-        globalFilterFn: "includesString",
-        state:{globalFilter},
-        onGlobalFilterChange:setGlobalFilter,
-    });
-
-    const openDeleteModal = (product:any) =>{
-        setSelectedProduct(product);
-        setShowDeleteModal(true);
-    }
-
+const ProductsPage = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<any>();
+  const [page, setPage] = useState(1);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const limit = 10;
+  const queryClient = useQueryClient();
+  const { data: products = {}, isLoading } = useQuery({
+    queryKey: ["all-products", page, limit],
+    queryFn: async () => {
+      const res = await axiosInstance.get(
+        `/admin/api/get-all-products?page=${page}&limit=${limit}`
+      );
+      return res.data;
+    },
+    keepPreviousData: true,
+    staleTime: 1000 * 60 * 5,
+  });
+  const categories = useMemo(() => {
+    if (!products.data) return [];
+    const unique = new Set(products.data.map((p: any) => p.category));
+    return Array.from(unique);
+  }, [products.data]);
+  const filteredProducts = (products.data || []).filter(
+    (product: any) =>
+      (categoryFilter === "all" || product.category === categoryFilter) &&
+      (product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.category.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+  const deleteMutation = useMutation({
+    mutationFn: deleteProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shop-products"] });
+      setShowDeleteModal(false);
+    },
+  });
+  const restoreMutation = useMutation({
+    mutationFn: restoreProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shop-products"] });
+      setShowDeleteModal(false);
+    },
+  });
+  const openDeleteModal = (product: any) => {
+    setSelectedProduct(product);
+    setShowDeleteModal(true);
+  };
   return (
-    <div className="min-h-screen" style={{ background: '#FDFAFB' }}>
-      <div className="max-w-6xl mx-auto">
-        <h1
-          className="text-3xl font-extrabold mt-8 mb-1 text-gray-900 drop-shadow-lg"
-          style={{ letterSpacing: '-0.02em' }}
-        >
-          All Products
-        </h1>
-        <div
-          className="mb-3"
-          style={{
-            height: 3,
-            width: 48,
-            background: 'var(--primary, #60a5fa)',
-            borderRadius: 2,
-          }}
-        />
-        <div className='flex items-center mb-4'>
-          <Link href="/dashboard" className='text-[#80Deea] cursor-pointer hover:underline'>Dashboard</Link>
-          <ChevronRight size={20} className='opacity-[.8]'/>
-          <span className='text-gray-800'>All Products</span>
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Products Management
+          </h1>
+          <p className="text-gray-600 mt-1">Manage all products</p>
         </div>
-        <div className='w-full max-w-6xl flex flex-col items-center'>
-          <div className='w-full glassy-card border border-gray-200 bg-white/60 rounded-2xl shadow-2xl p-4 sm:p-8 flex flex-col items-center'>
-            <div className='w-full my-4 flex items-center bg-white/40 p-2 rounded-md border border-gray-200'>
-              <Search size={18} className='text-gray-500 mr-2' />
-              <input type="text"
-                placeholder='Search Products...'
-                className='w-full bg-transparent text-gray-900 outline-none placeholder:text-gray-400'
-                value={globalFilter}
-                onChange={(e)=> setGlobalFilter(e.target.value)}
-              />
-            </div>
-            {/* Table */}
-            <div className='w-full overflow-x-auto rounded-lg p-0 mt-2 flex justify-center'>
-              {isLoading ? (
-                <p className='text-center text-gray-900'>Loading Products...</p>
-              ):(
-                <table className='w-full text-gray-900 rounded-xl overflow-hidden shadow-lg bg-white/80 border border-gray-200 text-center'>
-                  <thead className='bg-white/60'>
-                    {table.getHeaderGroups().map((headerGroup)=>(
-                      <tr key={headerGroup.id} className='border-b border-gray-200'>
-                        {headerGroup.headers.map((header)=>(
-                          <th key={header.id} className='p-3 text-sm font-semibold tracking-wide text-gray-700 text-center'>
-                            {header.isPlaceholder?null:flexRender(header.column.columnDef.header,header.getContext())}
-                          </th>
-                        ))}
-                      </tr>
-                    ))}
-                  </thead>
-                  <tbody>
-                    {table.getRowModel().rows.map((row)=>(
-                      <tr key={row.id}
-                        className='border-b border-gray-200 hover:bg-gray-100 transition group'>
-                        {row.getVisibleCells().map((cell)=>(
-                          <td key={cell.id} className='p-3 text-center group-hover:text-gray-900 transition'>
-                            {flexRender(cell.column.columnDef.cell,cell.getContext())}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-              {showDeleteModal && (
-                <DeleteConfirmationModal
-                  product={selectedProduct}
-                  onClose={()=> setShowDeleteModal(false)}
-                  onConfirm={()=> deleteMutation.mutate(selectedProduct?.id)}
-                  onRestore={()=> restoreMutation.mutate(selectedProduct?.id)}
-                />
-              )}
-            </div>
-          </div>
+        <div className="text-sm text-gray-500">
+          {filteredProducts.length} products
         </div>
       </div>
-      <style jsx global>{`
-        .glassy-card {
-          box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-          background: rgba(255,255,255,0.7);
-          border-radius: 20px;
-          border: 1px solid #e5e7eb;
-        }
-      `}</style>
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Input
+            placeholder="Search products by name or category..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <label htmlFor="category-filter" className="text-sm">
+            Category:
+          </label>
+          <select
+            id="category-filter"
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All</option>
+            {/* Dynamically render categories if available */}
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-center">Image</TableHead>
+              <TableHead className="text-center">Product Name</TableHead>
+              <TableHead className="text-center">Price</TableHead>
+              <TableHead className="text-center">Stock</TableHead>
+              <TableHead className="text-center">Category</TableHead>
+              <TableHead className="text-center">Rating</TableHead>
+              <TableHead className="text-center">Shop</TableHead>
+              <TableHead className="text-center">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-8">
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    <span>Loading products...</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : filteredProducts.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={8}
+                  className="text-center py-8 text-gray-500"
+                >
+                  No products found
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredProducts.map((product: any) => (
+                <TableRow key={product.id}>
+                  <TableCell className="text-center">
+                    <div className="flex justify-center">
+                      <img
+                        src={product.images[0]?.url}
+                        alt={product.images[0]?.url}
+                        width={48}
+                        height={48}
+                        className="w-12 h-12 rounded-md object-cover"
+                      />
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex justify-center">
+                      <a
+                        href={`${process.env.NEXT_PUBLIC_USE_UI_LINK}/product/${product.slug}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {product.title.length > 25
+                          ? `${product.title.substring(0, 25)}...`
+                          : product.title}
+                      </a>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="block text-center">
+                      ${product.sale_price}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span
+                      className={
+                        product.stock < 10
+                          ? "text-red-500 block text-center"
+                          : "text-gray-900 block text-center"
+                      }
+                    >
+                      {product.stock} left
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="block text-center">
+                      {product.category}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-1 text-yellow-400">
+                      <svg
+                        width="18"
+                        height="18"
+                        fill="#fde04"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M12 .587l3.668 7.568L24 9.423l-6 5.849L19.335 24 12 19.771 4.665 24 6 15.272 0 9.423l8.332-1.268z" />
+                      </svg>
+                      <span className="text-gray-900">
+                        {product.ratings || 5}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="text-gray-900 text-sm truncate">
+                      {product.Shop?.name ?? "Unknown Shop"}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex gap-3 justify-center">
+                      <Button
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        className="text-blue-600 hover:text-blue-800 border-blue-200 hover:bg-blue-50"
+                      >
+                        <a href={`/product/${product.id}`}>View</a>
+                      </Button>
+                      <Button
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        className="text-yellow-600 hover:text-yellow-800 border-yellow-200 hover:bg-yellow-50"
+                      >
+                        <a href={`/product/edit/${product.id}`}>Edit</a>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:text-red-800 border-red-200 hover:bg-red-50"
+                        onClick={() => openDeleteModal(product)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+        {showDeleteModal && (
+          <Modal
+            isOpen={showDeleteModal}
+            onClose={() => setShowDeleteModal(false)}
+            title="Delete Product"
+            size="sm"
+          >
+            <div className="space-y-4">
+              <p>Are you sure you want to delete this product?</p>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDeleteModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => deleteMutation.mutate(selectedProduct?.id)}
+                >
+                  Delete
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => restoreMutation.mutate(selectedProduct?.id)}
+                >
+                  Restore
+                </Button>
+              </div>
+            </div>
+          </Modal>
+        )}
+      </div>
+      <div className="flex justify-center items-center gap-2 mt-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          disabled={page === 1}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          Previous
+        </Button>
+        <span>
+          Page {products.currentPage || page} of {products.totalPages || 1}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setPage((p) => (products.totalPages ? Math.min(products.totalPages, p + 1) : p + 1))}
+          disabled={products.totalPages ? page >= products.totalPages : true}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          Next
+        </Button>
+      </div>
     </div>
-  )
-}
+  );
+};
 
-export default ProductList
+export default ProductsPage;

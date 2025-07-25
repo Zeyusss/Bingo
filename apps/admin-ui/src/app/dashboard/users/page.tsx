@@ -342,7 +342,7 @@ const UsersPage = () => {
     setEditFormData({
       name: entity.name,
       email: entity.email,
-      role: "", 
+      role: "",
       phone_number: entity.phone_number || "",
       country: entity.country || "",
     });
@@ -644,7 +644,7 @@ const UsersPage = () => {
         </Table>
       </div>
 
-      <div className="flex justify-end items-center gap-2 mt-4">
+      <div className="flex justify-center items-center gap-2 mt-4">
         <button
           onClick={() => setPage((p) => Math.max(1, p - 1))}
           disabled={page === 1}
@@ -661,7 +661,7 @@ const UsersPage = () => {
               meta.totalPages ? Math.min(meta.totalPages, p + 1) : p + 1
             )
           }
-          disabled={meta.totalPages ? page >= meta.totalPages : false}
+          disabled={meta.totalPages ? page >= meta.totalPages : true}
           className="px-3 py-1 border rounded disabled:opacity-50"
         >
           Next

@@ -7,7 +7,6 @@ import prisma from "@packages/libs/prisma";
 import { Prisma } from "@prisma/client";
 import { sendEmail } from "../utils/send-email";
 
-
 interface AuthenticatedRequest extends Request {
   user?: any;
 }
@@ -325,7 +324,7 @@ export const createOrder = async (
 
         const orderId = sessionId;
         const orderDate = new Date().toLocaleDateString();
-        const paymentMethod = "Credit Card"; 
+        const paymentMethod = "Credit Card";
         let shippingAddress = "N/A";
         if (shippingAddressId) {
           const addressRecord = await prisma.address.findUnique({
@@ -341,7 +340,7 @@ export const createOrder = async (
           0
         );
         const discountAmount = coupon?.discountAmount || 0;
-        const shippingFee = 0; 
+        const shippingFee = 0;
         const total = subtotal - discountAmount + shippingFee;
         const orderItemsForEmail = cart.map((item: any) => ({
           title: item.title,
@@ -654,9 +653,11 @@ export const getUserOrders = async (
 };
 
 // get recent orders
-export const getRecentOrders = async (  req: any,
+export const getRecentOrders = async (
+  req: any,
   res: Response,
-  next: NextFunction) => {
+  next: NextFunction
+) => {
   try {
     const orders = await prisma.orders.findMany({
       orderBy: { createdAt: "desc" },
@@ -674,22 +675,38 @@ export const getRecentOrders = async (  req: any,
 };
 
 // get admin orders
-export const getAdminOrders = async(req:any,res:Response,next:NextFunction)=>{
+export const getAdminOrders = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const orders = await prisma.orders.findMany({
-      include:{
-        user:true,
-        shop:true,
-      },orderBy:{
-        createdAt:"desc",
-      }
-    })
-
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const skip = (page - 1) * limit;
+    const [orders, total] = await Promise.all([
+      prisma.orders.findMany({
+        skip,
+        take: limit,
+        include: {
+          user: true,
+          shop: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      }),
+      prisma.orders.count(),
+    ]);
+    const totalPages = Math.ceil(total / limit);
     res.status(200).json({
-      success:true,
+      success: true,
       orders,
-    })
+      currentPage: page,
+      totalPages,
+      total,
+    });
   } catch (error) {
-    return next(error)
+    return next(error);
   }
-}
+};
