@@ -1,18 +1,9 @@
 "use client";
-import React, { useMemo, useState } from "react";
-import {
-  useReactTable,
-  getCoreRowModel,
-  getFilteredRowModel,
-  flexRender,
-} from "@tanstack/react-table";
-import { Search, ChevronRight } from "lucide-react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import axiosInstance from "apps/admin-ui/src/utils/axiosInstance";
 import { Button } from "../../shared/components/ui/button";
 import { Input } from "../../shared/components/ui/input";
-import { Modal } from "../../shared/components/ui/modal";
 import {
   Table,
   TableBody,
