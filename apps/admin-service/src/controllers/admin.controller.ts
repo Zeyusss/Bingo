@@ -9,6 +9,7 @@ import {
 import prisma from "@packages/libs/prisma";
 import { ValidationError } from "@packages/error-handler";
 import { UserRole } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 export async function getRevenue(
   req: Request,
@@ -818,6 +819,322 @@ export const promoteSellerToAdmin = async (
     res
       .status(200)
       .json({ success: true, message: "Seller promoted to admin", user });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// CATEGORY & SUBCATEGORY
+export const getConfig = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const config = await prisma.site_config.findFirst();
+    return res.status(200).json({
+      categories: config?.categories || [],
+      subCategories: config?.subCategories || {},
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const addCategory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { categoryName } = req.body;
+    if (!categoryName || typeof categoryName !== "string") {
+      return res.status(400).json({ error: "categoryName is required" });
+    }
+    const config = await prisma.site_config.findFirst();
+    if (!config)
+      return res.status(500).json({ error: "Site config not found" });
+    if (config.categories.includes(categoryName)) {
+      return res.status(400).json({ error: "Category already exists" });
+    }
+    const updated = await prisma.site_config.update({
+      where: { id: config.id },
+      data: {
+        categories: { set: [...config.categories, categoryName] },
+        subCategories: {
+          ...(config.subCategories as Prisma.JsonObject),
+          [categoryName]: [],
+        },
+      },
+    });
+    return res
+      .status(201)
+      .json({ success: true, categories: updated.categories });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const addSubcategory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { categoryName, subcategoryName } = req.body;
+    if (!categoryName || !subcategoryName) {
+      return res
+        .status(400)
+        .json({ error: "categoryName and subcategoryName are required" });
+    }
+    const config = await prisma.site_config.findFirst();
+    if (!config)
+      return res.status(500).json({ error: "Site config not found" });
+    const subCategories = {
+      ...(config.subCategories as Record<string, string[]>),
+    };
+    if (!subCategories[categoryName]) {
+      return res.status(400).json({ error: "Category does not exist" });
+    }
+    if (subCategories[categoryName].includes(subcategoryName)) {
+      return res.status(400).json({ error: "Subcategory already exists" });
+    }
+    subCategories[categoryName] = [
+      ...subCategories[categoryName],
+      subcategoryName,
+    ];
+    const updated = await prisma.site_config.update({
+      where: { id: config.id },
+      data: { subCategories: subCategories as Prisma.JsonObject },
+    });
+    return res
+      .status(201)
+      .json({ success: true, subCategories: updated.subCategories });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const deleteCategory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { name } = req.params;
+    const config = await prisma.site_config.findFirst();
+    if (!config)
+      return res.status(500).json({ error: "Site config not found" });
+    if (!config.categories.includes(name)) {
+      return res.status(404).json({ error: "Category not found" });
+    }
+    const newCategories = config.categories.filter((cat) => cat !== name);
+    const subCategories = {
+      ...(config.subCategories as Record<string, string[]>),
+    };
+    delete subCategories[name];
+    const updated = await prisma.site_config.update({
+      where: { id: config.id },
+      data: {
+        categories: { set: newCategories },
+        subCategories: subCategories as Prisma.JsonObject,
+      },
+    });
+    return res
+      .status(200)
+      .json({ success: true, categories: updated.categories });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const deleteSubcategory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { category, name } = req.params;
+    const config = await prisma.site_config.findFirst();
+    if (!config)
+      return res.status(500).json({ error: "Site config not found" });
+    const subCategories = {
+      ...(config.subCategories as Record<string, string[]>),
+    };
+    if (!subCategories[category]) {
+      return res.status(404).json({ error: "Category not found" });
+    }
+    if (!subCategories[category].includes(name)) {
+      return res.status(404).json({ error: "Subcategory not found" });
+    }
+    subCategories[category] = subCategories[category].filter(
+      (sub: string) => sub !== name
+    );
+    const updated = await prisma.site_config.update({
+      where: { id: config.id },
+      data: { subCategories: subCategories as Prisma.JsonObject },
+    });
+    return res
+      .status(200)
+      .json({ success: true, subCategories: updated.subCategories });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Reorder categories
+export const reorderCategories = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { categories } = req.body;
+    if (!Array.isArray(categories)) {
+      return res.status(400).json({ error: "categories array is required" });
+    }
+
+    const config = await prisma.site_config.findFirst();
+    if (!config)
+      return res.status(500).json({ error: "Site config not found" });
+
+    const existingCategories = config.categories;
+    const isValid = categories.every((cat: string) =>
+      existingCategories.includes(cat)
+    );
+
+    if (!isValid) {
+      return res.status(400).json({ error: "Invalid category names provided" });
+    }
+
+    const updated = await prisma.site_config.update({
+      where: { id: config.id },
+      data: { categories: { set: categories } },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Categories reordered successfully",
+      categories: updated.categories,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Reorder subcategories within a category
+export const reorderSubcategories = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { categoryName, subcategories } = req.body;
+    if (!categoryName || !Array.isArray(subcategories)) {
+      return res.status(400).json({
+        error: "categoryName and subcategories array are required",
+      });
+    }
+
+    const config = await prisma.site_config.findFirst();
+    if (!config)
+      return res.status(500).json({ error: "Site config not found" });
+
+    const subCategories = {
+      ...(config.subCategories as Record<string, string[]>),
+    };
+
+    if (!subCategories[categoryName]) {
+      return res.status(404).json({ error: "Category not found" });
+    }
+
+    const existingSubcategories = subCategories[categoryName];
+    const isValid = subcategories.every((sub: string) =>
+      existingSubcategories.includes(sub)
+    );
+
+    if (!isValid) {
+      return res
+        .status(400)
+        .json({ error: "Invalid subcategory names provided" });
+    }
+
+    subCategories[categoryName] = subcategories;
+
+    const updated = await prisma.site_config.update({
+      where: { id: config.id },
+      data: { subCategories: subCategories as Prisma.JsonObject },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Subcategories reordered successfully",
+      subCategories: updated.subCategories,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Move subcategory from one category to another
+export const moveSubcategory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { subcategoryName, fromCategory, toCategory } = req.body;
+
+    if (!subcategoryName || !fromCategory || !toCategory) {
+      return res.status(400).json({
+        error: "subcategoryName, fromCategory, and toCategory are required",
+      });
+    }
+
+    const config = await prisma.site_config.findFirst();
+    if (!config)
+      return res.status(500).json({ error: "Site config not found" });
+
+    const subCategories = {
+      ...(config.subCategories as Record<string, string[]>),
+    };
+
+    if (!subCategories[fromCategory]) {
+      return res.status(404).json({ error: "Source category not found" });
+    }
+
+    if (!subCategories[toCategory]) {
+      return res.status(404).json({ error: "Target category not found" });
+    }
+
+    if (!subCategories[fromCategory].includes(subcategoryName)) {
+      return res
+        .status(404)
+        .json({ error: "Subcategory not found in source category" });
+    }
+
+    if (subCategories[toCategory].includes(subcategoryName)) {
+      return res
+        .status(400)
+        .json({ error: "Subcategory already exists in target category" });
+    }
+
+    subCategories[fromCategory] = subCategories[fromCategory].filter(
+      (sub: string) => sub !== subcategoryName
+    );
+
+    subCategories[toCategory] = [...subCategories[toCategory], subcategoryName];
+
+    const updated = await prisma.site_config.update({
+      where: { id: config.id },
+      data: { subCategories: subCategories as Prisma.JsonObject },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Subcategory moved successfully",
+      subCategories: updated.subCategories,
+    });
   } catch (error) {
     return next(error);
   }

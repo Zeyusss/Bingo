@@ -25,6 +25,14 @@ import {
   getUserDetails,
   getSellerDetails,
   promoteSellerToAdmin,
+  getConfig,
+  addCategory,
+  addSubcategory,
+  deleteCategory,
+  deleteSubcategory,
+  reorderCategories,
+  reorderSubcategories,
+  moveSubcategory,
 } from "../controllers/admin.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isAdmin } from "@packages/middleware/authorizeRoles";
@@ -91,5 +99,15 @@ router.get(
   isAdmin,
   getSellerDetails
 );
+
+// Category & Subcategory Config Endpoints
+router.get("/config", getConfig);
+router.post("/config/category", addCategory);
+router.post("/config/subcategory", addSubcategory);
+router.delete("/config/category/:name", deleteCategory);
+router.delete("/config/subcategory/:category/:name", deleteSubcategory);
+router.put("/config/categories/reorder", reorderCategories);
+router.put("/config/subcategories/reorder", reorderSubcategories);
+router.put("/config/subcategories/move", moveSubcategory);
 
 export default router;
