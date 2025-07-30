@@ -156,17 +156,6 @@ const SidebarWrapper = () => {
                 }
               />
               <SidebarItem
-                isActive={activeSidebar === "/dashboard/management"}
-                title="Management"
-                href="/dashboard/management"
-                icon={
-                  <Settings
-                    size={22}
-                    color={getIconColor("/dashboard/management")}
-                  />
-                }
-              />
-              <SidebarItem
                 isActive={activeSidebar === "/dashboard/notifications"}
                 title="Notifications"
                 href="/dashboard/notifications"
