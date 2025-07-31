@@ -32,6 +32,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.0.0",
     "ejs": "^3.1.10",
+    "emoji-picker-react": "^4.13.2",
     "express": "^4.21.2",
     "express-http-proxy": "^2.1.1",
     "express-rate-limit": "^7.5.1",
@@ -64,6 +65,7 @@
     "swagger-ui-express": "^5.0.1",
     "tailwind-merge": "^3.3.1",
     "ua-parser-js": "^2.0.4",
+    "ws": "^8.18.3",
     "zustand": "^5.0.6"
   },
   "devDependencies": {
@@ -115,6 +117,7 @@
   "workspaces": [
     "apps/*",
     "order-service",
-    "order-service-e2e"
+    "order-service-e2e",
+    "chatting-service"
   ]
 }
