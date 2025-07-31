@@ -1,68 +1,62 @@
 "use client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useWebSocket } from "apps/user-ui/src/context/web-socket-context";
-import useRequireAuth from "apps/user-ui/src/hooks/useRequiredAuth";
-import ChatInput from "apps/user-ui/src/shared/components/chats/chatinput";
-import axiosInstance from "apps/user-ui/src/utils/axiosInstance";
-import { isProtected } from "apps/user-ui/src/utils/protected";
-import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import Image from "next/image";
+import ChatInput from "apps/seller-ui/src/shared/components/chats/chatinput";
+import { useWebSocket } from "apps/seller-ui/src/context/web-socket-context";
+import useSeller from "apps/seller-ui/src/hooks/useSeller";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import axiosInstance from "apps/seller-ui/src/utils/axiosInstance";
 
-const page = () => {
+const ChatPage = () => {
   const searchParams = useSearchParams();
-  const { user, isLoading: userLoading } = useRequireAuth();
   const router = useRouter();
   const messageContainerRef = useRef<HTMLDivElement | null>(null);
-  const scrollAnchorRef = useRef<HTMLDivElement | null>(null);
+  const { seller, isLoading: userLoading } = useSeller();
+  const conversationId = searchParams.get("conversationId");
+  const { ws } = useWebSocket();
   const queryClient = useQueryClient();
 
   const [chats, setChats] = useState<any[]>([]);
   const [selectedChat, setSelectedChat] = useState<any | null>(null);
   const [message, setMessage] = useState("");
-  const [hasMore, setHasMore] = useState(false);
-  const [page, setPage] = useState(1);
   const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
-  const conversationId = searchParams.get("conversationId");
-  const { ws } = useWebSocket();
 
   const { data: messages = [] } = useQuery({
     queryKey: ["messages", conversationId],
     queryFn: async () => {
       if (!conversationId || hasFetchedOnce) return [];
       const res = await axiosInstance.get(
-        `/chatting/api/get-messages/${conversationId}?page=1`,
-        isProtected
+        `/chatting/api/get-seller-messages/${conversationId}?page=1`
       );
-      setPage(1);
-      setHasMore(res.data.hasMore);
       setHasFetchedOnce(true);
       return res.data.messages.reverse();
     },
     enabled: !!conversationId,
     staleTime: 2 * 60 * 1000,
   });
+  useEffect(() => {
+    if (!conversationId || messages.length === 0) return;
+    const timeout = setTimeout(scrollToBottom, 100);
+    return () => clearTimeout(timeout);
+  }, [conversationId, message.length]);
 
-  const loadMoreMessages = async () => {
-    const nextPage = page + 1;
-    const res = await axiosInstance.get(
-      `/chatting/api/get-messages/${conversationId}?page=${nextPage}`,
-      isProtected
-    );
-    queryClient.setQueryData(["messages", conversationId], (old: any = []) => [
-      ...res.data.messages.reverse(),
-      ...old,
-    ]);
-    setPage(nextPage);
-    setHasMore(res.data.hasMore);
+  const scrollToBottom = () => {
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const container = messageContainerRef.current;
+        if (container) {
+          container.scrollTop = container.scrollHeight;
+        }
+      }, 50);
+    });
   };
 
   const { data: conversations, isLoading } = useQuery({
     queryKey: ["conversations"],
     queryFn: async () => {
       const res = await axiosInstance.get(
-        "/chatting/api/get-user-conversations",
-        isProtected
+        "/chatting/api/get-seller-conversations"
       );
       return res.data.conversations;
     },
@@ -72,16 +66,50 @@ const page = () => {
     if (conversations) setChats(conversations);
   }, [conversations]);
 
-  useEffect(()=>{
-    if(messages?.length > 0) scrollToBottom();
-  },[messages])
-
   useEffect(() => {
-    if (conversationId && chats.length > 0) {
-      const chat = chats.find((c) => c.conversationId === conversationId);
-      setSelectedChat(chat || null);
-    }
-  }, [conversationId, chats]);
+    if (!ws) return;
+    ws.onmessage = (event: any) => {
+      const data = JSON.parse(event.data);
+
+      if (data.type === "NEW_MESSAGE") {
+        const newMsg = data?.payload;
+
+        if (newMsg.conversationId === conversationId) {
+          queryClient.setQueryData(
+            ["messages", conversationId],
+            (old: any = []) => [
+              ...old,
+              {
+                content: newMsg.messageBody || newMsg.content || "",
+                senderType: newMsg.senderType,
+                seen: false,
+                createdAt: newMsg.createdAt || new Date().toISOString(),
+              },
+            ]
+          );
+          scrollToBottom();
+        }
+
+        setChats((prevChats) =>
+          prevChats.map((chat) =>
+            chat.conversationId === newMsg.conversationId
+              ? { ...chat, lastMessage: newMsg.content }
+              : chat
+          )
+        );
+      }
+      if (data.type === "UNSEEN_COUNT_UPDATE") {
+        const { conversationId, count } = data.payload;
+        setChats((prevChats) =>
+          prevChats.map((chat) =>
+            chat.conversationId === conversationId
+              ? { ...chat, unreadCount: count }
+              : chat
+          )
+        );
+      }
+    };
+  }, [ws, conversationId]);
 
   const handleChatSelect = (chat: any) => {
     setHasFetchedOnce(false);
@@ -92,56 +120,40 @@ const page = () => {
     );
     router.push(`?conversationId=${chat.conversationId}`);
 
-    ws?.send(JSON.stringify({
-      type:"MARK_AS_SEEN",
-      conversationId: chat.conversationId,
-    }))
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(
+        JSON.stringify({
+          type: "MARK_AS_SEEN",
+          conversationId: chat.conversationId,
+        })
+      );
+    }
   };
 
-  const scrollToBottom = ()=>{
-    requestAnimationFrame(()=>{
-      setTimeout(()=>{
-        scrollAnchorRef.current?.scrollIntoView({behavior:"smooth"})
-      },0)
-    })
-  }
-
-  const handleSend = async (e: any) => {
+  const handleSend = (e: any) => {
     e.preventDefault();
-    if (!message.trim() || !selectedChat) return;
+    if (
+      !message.trim() ||
+      !selectedChat ||
+      !ws ||
+      ws.readyState !== WebSocket.OPEN
+    )
+      return;
+
     const payload = {
-      fromUserId: user?.id,
-      toUserId: selectedChat?.seller?.id,
-      conversationId: selectedChat?.conversationId,
+      fromUserId: seller.id,
+      toUserId: selectedChat.user.id,
       messageBody: message,
-      senderType: "user",
+      conversationId: selectedChat.conversationId,
+      senderType: "seller",
     };
 
-    ws?.send(JSON.stringify(payload));
-    queryClient.setQueryData(
-      ["messages", selectedChat.conversationId],
-      (old: any = []) => [
-        ...old,
-        {
-          content: payload.messageBody,
-          senderType: "user",
-          seen: false,
-          createdAt: new Date().toISOString(),
-        },
-      ]
-    );
-    setChats((prevChats) =>
-      prevChats.map((chat) =>
-        chat.conversationId
-          ? { ...chat, lastMessage: payload.messageBody }
-          : chat
-      )
-    );
+    ws.send(JSON.stringify(payload));
+
     setMessage("");
     scrollToBottom();
   };
 
-  const getLastMessage = (chat: any) => chat?.lastMessage || "";
   return (
     <div className="w-full">
       <div className="md:w-[80%] mx-auto pt-5">
@@ -152,9 +164,13 @@ const page = () => {
             </div>
             <div className="divide-y divide-gray-200">
               {isLoading ? (
-                <div className="p-4 text-sm text-gray-500">Loading...</div>
+                <div className="py-5 text-sm text-center text-gray-500">
+                  Loading...
+                </div>
               ) : chats.length === 0 ? (
-                <div className="p-4 text-sm text-gray-500">No Conversation</div>
+                <div className="py-5 text-sm text-center text-gray-500">
+                  No Conversation
+                </div>
               ) : (
                 chats.map((chat) => {
                   const isActive =
@@ -169,8 +185,8 @@ const page = () => {
                     >
                       <div className="flex items-center gap-3">
                         <Image
-                          src={chat.seller?.avatar || ""}
-                          alt={chat.seller?.name}
+                          src={chat.user?.avatar || ""}
+                          alt={chat.user?.name}
                           width={36}
                           height={36}
                           className="rounded-full border w-[40px] h-[40px] object-cover border-gray-200"
@@ -178,15 +194,22 @@ const page = () => {
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-gray-800 font-semibold">
-                              {chat.seller?.name}
+                              {chat.user?.name}
                             </span>
-                            {chat.seller?.isOnline && (
+                            {chat.user?.isOnline && (
                               <span className="w-2 h-2 rounded-full bg-green-500" />
                             )}
                           </div>
-                          <p className="text-xs text-gray-500 truncate max-w-[170px]">
-                            {getLastMessage(chat)}
-                          </p>
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-gray-500 truncate max-w-[170px]">
+                              {chat.lastMessage || ""}{" "}
+                            </p>
+                            {chat?.unreadCount > 0 && (
+                              <span className="ml-2 inline-flex items-center justify-center min-w-[16px] h-[16px] px-[6px] rounded-full text-[10px] font-semibold bg-blue-600 text-white">
+                                {chat?.unreadCount}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </button>
@@ -200,47 +223,38 @@ const page = () => {
               <>
                 <div className="p-4 border-b border-b-gray-200 bg-white flex items-center gap-3">
                   <Image
-                    src={selectedChat.seller?.avatar || ""}
-                    alt={selectedChat.seller?.name}
+                    src={selectedChat.user?.avatar || ""}
+                    alt={selectedChat.user.name}
                     width={40}
                     height={40}
                     className="rounded-full border w-[40px] h-[40px] object-cover border-gray-200"
                   />
                   <div>
                     <h2 className="text-gray-800 font-semibold text-base">
-                      {selectedChat.seller?.name}
+                      {selectedChat.user?.name}
                     </h2>
                     <p className="text-xs text-gray-500">
-                      {selectedChat.seller?.isOnline ? "Online" : "Offline"}
+                      {selectedChat.user?.isOnline ? "Online" : "Offline"}
                     </p>
                   </div>
                 </div>
+
                 <div
                   ref={messageContainerRef}
                   className="flex-1 overflow-y-auto px-6 py-6 space-y-4 text-sm"
                 >
-                  {hasMore && (
-                    <div className="flex justify-center mb-2">
-                      <button
-                        onClick={loadMoreMessages}
-                        className="text-xs px-4 py-1 bg-gray-200 hover:bg-gray-300"
-                      >
-                        Load Previous messages
-                      </button>
-                    </div>
-                  )}
                   {messages?.map((msg: any, index: number) => (
                     <div
                       key={index}
                       className={`flex flex-col ${
-                        msg.senderType === "user"
+                        msg.senderType === "seller"
                           ? "items-end ml-auto"
                           : "items-start"
                       } max-w-[80%]`}
                     >
                       <div
                         className={`${
-                          msg.senderType === "user"
+                          msg.senderType === "seller"
                             ? "bg-blue-600 text-white"
                             : "bg-white text-gray-800"
                         } px-4 py-2 rounded-lg shadow-sm w-fit`}
@@ -249,7 +263,7 @@ const page = () => {
                       </div>
                       <div
                         className={`text-[11px] text-gray-400 mt-1 flex items-center gap-1 ${
-                          msg.senderType === "user"
+                          msg.senderType === "seller"
                             ? "mr-1 justify-end"
                             : "ml-1"
                         }`}
@@ -262,7 +276,6 @@ const page = () => {
                       </div>
                     </div>
                   ))}
-                  <div ref={scrollAnchorRef} />
                 </div>
 
                 <ChatInput
@@ -283,4 +296,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default ChatPage;
