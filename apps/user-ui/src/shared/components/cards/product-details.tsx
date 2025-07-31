@@ -9,6 +9,8 @@ import { useStore } from "apps/user-ui/src/store";
 import useDeviceTracking from "apps/user-ui/src/hooks/useDeviceTracking";
 import useUser from "apps/user-ui/src/hooks/useUser";
 import useLocationTracking from "apps/user-ui/src/hooks/useLocationTracking";
+import axiosInstance from "apps/user-ui/src/utils/axiosInstance";
+import { isProtected } from "apps/user-ui/src/utils/protected";
 
 
 
@@ -23,16 +25,14 @@ const ProductDetailsCard = ({
   const [isSelected, setIsSelected] = useState(data?.colors?.[0] || "");
   const [isSizeSelected, setIsSizeSelected] = useState(data?.sizes?.[0] || "");
   const [quantity, setQuantity] = useState(1);
+  const [isLoading,setIsLoading] = useState(false);
   const router = useRouter();
   const modalRef = useRef<HTMLDivElement>(null);
-
 
     const { user } = useUser();
   const location = useLocationTracking()
   const deviceInfo = useDeviceTracking();
   const addToCart = useStore((state: any) => state.addToCart);
-
-
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -47,6 +47,20 @@ const ProductDetailsCard = ({
     modalRef.current?.focus();
   }, []);
 
+  const handleChat = async ()=>{
+  if(isLoading){
+   return;
+  }
+  setIsLoading(true);
+  try {
+    const res = await axiosInstance.post("/chatting/api/create-user-conversationGroup",{sellerId:data?.Shop?.sellerId},isProtected)
+  router.push(`/inbox?conversationId=${res.data.conversation.id}`);
+  } catch (error) {
+    console.log(error);
+  }finally{
+    setIsLoading(false)
+  }
+  }
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-all animate-fadeIn"
@@ -192,7 +206,7 @@ const ProductDetailsCard = ({
           <div className="flex gap-3 mt-6">
             <button
               className="flex items-center gap-2 px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow transition"
-              onClick={() => router.push(`/inbox?shopId=${data?.Shop?.id}`)}
+              onClick={() => handleChat()}
             >
               <MessageCircle size={18} /> Chat With Seller
             </button>

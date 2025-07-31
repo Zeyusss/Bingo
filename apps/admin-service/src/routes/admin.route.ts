@@ -99,15 +99,13 @@ router.get(
   isAdmin,
   getSellerDetails
 );
-
-// Category & Subcategory Config Endpoints
-router.get("/config", getConfig);
-router.post("/config/category", addCategory);
-router.post("/config/subcategory", addSubcategory);
-router.delete("/config/category/:name", deleteCategory);
-router.delete("/config/subcategory/:category/:name", deleteSubcategory);
-router.put("/config/categories/reorder", reorderCategories);
-router.put("/config/subcategories/reorder", reorderSubcategories);
-router.put("/config/subcategories/move", moveSubcategory);
+router.get("/config", isAuthenticated, isAdmin, getConfig);
+router.post("/config/category", isAuthenticated, isAdmin, addCategory);
+router.post("/config/subcategory", isAuthenticated, isAdmin, addSubcategory);
+router.delete("/config/category/:name", isAuthenticated, isAdmin, deleteCategory);
+router.delete("/config/subcategory/:category/:name", isAuthenticated, isAdmin, deleteSubcategory);
+router.put("/config/categories/reorder", isAuthenticated, isAdmin, reorderCategories);
+router.put("/config/subcategories/reorder", isAuthenticated, isAdmin, reorderSubcategories);
+router.put("/config/subcategories/move", isAuthenticated, isAdmin, moveSubcategory);
 
 export default router;
