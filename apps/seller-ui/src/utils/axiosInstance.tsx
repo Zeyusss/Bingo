@@ -41,6 +41,13 @@ axiosInstance.interceptors.response.use(
 
     //prevent infinite loops
     if (error.response?.status === 401 && !originalRequest._retry) {
+      if (
+        error.response?.data?.message?.includes("No refresh token provided")
+      ) {
+        handleLogout();
+        return Promise.reject(error);
+      }
+
       if (isRefreshing) {
         return new Promise((resolve) => {
           subscribeTokenRefresh(() => resolve(axiosInstance(originalRequest)));
