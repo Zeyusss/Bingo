@@ -158,7 +158,7 @@ export const getSellerConversations = async (
   next: NextFunction
 ) => {
   try {
-    const sellerId = req.user.id;
+    const sellerId = req.seller.id;
 
     const conversations = await prisma.conversationGroup.findMany({
       where: {
@@ -202,7 +202,7 @@ export const getSellerConversations = async (
 
         let isOnline = false;
         if (userParticipant?.userId) {
-          const redisKey = `online:user:user_${userParticipant.sellerId}`;
+          const redisKey = `online:user:user_${userParticipant.userId}`;
           const redisResult = await redis.get(redisKey);
           isOnline = !!redisResult;
         }
