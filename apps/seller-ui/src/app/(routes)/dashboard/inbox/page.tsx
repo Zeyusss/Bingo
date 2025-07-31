@@ -12,7 +12,7 @@ const ChatPage = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const messageContainerRef = useRef<HTMLDivElement | null>(null);
-  const { seller, isLoading: userLoading } = useSeller();
+  const { seller, isLoading: userLoading } = useSeller({ enabled: true });
   const conversationId = searchParams.get("conversationId");
   const { ws } = useWebSocket();
   const queryClient = useQueryClient();
@@ -40,6 +40,13 @@ const ChatPage = () => {
     const timeout = setTimeout(scrollToBottom, 100);
     return () => clearTimeout(timeout);
   }, [conversationId, message.length]);
+
+  useEffect(() => {
+    if (conversationId && chats.length > 0) {
+      const chat = chats.find((c) => c.conversationId === conversationId);
+      setSelectedChat(chat || null);
+    }
+  }, [conversationId, chats]);
 
   const scrollToBottom = () => {
     requestAnimationFrame(() => {

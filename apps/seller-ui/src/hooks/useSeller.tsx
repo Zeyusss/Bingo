@@ -7,7 +7,11 @@ const fetchSeller = async () => {
   return response.data.seller;
 };
 
-const useSeller = () => {
+interface UseSellerOptions {
+  enabled?: boolean;
+}
+
+const useSeller = (options: UseSellerOptions = {}) => {
   const {
     data: seller,
     isLoading,
@@ -17,7 +21,14 @@ const useSeller = () => {
     queryKey: ["seller"],
     queryFn: fetchSeller,
     staleTime: 1000 * 60 * 5,
-    retry: 1,
+    enabled: options.enabled !== false,
+    retry: (failureCount, error: any) => {
+      if (error?.response?.status === 401) {
+        return false;
+      }
+      return failureCount < 1;
+    },
+    refetchOnWindowFocus: false,
   });
   return { seller, isLoading, isError, refetch };
 };

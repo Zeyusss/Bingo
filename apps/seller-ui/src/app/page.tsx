@@ -1,11 +1,12 @@
-import React from 'react'
+"use client";
+import React from "react";
 
 const Page = () => {
-  return (
-    <div>
-      
+    return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
     </div>
-  )
-}
+  );
+};
 
-export default Page
+export default Page;

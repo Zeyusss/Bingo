@@ -72,9 +72,53 @@ const page = () => {
     if (conversations) setChats(conversations);
   }, [conversations]);
 
-  useEffect(()=>{
-    if(messages?.length > 0) scrollToBottom();
-  },[messages])
+  useEffect(() => {
+    if (!ws) return;
+    ws.onmessage = (event: any) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "NEW_MESSAGE") {
+        const newMsg = data?.payload;
+
+        if (newMsg.conversationId === conversationId) {
+          queryClient.setQueryData(
+            ["messages", conversationId],
+            (old: any = []) => [
+              ...old,
+              {
+                content: newMsg.content,
+                senderType: newMsg.senderType,
+                seen: false,
+                createdAt: new Date().toISOString(),
+              },
+            ]
+          );
+          scrollToBottom();
+        }
+
+        setChats((prevChats) =>
+          prevChats.map((chat) =>
+            chat.conversationId === newMsg.conversationId
+              ? { ...chat, lastMessage: newMsg.content }
+              : chat
+          )
+        );
+      }
+      if (data.type === "UNSEEN_COUNT_UPDATE") {
+        const { conversationId, count } = data.payload;
+        setChats((prevChats) =>
+          prevChats.map((chat) =>
+            chat.conversationId === conversationId
+              ? { ...chat, unreadCount: count }
+              : chat
+          )
+        );
+      }
+    };
+  }, [ws, queryClient]);
+
+  useEffect(() => {
+    if (messages?.length > 0) scrollToBottom();
+  }, [messages]);
 
   useEffect(() => {
     if (conversationId && chats.length > 0) {
@@ -92,19 +136,21 @@ const page = () => {
     );
     router.push(`?conversationId=${chat.conversationId}`);
 
-    ws?.send(JSON.stringify({
-      type:"MARK_AS_SEEN",
-      conversationId: chat.conversationId,
-    }))
+    ws?.send(
+      JSON.stringify({
+        type: "MARK_AS_SEEN",
+        conversationId: chat.conversationId,
+      })
+    );
   };
 
-  const scrollToBottom = ()=>{
-    requestAnimationFrame(()=>{
-      setTimeout(()=>{
-        scrollAnchorRef.current?.scrollIntoView({behavior:"smooth"})
-      },0)
-    })
-  }
+  const scrollToBottom = () => {
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        scrollAnchorRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 0);
+    });
+  };
 
   const handleSend = async (e: any) => {
     e.preventDefault();
@@ -118,18 +164,6 @@ const page = () => {
     };
 
     ws?.send(JSON.stringify(payload));
-    queryClient.setQueryData(
-      ["messages", selectedChat.conversationId],
-      (old: any = []) => [
-        ...old,
-        {
-          content: payload.messageBody,
-          senderType: "user",
-          seen: false,
-          createdAt: new Date().toISOString(),
-        },
-      ]
-    );
     setChats((prevChats) =>
       prevChats.map((chat) =>
         chat.conversationId
@@ -184,9 +218,16 @@ const page = () => {
                               <span className="w-2 h-2 rounded-full bg-green-500" />
                             )}
                           </div>
-                          <p className="text-xs text-gray-500 truncate max-w-[170px]">
-                            {getLastMessage(chat)}
-                          </p>
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-gray-500 truncate max-w-[170px]">
+                              {getLastMessage(chat)}
+                            </p>
+                            {chat?.unreadCount > 0 && (
+                              <span className="ml-2 inline-flex items-center justify-center min-w-[16px] h-[16px] px-[6px] rounded-full text-[10px] font-semibold bg-blue-600 text-white">
+                                {chat?.unreadCount}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </button>

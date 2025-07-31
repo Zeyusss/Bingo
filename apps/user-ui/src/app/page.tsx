@@ -59,7 +59,6 @@ const Page = () => {
         <div className="mb-8">
           <SectionTitle title="Suggested Products" />
         </div>
-        {/* Suggested Products Section */}
         <div className="bg-white rounded-xl shadow-md p-6 mb-12">
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 2xl:grid-cols-5 gap-5">
@@ -80,9 +79,7 @@ const Page = () => {
             <p className="text-center">No Products available yet!</p>
           )}
         </div>
-        {/* Top Offers Section */}
         <TopOffersSection />
-        {/* Latest Products Carousel Section */}
         <div className="my-8 block">
           <SectionTitle title="Latest Products" />
         </div>
