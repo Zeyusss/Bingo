@@ -223,28 +223,29 @@ model notifications {
 }
 
 model orders {
-  id                String        @id @default(auto()) @map("_id") @db.ObjectId
-  shopId            String        @db.ObjectId
-  userId            String        @db.ObjectId
-  user              users         @relation(fields: [userId], references: [id])
-  products          String[]
-  total             Float
-  status            String
-  deliveryStatus    String?
-  address           String?
-  paymentMethod     String?
-  couponCode        String?
-  discount          Float?
-  shippingFee       Float?
-  notes             String?
-  shippingAddressId String?
-  discountAmount    Float?        @default(0)
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  items             order_items[]
-  shop              shops         @relation(fields: [shopId], references: [id])
-  isDeleted         Boolean       @default(false)
-  deletedAt         DateTime?
+  id                      String        @id @default(auto()) @map("_id") @db.ObjectId
+  shopId                  String        @db.ObjectId
+  userId                  String        @db.ObjectId
+  user                    users         @relation(fields: [userId], references: [id])
+  products                String[]
+  total                   Float
+  status                  String
+  deliveryStatus          String?
+  address                 String?
+  paymentMethod           String?
+  couponCode              String?
+  discount                Float?
+  shippingFee             Float?
+  notes                   String?
+  shippingAddressId       String?
+  shippingAddressSnapshot Json?
+  discountAmount          Float?        @default(0)
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+  items                   order_items[]
+  shop                    shops         @relation(fields: [shopId], references: [id])
+  isDeleted               Boolean       @default(false)
+  deletedAt               DateTime?
 }
 
 enum addressType {

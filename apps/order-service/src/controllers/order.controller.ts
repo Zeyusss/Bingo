@@ -22,6 +22,15 @@ export const createPaymentIntent = async (
   next: NextFunction
 ) => {
   const { amount, sellerStripeAccountId, sessionId } = req.body;
+
+  // Minimum amount validation for Stripe (50 EGP = 5000 kuruş)
+  const minimumAmount = 50; // EGP
+  if (amount < minimumAmount) {
+    return res.status(400).json({
+      error: `Minimum order amount is ${minimumAmount} EGP. Current amount: ${amount} EGP`,
+    });
+  }
+
   const customerAmount = Math.round(amount * 100);
   const platformFee = Math.floor(customerAmount * 0.1);
   try {
@@ -249,13 +258,36 @@ export const createOrder = async (
           }
         }
 
-        await prisma.orders.create({
+        // Fetch shipping address snapshot if shippingAddressId exists
+        let shippingAddressSnapshot = null;
+        if (shippingAddressId) {
+          try {
+            const addressRecord = await prisma.address.findUnique({
+              where: { id: shippingAddressId },
+            });
+            if (addressRecord) {
+              shippingAddressSnapshot = {
+                name: addressRecord.name,
+                street: addressRecord.street,
+                city: addressRecord.city,
+                zip: addressRecord.zip,
+                country: addressRecord.country,
+                label: addressRecord.label,
+              };
+            }
+          } catch (error) {
+            console.error("Failed to fetch address for snapshot:", error);
+          }
+        }
+
+        const order = await prisma.orders.create({
           data: {
             userId,
             shopId,
             total: orderTotal,
             status: "Paid",
             shippingAddressId: shippingAddressId || null,
+            shippingAddressSnapshot,
             couponCode: coupon?.code || null,
             discountAmount: coupon?.discountAmount || 0,
             items: {
@@ -268,6 +300,8 @@ export const createOrder = async (
             },
           },
         });
+
+        // Update product analytics and stock for this shop's items
         for (const item of orderItems) {
           const { id: productId, quantity } = item;
 
@@ -321,93 +355,94 @@ export const createOrder = async (
             });
           }
         }
+      }
 
-        const orderId = sessionId;
-        const orderDate = new Date().toLocaleDateString();
-        const paymentMethod = "Credit Card";
-        let shippingAddress = "N/A";
-        if (shippingAddressId) {
-          const addressRecord = await prisma.address.findUnique({
-            where: { id: shippingAddressId },
-          });
-          if (addressRecord) {
-            shippingAddress = `${addressRecord.name}, ${addressRecord.street}, ${addressRecord.city}, ${addressRecord.country}, ${addressRecord.zip}`;
-          }
-        }
-        const couponCode = coupon?.code || null;
-        const subtotal = cart.reduce(
-          (sum: number, item: any) => sum + item.sale_price * item.quantity,
-          0
-        );
-        const discountAmount = coupon?.discountAmount || 0;
-        const shippingFee = 0;
-        const total = subtotal - discountAmount + shippingFee;
-        const orderItemsForEmail = cart.map((item: any) => ({
-          title: item.title,
-          quantity: item.quantity,
-          price: item.sale_price,
-          selectedOptions: item.selectedOptions || {},
-        }));
-        const orderTrackingUrl = `https://bingo.com/order/${sessionId}`;
-
-        await sendEmail(
-          email,
-          "Your Bingo Order Confirmation",
-          "order-confirmation",
-          {
-            name,
-            orderId,
-            orderDate,
-            paymentMethod,
-            shippingAddress,
-            couponCode,
-            subtotal,
-            discountAmount,
-            shippingFee,
-            total,
-            orderItems: orderItemsForEmail,
-            orderTrackingUrl,
-          }
-        );
-        const createdShopIds = Object.keys(shopGrouped);
-        const sellerShops = await prisma.shops.findMany({
-          where: { id: { in: createdShopIds } },
-          select: {
-            id: true,
-            sellerId: true,
-            name: true,
-          },
+      const orderId = sessionId;
+      const orderDate = new Date().toLocaleDateString();
+      const paymentMethod = "Credit Card";
+      let shippingAddress = "N/A";
+      if (shippingAddressId) {
+        const addressRecord = await prisma.address.findUnique({
+          where: { id: shippingAddressId },
         });
-
-        for (const shop of sellerShops) {
-          const firstProduct = shopGrouped[shop.id][0];
-          const productTitle = firstProduct?.title || "new item";
-
-          await prisma.notifications.create({
-            data: {
-              title: "New Order Recevied",
-              message: `A customer just ordered ${productTitle} from your shop.`,
-              creatorId: userId,
-              receiverId: shop.sellerId,
-              redirect_link: `https://bingo.com/order/${sessionId}`,
-            },
-          });
+        if (addressRecord) {
+          shippingAddress = `${addressRecord.name}, ${addressRecord.street}, ${addressRecord.city}, ${addressRecord.country}, ${addressRecord.zip}`;
         }
+      }
+      const couponCode = coupon?.code || null;
+      const subtotal = cart.reduce(
+        (sum: number, item: any) => sum + item.sale_price * item.quantity,
+        0
+      );
+      const discountAmount = coupon?.discountAmount || 0;
+      const shippingFee = 0;
+      const total = subtotal - discountAmount + shippingFee;
+      const orderItemsForEmail = cart.map((item: any) => ({
+        title: item.title,
+        quantity: item.quantity,
+        price: item.sale_price,
+        selectedOptions: item.selectedOptions || {},
+      }));
+      const orderTrackingUrl = `https://bingo.com/order/${sessionId}`;
+
+      await sendEmail(
+        email,
+        "Your Bingo Order Confirmation",
+        "order-confirmation",
+        {
+          name,
+          orderId,
+          orderDate,
+          paymentMethod,
+          shippingAddress,
+          couponCode,
+          subtotal,
+          discountAmount,
+          shippingFee,
+          total,
+          orderItems: orderItemsForEmail,
+          orderTrackingUrl,
+        }
+      );
+      const createdShopIds = [...new Set(cart.map((item: any) => item.shopId))];
+      const shopIds = createdShopIds as string[];
+      const sellerShops = await prisma.shops.findMany({
+        where: { id: { in: shopIds } },
+        select: {
+          id: true,
+          sellerId: true,
+          name: true,
+        },
+      });
+
+      for (const shop of sellerShops) {
+        const shopItems = cart.filter((item: any) => item.shopId === shop.id);
+        const firstProduct = shopItems[0];
+        const productTitle = firstProduct?.title || "new item";
 
         await prisma.notifications.create({
           data: {
-            title: "Platform Order Alert",
-            message: `A new order was placed by ${name}`,
+            title: "New Order Recevied",
+            message: `A customer just ordered ${productTitle} from your shop.`,
             creatorId: userId,
-            receiverId: "admin",
+            receiverId: shop.sellerId,
             redirect_link: `https://bingo.com/order/${sessionId}`,
           },
         });
-
-        await redis.del(sessionKey);
       }
+
+      await prisma.notifications.create({
+        data: {
+          title: "Platform Order Alert",
+          message: `A new order was placed by ${name}`,
+          creatorId: userId,
+          receiverId: "admin",
+          redirect_link: `https://bingo.com/order/${sessionId}`,
+        },
+      });
+
+      await redis.del(sessionKey);
     }
-    res.status(200).json({ received: true });
   } catch (error) {
     console.log(error);
     return next(error);
@@ -484,6 +519,10 @@ export const getOrderDetails = async (
         : Promise.resolve(null),
     ]);
 
+    // use shipping address snapshot if the address was deleted
+    const finalShippingAddress =
+      shippingAddress || order.shippingAddressSnapshot;
+
     const productIds = order.items.map((item: any) => item.productId);
     const products =
       productIds.length > 0
@@ -504,7 +543,7 @@ export const getOrderDetails = async (
       order: {
         ...order,
         items,
-        shippingAddress,
+        shippingAddress: finalShippingAddress,
         couponCode: coupon,
       },
     });
@@ -643,9 +682,35 @@ export const getUserOrders = async (
       },
     });
 
+    // Fetch shipping addresses for all orders that have shippingAddressId
+    const ordersWithAddresses = await Promise.all(
+      orders.map(async (order) => {
+        let shippingAddress = null;
+        if (order.shippingAddressId) {
+          try {
+            shippingAddress = await prisma.address.findUnique({
+              where: { id: order.shippingAddressId },
+            });
+          } catch (error) {
+            console.error(
+              `Failed to fetch address for order ${order.id}:`,
+              error
+            );
+          }
+        }
+        // Use shipping address snapshot if the address was deleted
+        const finalShippingAddress =
+          shippingAddress || order.shippingAddressSnapshot;
+        return {
+          ...order,
+          shippingAddress: finalShippingAddress,
+        };
+      })
+    );
+
     res.status(201).json({
       success: true,
-      orders,
+      orders: ordersWithAddresses,
     });
   } catch (error) {
     return next(error);
