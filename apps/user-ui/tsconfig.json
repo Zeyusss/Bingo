@@ -41,7 +41,7 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     ".next/types/**/*.ts"
-  ],
+, "../seller-ui/src/utils/cn.ts"  ],
   "exclude": [
     "out-tsc",
     "dist",
