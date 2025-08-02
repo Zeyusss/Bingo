@@ -558,8 +558,6 @@ export const createShopReview = async (
     if (existingReview) {
       return next(new ValidationError("You have already reviewed this shop."));
     }
-
-    // Create the review
     const review = await prisma.shopReviws.create({
       data: {
         userId: req.user.id,
@@ -578,7 +576,6 @@ export const createShopReview = async (
       },
     });
 
-    // Update shop's average rating
     const allReviews = await prisma.shopReviws.findMany({
       where: { shopsId: shopId },
     });
@@ -770,7 +767,7 @@ export const getShopAnalytics = async (
     if (!shop) {
       return next(new NotFoundError("Shop not found."));
     }
-    
+
     const analytics = await prisma.shopAnalytics.findUnique({
       where: { shopId: shop.id },
     });
@@ -928,6 +925,76 @@ export const getShopTopSellingProducts = async (
 
     const data = await fetchShopTopSellingProducts(req.seller.id);
     res.status(200).json(data);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Track shop visitor
+export const trackShopVisitor = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { shopId, userId } = req.body;
+
+    if (!shopId || !userId) {
+      return next(new ValidationError("Shop ID and User ID are required"));
+    }
+
+    const shop = await prisma.shops.findUnique({
+      where: { id: shopId },
+      select: { id: true },
+    });
+
+    if (!shop) {
+      return next(new NotFoundError("Shop not found"));
+    }
+
+    const user = await prisma.users.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return next(new NotFoundError("User not found"));
+    }
+
+    await prisma.uniqueShopVisitors.upsert({
+      where: {
+        shopId_userId: {
+          shopId,
+          userId,
+        },
+      },
+      update: {
+        visitedAt: new Date(),
+      },
+      create: {
+        shopId,
+        userId,
+        visitedAt: new Date(),
+      },
+    });
+
+    // Update shop analytics
+    await prisma.shopAnalytics.upsert({
+      where: { shopId },
+      update: {
+        totalVisitors: {
+          increment: 1,
+        },
+        lastVisitedAt: new Date(),
+      },
+      create: {
+        shopId,
+        totalVisitors: 1,
+        lastVisitedAt: new Date(),
+      },
+    });
+
+    res.status(200).json({ message: "Visitor tracked successfully" });
   } catch (error) {
     return next(error);
   }

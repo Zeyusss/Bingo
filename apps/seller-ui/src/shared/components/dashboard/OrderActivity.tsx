@@ -6,6 +6,11 @@ import {
   Smartphone,
   Monitor,
   Tablet,
+  TrendingUp,
+  MapPin,
+  BarChart3,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card";
@@ -14,13 +19,17 @@ import {
   useWorldMapActivity,
   useDeviceUsage,
 } from "../../../hooks/useDashboardData";
+import { Button } from "./ui/Button";
 import "leaflet/dist/leaflet.css";
 
-interface OrderActivityData {
+interface WorldActivityData {
   country: string;
   orders: number;
   visitors: number;
+  cities: string[];
   conversionRate: number;
+  lat: number;
+  lng: number;
 }
 
 export default function OrderActivity() {
@@ -28,11 +37,13 @@ export default function OrderActivity() {
     data: worldData,
     isLoading: worldLoading,
     error: worldError,
+    refetch: refetchWorld,
   } = useWorldMapActivity();
   const {
     data: deviceData,
     isLoading: deviceLoading,
     error: deviceError,
+    refetch: refetchDevice,
   } = useDeviceUsage();
 
   if (worldLoading || deviceLoading) {
@@ -58,11 +69,42 @@ export default function OrderActivity() {
     return (
       <Card className="h-full">
         <CardHeader>
-          <CardTitle className="text-red-600">Order Activity</CardTitle>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-red-600">
+                <Globe2 className="h-5 w-5" />
+                Customer Orders Distribution
+              </CardTitle>
+            </div>
+            <Button
+              onClick={() => {
+                if (worldError) refetchWorld();
+                if (deviceError) refetchDevice();
+              }}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Retry
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-32 text-gray-500">
-            Failed to load order activity data
+          <div className="flex items-center justify-center h-32">
+            <div className="text-center">
+              <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
+              <p className="text-gray-500 mb-2">
+                Failed to load order distribution data
+              </p>
+              <p className="text-sm text-gray-400">
+                {worldError instanceof Error
+                  ? worldError.message
+                  : deviceError instanceof Error
+                  ? deviceError.message
+                  : "An error occurred"}
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -77,12 +119,58 @@ export default function OrderActivity() {
     Tooltip,
   } = require("react-leaflet");
 
+  const worldActivityData = worldData as WorldActivityData[];
   const totalOrders =
-    worldData?.reduce((sum: any, item: any) => sum + item.orders, 0) || 0;
+    worldActivityData?.reduce(
+      (sum: number, item: WorldActivityData) => sum + item.orders,
+      0
+    ) || 0;
+  const totalVisitors =
+    worldActivityData?.reduce(
+      (sum: number, item: WorldActivityData) => sum + item.visitors,
+      0
+    ) || 0;
+  const topCountry = worldActivityData?.[0];
   const topDevice = deviceData?.reduce(
     (max: any, device: any) => (device.value > max.value ? device : max),
     deviceData[0]
   );
+
+  if (totalOrders === 0 && totalVisitors === 0) {
+    return (
+      <Card className="h-full hover:shadow-lg transition-shadow duration-200">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Globe2 className="h-5 w-5 text-purple-600" />
+                Customer Orders Distribution
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                No orders or visitors yet • Start selling to see distribution
+                data
+              </p>
+            </div>
+            <div className="flex items-center gap-1 text-sm text-gray-500">
+              <TrendingUp className="h-4 w-4" />
+              <span className="font-medium">No data</span>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-64 text-gray-500">
+            <div className="text-center">
+              <Globe2 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p className="text-lg font-medium">No orders yet</p>
+              <p className="text-sm">
+                Start selling to see customer distribution
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="h-full hover:shadow-lg transition-shadow duration-200">
@@ -94,145 +182,258 @@ export default function OrderActivity() {
               Customer Orders Distribution
             </CardTitle>
             <p className="text-sm text-gray-600">
-              Worldwide order activity • Total: {totalOrders.toLocaleString()}{" "}
-              orders
+              Global order activity & conversion rates •{" "}
+              {totalOrders.toLocaleString()} orders from{" "}
+              {totalVisitors.toLocaleString()} visitors
             </p>
           </div>
           <div className="flex items-center gap-1 text-sm text-purple-600">
-            <ShoppingCart className="h-4 w-4" />
-            <span className="font-medium">Active</span>
+            <TrendingUp className="h-4 w-4" />
+            <span className="font-medium">Live</span>
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {/* Device Usage Summary */}
-          {deviceData && (
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-medium text-purple-900">Device Usage</h4>
-                <div className="flex items-center gap-2">
-                  {topDevice?.id === "Phone" && (
-                    <Smartphone className="h-4 w-4 text-purple-600" />
-                  )}
-                  {topDevice?.id === "Computer" && (
-                    <Monitor className="h-4 w-4 text-purple-600" />
-                  )}
-                  {topDevice?.id === "Tablet" && (
-                    <Tablet className="h-4 w-4 text-purple-600" />
-                  )}
-                  <span className="text-sm font-medium text-purple-700">
-                    {topDevice?.id} ({topDevice?.value}%)
+        <div className="space-y-6">
+          {/* Key Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Top Country */}
+            {topCountry && (
+              <motion.div
+                className="bg-gradient-to-br from-purple-50 to-pink-100 p-4 rounded-xl border border-purple-200"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Globe2 className="h-4 w-4 text-purple-600" />
+                  <span className="font-semibold text-purple-900">
+                    Top Country
                   </span>
                 </div>
+                <div className="text-xl font-bold text-purple-900 mb-1">
+                  {topCountry.country}
+                </div>
+                <div className="text-sm text-purple-700 mb-2">
+                  {topCountry.orders.toLocaleString()} orders
+                </div>
+                <div className="flex items-center gap-4 text-xs text-purple-600">
+                  <span>{topCountry.visitors.toLocaleString()} visitors</span>
+                  <span>{topCountry.conversionRate}% conversion</span>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Device Usage */}
+            {deviceData && deviceData.some((d: any) => d.value > 0) && (
+              <motion.div
+                className="bg-gradient-to-br from-blue-50 to-indigo-100 p-4 rounded-xl border border-blue-200"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  {topDevice?.id === "Phone" && (
+                    <Smartphone className="h-4 w-4 text-blue-600" />
+                  )}
+                  {topDevice?.id === "Computer" && (
+                    <Monitor className="h-4 w-4 text-blue-600" />
+                  )}
+                  {topDevice?.id === "Tablet" && (
+                    <Tablet className="h-4 w-4 text-blue-600" />
+                  )}
+                  <span className="font-semibold text-blue-900">
+                    Top Device
+                  </span>
+                </div>
+                <div className="text-xl font-bold text-blue-900 mb-1">
+                  {topDevice?.id}
+                </div>
+                <div className="text-sm text-blue-700 mb-2">
+                  {topDevice?.value}% of users
+                </div>
+                <div className="text-xs text-blue-600">
+                  {deviceData
+                    .map((d: any) => `${d.label}: ${d.value}%`)
+                    .join(" • ")}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Conversion Rate */}
+            <motion.div
+              className="bg-gradient-to-br from-green-50 to-emerald-100 p-4 rounded-xl border border-green-200"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="h-4 w-4 text-green-600" />
+                <span className="font-semibold text-green-900">
+                  Global Conversion
+                </span>
               </div>
-              <div className="flex gap-2">
-                {deviceData.map((device: any) => (
-                  <div key={device.id} className="flex-1 text-center">
-                    <div className="text-lg font-bold text-purple-900">
+              <div className="text-xl font-bold text-green-900 mb-1">
+                {totalVisitors > 0
+                  ? Math.round(Math.min((totalOrders / totalVisitors) * 100, 100) * 100) / 100
+                  : 0}
+                %
+              </div>
+              <div className="text-sm text-green-700 mb-2">
+                {totalOrders.toLocaleString()} orders
+              </div>
+              <div className="text-xs text-green-600">
+                from {totalVisitors.toLocaleString()} visitors
+              </div>
+            </motion.div>
+          </div>
+
+          {/* World Map */}
+          {worldActivityData && worldActivityData.length > 0 && (
+            <div className="h-64 w-full rounded-lg overflow-hidden border">
+              <MapContainer
+                center={[20, 0]}
+                zoom={2}
+                scrollWheelZoom={false}
+                style={{ height: "100%", width: "100%", background: "#f8fafc" }}
+                attributionControl={false}
+              >
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                {worldActivityData?.map((loc: WorldActivityData, i: number) => (
+                  <CircleMarker
+                    key={i}
+                    center={[loc.lat, loc.lng]}
+                    radius={Math.max(
+                      8,
+                      Math.min(25, 8 + Math.log(loc.orders) * 3)
+                    )}
+                    pathOptions={{
+                      color: "#8b5cf6",
+                      fillColor: "#8b5cf6",
+                      fillOpacity: 0.6,
+                      weight: 2,
+                    }}
+                  >
+                    <Tooltip
+                      direction="top"
+                      offset={[0, -8]}
+                      opacity={1}
+                      permanent={false}
+                      className="bg-white text-gray-900 rounded-lg px-3 py-2 shadow-lg border"
+                    >
+                      <div className="font-bold text-purple-600">
+                        {loc.country}
+                      </div>
+                      <div className="text-sm space-y-1">
+                        <div className="flex items-center gap-1">
+                          <ShoppingCart className="h-3 w-3" />
+                          Orders: {loc.orders.toLocaleString()}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          Visitors: {loc.visitors.toLocaleString()}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <TrendingUp className="h-3 w-3" />
+                          Conversion: {loc.conversionRate}%
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {loc.cities.length} cities
+                        </div>
+                      </div>
+                    </Tooltip>
+                  </CircleMarker>
+                ))}
+              </MapContainer>
+            </div>
+          )}
+
+          {/* Top Countries with Conversion Rates */}
+          {worldActivityData && worldActivityData.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-gray-600" />
+                <h4 className="font-semibold text-gray-900">
+                  Top Countries by Orders
+                </h4>
+              </div>
+              {worldActivityData
+                ?.slice(0, 5)
+                .map((item: WorldActivityData, index: number) => (
+                  <motion.div
+                    key={item.country}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-bold text-purple-600">
+                          {index + 1}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="font-semibold text-gray-900">
+                          {item.country}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {item.visitors.toLocaleString()} visitors •{" "}
+                          {item.cities.length} cities
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-gray-900">
+                        {item.orders.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {item.conversionRate}% conversion
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+            </div>
+          )}
+
+          {/* Device Usage Breakdown */}
+          {deviceData && deviceData.some((d: any) => d.value > 0) && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Monitor className="h-4 w-4 text-gray-600" />
+                <h4 className="font-semibold text-gray-900">
+                  Device Usage Breakdown
+                </h4>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {deviceData.map((device: any, index: number) => (
+                  <motion.div
+                    key={device.id}
+                    className="bg-white border border-gray-200 rounded-lg p-3 text-center hover:border-blue-300 transition-colors"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <div className="flex justify-center mb-2">
+                      {device.id === "Phone" && (
+                        <Smartphone className="h-5 w-5 text-blue-600" />
+                      )}
+                      {device.id === "Computer" && (
+                        <Monitor className="h-5 w-5 text-blue-600" />
+                      )}
+                      {device.id === "Tablet" && (
+                        <Tablet className="h-5 w-5 text-blue-600" />
+                      )}
+                    </div>
+                    <div className="text-lg font-bold text-gray-900">
                       {device.value}%
                     </div>
-                    <div className="text-xs text-purple-600">
-                      {device.label}
-                    </div>
-                  </div>
+                    <div className="text-xs text-gray-500">{device.label}</div>
+                  </motion.div>
                 ))}
               </div>
             </div>
           )}
-
-          {/* World Map */}
-          <div className="h-64 w-full rounded-lg overflow-hidden border">
-            <MapContainer
-              center={[20, 0]}
-              zoom={2}
-              scrollWheelZoom={false}
-              style={{ height: "100%", width: "100%", background: "#f8fafc" }}
-              attributionControl={false}
-            >
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              {worldData?.map((loc: any, i: number) => (
-                <CircleMarker
-                  key={i}
-                  center={[loc.lat, loc.lng]}
-                  radius={Math.max(
-                    8,
-                    Math.min(20, 8 + Math.log(loc.orders) * 2)
-                  )}
-                  pathOptions={{
-                    color: "#8b5cf6",
-                    fillColor: "#8b5cf6",
-                    fillOpacity: 0.6,
-                    weight: 2,
-                  }}
-                >
-                  <Tooltip
-                    direction="top"
-                    offset={[0, -8]}
-                    opacity={1}
-                    permanent={false}
-                    className="bg-white text-gray-900 rounded-lg px-3 py-2 shadow-lg border"
-                  >
-                    <div className="font-bold text-purple-600">
-                      {loc.country}
-                    </div>
-                    <div className="text-sm">
-                      <div className="flex items-center gap-1">
-                        <ShoppingCart className="h-3 w-3" />
-                        Orders: {loc.orders.toLocaleString()}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        Visitors:{" "}
-                        {Math.round(
-                          loc.orders * (1 + Math.random() * 2)
-                        ).toLocaleString()}
-                      </div>
-                    </div>
-                  </Tooltip>
-                </CircleMarker>
-              ))}
-            </MapContainer>
-          </div>
-
-          {/* Top Countries List */}
-          <div className="space-y-3">
-            <h4 className="font-medium text-gray-900">Top Order Countries</h4>
-            {worldData?.slice(0, 5).map((item: any, index: number) => (
-              <motion.div
-                key={item.country}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-medium text-purple-600">
-                      {index + 1}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900">
-                      {item.country}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {Math.round(
-                        item.orders * (1 + Math.random() * 2)
-                      ).toLocaleString()}{" "}
-                      visitors
-                    </div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-medium text-gray-900">
-                    {item.orders.toLocaleString()}
-                  </div>
-                  <div className="text-sm text-gray-500">orders</div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
         </div>
       </CardContent>
     </Card>

@@ -1,9 +1,17 @@
 "use client";
-import { TrendingUp, Package, DollarSign, Star } from "lucide-react";
+import {
+  TrendingUp,
+  Package,
+  DollarSign,
+  Star,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card";
 import { Skeleton } from "./ui/Skeleton";
 import { useTopSellingProducts } from "../../../hooks/useDashboardData";
+import { Button } from "./ui/Button";
 
 interface TopProduct {
   id: string;
@@ -16,7 +24,7 @@ interface TopProduct {
 }
 
 export default function TopSellingProducts() {
-  const { data, isLoading, error } = useTopSellingProducts();
+  const { data, isLoading, error, refetch } = useTopSellingProducts();
 
   if (isLoading) {
     return (
@@ -55,11 +63,35 @@ export default function TopSellingProducts() {
     return (
       <Card className="h-full">
         <CardHeader>
-          <CardTitle className="text-red-600">Top Selling Products</CardTitle>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-red-600">
+                <Package className="h-5 w-5" />
+                Top Selling Products
+              </CardTitle>
+            </div>
+            <Button
+              onClick={() => refetch()}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Retry
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-32 text-gray-500">
-            Failed to load top selling products
+          <div className="flex items-center justify-center h-32">
+            <div className="text-center">
+              <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
+              <p className="text-gray-500 mb-2">
+                Failed to load top selling products
+              </p>
+              <p className="text-sm text-gray-400">
+                {error instanceof Error ? error.message : "An error occurred"}
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -101,7 +133,7 @@ export default function TopSellingProducts() {
       <CardContent>
         <div className="space-y-4">
           {/* Summary Stats */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <DollarSign className="h-4 w-4 text-orange-600" />
@@ -188,11 +220,21 @@ export default function TopSellingProducts() {
                 </div>
 
                 {/* Sales Data */}
-                <div className="text-right">
+                <div className="text-right hidden sm:block">
                   <div className="font-medium text-gray-900">
                     {product.totalSold.toLocaleString()}
                   </div>
                   <div className="text-sm text-gray-500">sold</div>
+                  <div className="text-sm font-medium text-green-600">
+                    ${product.revenue.toLocaleString()}
+                  </div>
+                </div>
+
+                {/* Mobile Sales Data */}
+                <div className="text-right sm:hidden">
+                  <div className="font-medium text-gray-900 text-sm">
+                    {product.totalSold.toLocaleString()} sold
+                  </div>
                   <div className="text-sm font-medium text-green-600">
                     ${product.revenue.toLocaleString()}
                   </div>

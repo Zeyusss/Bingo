@@ -152,22 +152,48 @@ export const updateShopAnalytics = async (event: any) => {
     // Update visitor count for shop visits
     if (event.action === "shop_visit") {
       updateFields.totalVisitors = { increment: 1 };
+
+      // Track unique visitor if userId is provided
+      if (event.userId) {
+        try {
+          await prisma.uniqueShopVisitors.upsert({
+            where: {
+              shopId_userId: {
+                shopId: event.shopId,
+                userId: event.userId,
+              },
+            },
+            update: {
+              visitedAt: new Date(),
+            },
+            create: {
+              shopId: event.shopId,
+              userId: event.userId,
+              visitedAt: new Date(),
+            },
+          });
+        } catch (error) {
+          console.log("Error tracking unique visitor:", error);
+        }
+      }
     }
 
     // Update location stats
     if (event.country || event.city) {
-      const currentStats = existingAnalytics?.countryStats || {};
+      const currentCountryStats = existingAnalytics?.countryStats || {};
+      const currentCityStats = existingAnalytics?.cityStats || {};
 
       if (event.country) {
         const countryKey = event.country;
-        currentStats[countryKey] = (currentStats[countryKey] || 0) + 1;
-        updateFields.countryStats = currentStats;
+        currentCountryStats[countryKey] =
+          (currentCountryStats[countryKey] || 0) + 1;
+        updateFields.countryStats = currentCountryStats;
       }
 
       if (event.city) {
         const cityKey = event.city;
-        currentStats[cityKey] = (currentStats[cityKey] || 0) + 1;
-        updateFields.cityStats = currentStats;
+        currentCityStats[cityKey] = (currentCityStats[cityKey] || 0) + 1;
+        updateFields.cityStats = currentCityStats;
       }
     }
 

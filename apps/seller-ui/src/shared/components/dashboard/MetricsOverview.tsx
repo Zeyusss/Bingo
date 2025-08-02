@@ -3,21 +3,43 @@ import { MetricCard } from "./ui/MetricCard";
 import { useSystemStats } from "../../../hooks/useDashboardData";
 import {
   Package,
-  Store,
   ShoppingCart,
   TrendingUp,
+  Star,
+  Store,
   DollarSign,
-  Users,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
+import { Button } from "./ui/Button";
 
 export const MetricsOverview: React.FC = () => {
-  const { data: stats, isLoading, error } = useSystemStats();
+  const { data: stats, isLoading, error, refetch } = useSystemStats();
 
   if (error) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <div className="col-span-full text-center text-red-500 p-4">
-          Failed to load metrics
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="col-span-full">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-3" />
+            <h3 className="text-lg font-semibold text-red-900 mb-2">
+              Failed to load metrics
+            </h3>
+            <p className="text-red-700 mb-4">
+              {error instanceof Error
+                ? error.message
+                : "An error occurred while loading dashboard data"}
+            </p>
+            <Button
+              onClick={() => refetch()}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2 mx-auto"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Retry
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -81,9 +103,11 @@ export const MetricsOverview: React.FC = () => {
     },
     {
       title: "Shop Rating",
-      value: "4.8★",
+      value: stats?.averageRating
+        ? `${stats.averageRating.toFixed(1)}★`
+        : "N/A",
       description: "Average rating",
-      icon: <Users className="h-5 w-5" />,
+      icon: <Star className="h-5 w-5" />,
       trend: {
         value: 0.2,
         label: "vs last month",
@@ -93,7 +117,7 @@ export const MetricsOverview: React.FC = () => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
       {metrics.map((metric, index) => (
         <MetricCard
           key={index}

@@ -1,10 +1,5 @@
 import prisma from "@packages/libs/prisma";
-import {
-  format,
-  startOfDay,
-  endOfDay,
-  subDays,
-} from "date-fns";
+import { format, startOfDay, endOfDay, subDays } from "date-fns";
 
 const COUNTRY_COORDS: Record<string, { lat: number; lng: number }> = {
   USA: { lat: 37.7749, lng: -122.4194 },
@@ -12,6 +7,108 @@ const COUNTRY_COORDS: Record<string, { lat: number; lng: number }> = {
   UK: { lat: 51.5074, lng: -0.1278 },
   Germany: { lat: 52.52, lng: 13.405 },
   Canada: { lat: 45.4215, lng: -75.6997 },
+  France: { lat: 48.8566, lng: 2.3522 },
+  Italy: { lat: 41.9028, lng: 12.4964 },
+  Spain: { lat: 40.4168, lng: -3.7038 },
+  Netherlands: { lat: 52.3676, lng: 4.9041 },
+  Belgium: { lat: 50.8503, lng: 4.3517 },
+  Switzerland: { lat: 46.9479, lng: 7.4474 },
+  Austria: { lat: 48.2082, lng: 16.3738 },
+  Sweden: { lat: 59.3293, lng: 18.0686 },
+  Norway: { lat: 59.9139, lng: 10.7522 },
+  Denmark: { lat: 55.6761, lng: 12.5683 },
+  Finland: { lat: 60.1699, lng: 24.9384 },
+  Poland: { lat: 52.2297, lng: 21.0122 },
+  Czech: { lat: 50.0755, lng: 14.4378 },
+  Hungary: { lat: 47.4979, lng: 19.0402 },
+  Romania: { lat: 44.4268, lng: 26.1025 },
+  Bulgaria: { lat: 42.6977, lng: 23.3219 },
+  Greece: { lat: 37.9838, lng: 23.7275 },
+  Portugal: { lat: 38.7223, lng: -9.1393 },
+  Ireland: { lat: 53.3498, lng: -6.2603 },
+  Australia: { lat: -33.8688, lng: 151.2093 },
+  NewZealand: { lat: -41.2866, lng: 174.7756 },
+  Japan: { lat: 35.6762, lng: 139.6503 },
+  SouthKorea: { lat: 37.5665, lng: 126.978 },
+  China: { lat: 39.9042, lng: 116.4074 },
+  India: { lat: 28.6139, lng: 77.209 },
+  Brazil: { lat: -23.5505, lng: -46.6333 },
+  Argentina: { lat: -34.6118, lng: -58.396 },
+  Chile: { lat: -33.4489, lng: -70.6693 },
+  Mexico: { lat: 19.4326, lng: -99.1332 },
+  Colombia: { lat: 4.711, lng: -74.0721 },
+  Peru: { lat: -12.0464, lng: -77.0428 },
+  Venezuela: { lat: 10.4806, lng: -66.9036 },
+  SouthAfrica: { lat: -26.2041, lng: 28.0473 },
+  Nigeria: { lat: 9.082, lng: 8.6753 },
+  Kenya: { lat: -1.2921, lng: 36.8219 },
+  Morocco: { lat: 31.7917, lng: -7.0926 },
+  Algeria: { lat: 36.7538, lng: 3.0588 },
+  Tunisia: { lat: 36.8065, lng: 10.1815 },
+  Turkey: { lat: 39.9334, lng: 32.8597 },
+  Israel: { lat: 31.7683, lng: 35.2137 },
+  SaudiArabia: { lat: 24.7136, lng: 46.6753 },
+  UAE: { lat: 25.2048, lng: 55.2708 },
+  Qatar: { lat: 25.2854, lng: 51.531 },
+  Kuwait: { lat: 29.3759, lng: 47.9774 },
+  Bahrain: { lat: 26.0667, lng: 50.5577 },
+  Oman: { lat: 23.588, lng: 58.3829 },
+  Jordan: { lat: 31.9454, lng: 35.9284 },
+  Lebanon: { lat: 33.8935, lng: 35.5016 },
+  Syria: { lat: 33.5138, lng: 36.2765 },
+  Iraq: { lat: 33.3152, lng: 44.3661 },
+  Iran: { lat: 35.6892, lng: 51.389 },
+  Pakistan: { lat: 33.6844, lng: 73.0479 },
+  Bangladesh: { lat: 23.8103, lng: 90.4125 },
+  SriLanka: { lat: 6.9271, lng: 79.8612 },
+  Nepal: { lat: 27.7172, lng: 85.324 },
+  Bhutan: { lat: 27.4716, lng: 89.6386 },
+  Myanmar: { lat: 16.8661, lng: 96.1951 },
+  Thailand: { lat: 13.7563, lng: 100.5018 },
+  Vietnam: { lat: 21.0285, lng: 105.8542 },
+  Cambodia: { lat: 11.5564, lng: 104.9282 },
+  Laos: { lat: 17.9757, lng: 102.6331 },
+  Malaysia: { lat: 3.139, lng: 101.6869 },
+  Singapore: { lat: 1.3521, lng: 103.8198 },
+  Indonesia: { lat: -6.2088, lng: 106.8456 },
+  Philippines: { lat: 14.5995, lng: 120.9842 },
+  Taiwan: { lat: 25.033, lng: 121.5654 },
+  HongKong: { lat: 22.3193, lng: 114.1694 },
+  Macau: { lat: 22.1987, lng: 113.5439 },
+  Mongolia: { lat: 47.8864, lng: 106.9057 },
+  Kazakhstan: { lat: 51.1694, lng: 71.4491 },
+  Uzbekistan: { lat: 41.2995, lng: 69.2401 },
+  Kyrgyzstan: { lat: 42.8746, lng: 74.5698 },
+  Tajikistan: { lat: 38.5358, lng: 68.7791 },
+  Turkmenistan: { lat: 37.9601, lng: 58.3261 },
+  Azerbaijan: { lat: 40.4093, lng: 49.8671 },
+  Georgia: { lat: 41.7151, lng: 44.8271 },
+  Armenia: { lat: 40.1872, lng: 44.5152 },
+  Ukraine: { lat: 50.4501, lng: 30.5234 },
+  Belarus: { lat: 53.9045, lng: 27.5615 },
+  Lithuania: { lat: 54.6872, lng: 25.2797 },
+  Latvia: { lat: 56.9496, lng: 24.1052 },
+  Estonia: { lat: 59.4369, lng: 24.7536 },
+  Russia: { lat: 55.7558, lng: 37.6176 },
+  Iceland: { lat: 64.9631, lng: -19.0208 },
+  Malta: { lat: 35.9375, lng: 14.3754 },
+  Cyprus: { lat: 35.1264, lng: 33.4299 },
+  Croatia: { lat: 45.815, lng: 15.9819 },
+  Slovenia: { lat: 46.0569, lng: 14.5058 },
+  Slovakia: { lat: 48.1486, lng: 17.1077 },
+  Serbia: { lat: 44.7866, lng: 20.4489 },
+  Bosnia: { lat: 43.8564, lng: 18.4131 },
+  Montenegro: { lat: 42.4304, lng: 19.2594 },
+  Albania: { lat: 41.3275, lng: 19.8187 },
+  NorthMacedonia: { lat: 42.0027, lng: 21.4262 },
+  Kosovo: { lat: 42.6629, lng: 21.1655 },
+  Moldova: { lat: 47.0105, lng: 28.8638 },
+  Luxembourg: { lat: 49.6116, lng: 6.1319 },
+  Liechtenstein: { lat: 47.166, lng: 9.5554 },
+  Monaco: { lat: 43.7384, lng: 7.4246 },
+  Andorra: { lat: 42.5063, lng: 1.5218 },
+  SanMarino: { lat: 43.9424, lng: 12.4578 },
+  Vatican: { lat: 41.9029, lng: 12.4534 },
 };
 
 export async function fetchShopRevenueData(
@@ -124,9 +221,17 @@ export async function fetchShopStats(sellerId: string) {
     where: { shopId: shop.id },
   });
 
-  const conversionRate = analytics?.totalVisitors
-    ? Math.round((totalOrders / analytics.totalVisitors) * 100 * 100) / 100
-    : 0;
+
+  let conversionRate = 0;
+  if (analytics?.totalVisitors) {
+    const rawConversionRate = (totalOrders / analytics.totalVisitors) * 100;
+    conversionRate = Math.round(Math.min(rawConversionRate, 100) * 100) / 100;
+  }
+
+  const shopWithRating = await prisma.shops.findUnique({
+    where: { id: shop.id },
+    select: { ratings: true },
+  });
 
   return {
     totalProducts,
@@ -134,6 +239,7 @@ export async function fetchShopStats(sellerId: string) {
     ordersToday,
     totalRevenue: totalRevenue._sum.total || 0,
     conversionRate,
+    averageRating: shopWithRating?.ratings || 0,
   };
 }
 
@@ -169,11 +275,125 @@ export async function fetchShopRecentOrders(
     status: order.status,
     createdAt: order.createdAt.toISOString(),
     items: order.items.map((item: any) => ({
-      name: `Product ${item.productId}`, 
+      name: `Product ${item.productId}`,
       quantity: item.quantity,
       price: item.price,
     })),
   }));
+}
+
+export async function fetchShopWorldActivity(sellerId: string) {
+  const shop = await prisma.shops.findUnique({
+    where: { sellerId },
+    select: { id: true },
+  });
+
+  if (!shop) return [];
+
+
+  const shopAnalytics = await prisma.shopAnalytics.findUnique({
+    where: { shopId: shop.id },
+  });
+
+  if (!shopAnalytics || !shopAnalytics.countryStats) return [];
+
+
+  const worldActivity = Object.entries(
+    shopAnalytics.countryStats as Record<string, number>
+  )
+    .filter(([country]) => COUNTRY_COORDS[country])
+    .map(([country, visitors]) => {
+
+      const countryOrders = 0; 
+
+      return {
+        lat: COUNTRY_COORDS[country].lat,
+        lng: COUNTRY_COORDS[country].lng,
+        orders: countryOrders,
+        visitors: visitors,
+        cities: [],
+        country,
+        conversionRate:
+          visitors > 0
+            ? Math.round(Math.min((countryOrders / visitors) * 100, 100) * 100) / 100
+            : 0,
+      };
+    })
+    .sort((a, b) => b.visitors - a.visitors);
+
+  return worldActivity;
+}
+
+export async function fetchShopVisitorAnalytics(sellerId: string) {
+  const shop = await prisma.shops.findUnique({
+    where: { sellerId },
+    select: { id: true },
+  });
+
+  if (!shop) return [];
+
+  const shopAnalytics = await prisma.shopAnalytics.findUnique({
+    where: { shopId: shop.id },
+  });
+
+  if (!shopAnalytics) {
+    return {
+      totalVisitors: 0,
+      topCountry: null,
+      topState: null,
+      countries: [],
+      locations: [],
+    };
+  }
+
+  const totalVisitors = shopAnalytics.totalVisitors || 0;
+  const countryStats =
+    (shopAnalytics.countryStats as Record<string, number>) || {};
+  const cityStats = (shopAnalytics.cityStats as Record<string, number>) || {};
+
+  const countries = Object.entries(countryStats)
+    .map(([country, visitors]) => ({
+      country,
+      visitors,
+      states: 1, 
+      cities: Object.keys(cityStats), 
+      percentage:
+        totalVisitors > 0
+          ? Math.round((visitors / totalVisitors) * 100 * 100) / 100
+          : 0,
+    }))
+    .sort((a, b) => b.visitors - a.visitors);
+
+  const locations = Object.entries(cityStats)
+    .map(([city, visitors]) => {
+      return {
+        country: "Unknown", 
+        state: city, 
+        visitors,
+        cities: [city],
+        percentage:
+          totalVisitors > 0
+            ? Math.round((visitors / totalVisitors) * 100 * 100) / 100
+            : 0,
+      };
+    })
+    .sort((a, b) => b.visitors - a.visitors);
+
+
+  if (Object.keys(countryStats).length > 0) {
+    const country = Object.keys(countryStats)[0];
+    locations.forEach((location) => {
+      location.country = country;
+    });
+  }
+
+  return {
+    totalVisitors,
+    topCountry: countries[0] || null,
+    topState: locations[0] || null,
+    countries: countries.slice(0, 5),
+    locations: locations.slice(0, 10),
+  };
 }
 
 export async function fetchShopDeviceUsage(sellerId: string) {
@@ -190,14 +410,12 @@ export async function fetchShopDeviceUsage(sellerId: string) {
     ];
   }
 
-  const orders = await prisma.orders.findMany({
+
+  const shopAnalytics = await prisma.shopAnalytics.findUnique({
     where: { shopId: shop.id },
-    select: { userId: true },
   });
 
-  const userIds = [...new Set(orders.map((o) => o.userId))];
-
-  if (userIds.length === 0) {
+  if (!shopAnalytics || !shopAnalytics.deviceStats) {
     return [
       { id: "Phone", label: "Phone", value: 0 },
       { id: "Tablet", label: "Tablet", value: 0 },
@@ -205,132 +423,61 @@ export async function fetchShopDeviceUsage(sellerId: string) {
     ];
   }
 
-  const analytics = await prisma.userAnalytics.findMany({
-    where: { userId: { in: userIds } },
-    select: { device: true },
+  const deviceStats = shopAnalytics.deviceStats as Record<string, number>;
+  const totalDevices = Object.values(deviceStats).reduce(
+    (sum, count) => sum + count,
+    0
+  );
+
+
+  const deviceCategories = {
+    Phone: 0,
+    Tablet: 0,
+    Computer: 0,
+  };
+
+  Object.entries(deviceStats).forEach(([device, count]) => {
+    const deviceLower = device.toLowerCase();
+    if (
+      deviceLower.includes("phone") ||
+      deviceLower.includes("mobile") ||
+      deviceLower.includes("android") ||
+      deviceLower.includes("iphone")
+    ) {
+      deviceCategories.Phone += count;
+    } else if (deviceLower.includes("tablet") || deviceLower.includes("ipad")) {
+      deviceCategories.Tablet += count;
+    } else {
+      deviceCategories.Computer += count;
+    }
   });
-
-  const counts = { Phone: 0, Tablet: 0, Computer: 0 };
-  for (const a of analytics) {
-    if (!a.device) continue;
-    if (/phone/i.test(a.device)) counts.Phone++;
-    else if (/tablet/i.test(a.device)) counts.Tablet++;
-    else if (/computer|desktop|laptop/i.test(a.device)) counts.Computer++;
-  }
-
-  const total = counts.Phone + counts.Tablet + counts.Computer;
 
   return [
     {
       id: "Phone",
       label: "Phone",
-      value: total ? Math.round((counts.Phone / total) * 100) : 0,
+      value:
+        totalDevices > 0
+          ? Math.round((deviceCategories.Phone / totalDevices) * 100)
+          : 0,
     },
     {
       id: "Tablet",
       label: "Tablet",
-      value: total ? Math.round((counts.Tablet / total) * 100) : 0,
+      value:
+        totalDevices > 0
+          ? Math.round((deviceCategories.Tablet / totalDevices) * 100)
+          : 0,
     },
     {
       id: "Computer",
       label: "Computer",
-      value: total ? Math.round((counts.Computer / total) * 100) : 0,
+      value:
+        totalDevices > 0
+          ? Math.round((deviceCategories.Computer / totalDevices) * 100)
+          : 0,
     },
   ];
-}
-
-export async function fetchShopWorldActivity(sellerId: string) {
-  const shop = await prisma.shops.findUnique({
-    where: { sellerId },
-    select: { id: true },
-  });
-
-  if (!shop) return [];
-
-  const orders = await prisma.orders.findMany({
-    where: { shopId: shop.id },
-    select: { userId: true },
-  });
-
-  const userIds = [...new Set(orders.map((o) => o.userId))];
-
-  if (userIds.length === 0) return [];
-
-  const userAnalytics = await prisma.userAnalytics.findMany({
-    where: { userId: { in: userIds } },
-    select: { country: true },
-  });
-
-  const countryMap: Record<string, number> = {};
-  for (const a of userAnalytics) {
-    if (!a.country) continue;
-    const c = a.country.trim();
-    countryMap[c] = (countryMap[c] || 0) + 1;
-  }
-
-  return Object.entries(countryMap)
-    .filter(([country]) => COUNTRY_COORDS[country])
-    .map(([country, orders]) => ({
-      lat: COUNTRY_COORDS[country].lat,
-      lng: COUNTRY_COORDS[country].lng,
-      orders,
-      country,
-    }));
-}
-
-export async function fetchShopVisitorAnalytics(sellerId: string) {
-  const shop = await prisma.shops.findUnique({
-    where: { sellerId },
-    select: { id: true },
-  });
-
-  if (!shop) return [];
-
-  const orders = await prisma.orders.findMany({
-    where: { shopId: shop.id },
-    select: { userId: true },
-  });
-
-  const userIds = [...new Set(orders.map((o) => o.userId))];
-
-  if (userIds.length === 0) return [];
-
-  const userAnalytics = await prisma.userAnalytics.findMany({
-    where: { userId: { in: userIds } },
-    select: { country: true, city: true },
-  });
-
-  const locationMap: Record<
-    string,
-    { country: string; state: string; visitors: number }
-  > = {};
-
-  for (const a of userAnalytics) {
-    const country = a.country?.trim() || "Unknown";
-    const state = a.city?.trim() || "Unknown"; 
-    const key = `${country}-${state}`;
-
-    if (!locationMap[key]) {
-      locationMap[key] = { country, state, visitors: 0 };
-    }
-    locationMap[key].visitors++;
-  }
-
-  const totalVisitors = Object.values(locationMap).reduce(
-    (sum, loc) => sum + loc.visitors,
-    0
-  );
-
-  return Object.values(locationMap)
-    .map((location) => ({
-      ...location,
-      percentage:
-        totalVisitors > 0
-          ? Math.round((location.visitors / totalVisitors) * 100 * 100) / 100
-          : 0,
-    }))
-    .sort((a, b) => b.visitors - a.visitors)
-    .slice(0, 10);
 }
 
 export async function fetchShopTopSellingProducts(sellerId: string) {
@@ -340,7 +487,6 @@ export async function fetchShopTopSellingProducts(sellerId: string) {
   });
 
   if (!shop) return [];
-
 
   const products = await prisma.products.findMany({
     where: { shopId: shop.id, isDeleted: false },

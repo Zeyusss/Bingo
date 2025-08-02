@@ -23,6 +23,7 @@ import {
   getShopWorldActivity,
   getShopVisitorAnalytics,
   getShopTopSellingProducts,
+  trackShopVisitor,
 } from "../controllers/seller.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isSeller } from "@packages/middleware/authorizeRoles";
@@ -78,5 +79,7 @@ router.get(
   isSeller,
   getShopTopSellingProducts
 );
+
+router.post("/track-visitor", trackShopVisitor);
 
 export default router;

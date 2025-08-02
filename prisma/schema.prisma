@@ -264,7 +264,7 @@ model uniqueShopVisitors {
   userId    String   @db.ObjectId
   visitedAt DateTime @default(now())
 
-  @@unique([shopId, userId])
+  @@unique([shopId, userId], name: "shopId_userId")
 }
 
 model followers {
