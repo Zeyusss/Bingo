@@ -16,6 +16,13 @@ import {
   deleteShopReview,
   getUserReview,
   getShopAnalytics,
+  getShopRevenue,
+  getShopStats,
+  getShopRecentOrders,
+  getShopDeviceUsage,
+  getShopWorldActivity,
+  getShopVisitorAnalytics,
+  getShopTopSellingProducts,
 } from "../controllers/seller.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isSeller } from "@packages/middleware/authorizeRoles";
@@ -37,5 +44,39 @@ router.post("/create-review", isAuthenticated, createShopReview);
 router.get("/get-reviews/:id", getShopReviews);
 router.delete("/delete-review", isAuthenticated, deleteShopReview);
 router.get("/get-user-review/:id", isAuthenticated, getUserReview);
-router.get("/analytics", isAuthenticated,isSeller, getShopAnalytics);
+router.get("/analytics", isAuthenticated, isSeller, getShopAnalytics);
+
+router.get("/dashboard/revenue", isAuthenticated, isSeller, getShopRevenue);
+router.get("/dashboard/shop-stats", isAuthenticated, isSeller, getShopStats);
+router.get(
+  "/dashboard/recent-orders",
+  isAuthenticated,
+  isSeller,
+  getShopRecentOrders
+);
+router.get(
+  "/dashboard/device-usage",
+  isAuthenticated,
+  isSeller,
+  getShopDeviceUsage
+);
+router.get(
+  "/dashboard/world-activity",
+  isAuthenticated,
+  isSeller,
+  getShopWorldActivity
+);
+router.get(
+  "/dashboard/visitor-analytics",
+  isAuthenticated,
+  isSeller,
+  getShopVisitorAnalytics
+);
+router.get(
+  "/dashboard/top-selling-products",
+  isAuthenticated,
+  isSeller,
+  getShopTopSellingProducts
+);
+
 export default router;

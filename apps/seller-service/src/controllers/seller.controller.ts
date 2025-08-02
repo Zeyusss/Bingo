@@ -7,6 +7,15 @@ import {
 } from "@packages/error-handler";
 import { imagekit } from "@packages/libs/imagekit";
 import prisma from "@packages/libs/prisma";
+import {
+  fetchShopRevenueData,
+  fetchShopStats,
+  fetchShopRecentOrders,
+  fetchShopDeviceUsage,
+  fetchShopWorldActivity,
+  fetchShopVisitorAnalytics,
+  fetchShopTopSellingProducts,
+} from "../utils/dashboardData";
 
 //delete shop (soft delete)
 export const deleteShop = async (
@@ -259,7 +268,7 @@ export const getSellerInfo = async (
           orderBy: {
             createdAt: "desc",
           },
-          take: 5, 
+          take: 5,
         },
       },
     });
@@ -271,7 +280,7 @@ export const getSellerInfo = async (
     const productsCount = await prisma.products.count({
       where: {
         shopId: shop?.id,
-        starting_date: null, 
+        starting_date: null,
       },
     });
 
@@ -279,7 +288,7 @@ export const getSellerInfo = async (
       where: {
         shopId: shop?.id,
         starting_date: {
-          not: null, 
+          not: null,
         },
       },
     });
@@ -526,7 +535,6 @@ export const createShopReview = async (
       );
     }
 
-
     const shop = await prisma.shops.findUnique({
       where: { id: shopId },
       select: { sellerId: true },
@@ -536,11 +544,9 @@ export const createShopReview = async (
       return next(new ValidationError("Shop not found."));
     }
 
-
     if (shop.sellerId === req.user.id) {
       return next(new ValidationError("You cannot review your own shop."));
     }
-
 
     const existingReview = await prisma.shopReviws.findFirst({
       where: {
@@ -662,7 +668,6 @@ export const deleteShopReview = async (
       );
     }
 
-
     const review = await prisma.shopReviws.findFirst({
       where: {
         id: reviewId,
@@ -678,11 +683,9 @@ export const deleteShopReview = async (
       );
     }
 
-
     await prisma.shopReviws.delete({
       where: { id: reviewId },
     });
-
 
     const allReviews = await prisma.shopReviws.findMany({
       where: { shopsId: review.shopsId },
@@ -760,7 +763,6 @@ export const getShopAnalytics = async (
       return next(new AuthError("Only sellers can access shop analytics."));
     }
 
-
     const shop = await prisma.shops.findUnique({
       where: { sellerId: req.seller.id },
     });
@@ -768,12 +770,10 @@ export const getShopAnalytics = async (
     if (!shop) {
       return next(new NotFoundError("Shop not found."));
     }
-
-
+    
     const analytics = await prisma.shopAnalytics.findUnique({
       where: { shopId: shop.id },
     });
-
 
     const followersCount = await prisma.followers.count({
       where: { shopId: shop.id },
@@ -804,5 +804,131 @@ export const getShopAnalytics = async (
     });
   } catch (error) {
     next(error);
+  }
+};
+
+// Dashboard endpoints for seller analytics
+export const getShopRevenue = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.seller?.id) {
+      return next(new AuthError("Only sellers can access shop revenue data."));
+    }
+
+    const period = (req.query.period as "7d" | "30d" | "90d") || "30d";
+    const data = await fetchShopRevenueData(req.seller.id, period);
+    res.status(200).json(data);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getShopStats = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.seller?.id) {
+      return next(new AuthError("Only sellers can access shop stats."));
+    }
+
+    const data = await fetchShopStats(req.seller.id);
+    res.status(200).json(data);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getShopRecentOrders = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.seller?.id) {
+      return next(new AuthError("Only sellers can access shop recent orders."));
+    }
+
+    const limit = parseInt(req.query.limit as string) || 5;
+    const data = await fetchShopRecentOrders(req.seller.id, limit);
+    res.status(200).json(data);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getShopDeviceUsage = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.seller?.id) {
+      return next(new AuthError("Only sellers can access shop device usage."));
+    }
+
+    const data = await fetchShopDeviceUsage(req.seller.id);
+    res.status(200).json(data);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getShopWorldActivity = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.seller?.id) {
+      return next(
+        new AuthError("Only sellers can access shop world activity.")
+      );
+    }
+
+    const data = await fetchShopWorldActivity(req.seller.id);
+    res.status(200).json(data);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getShopVisitorAnalytics = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.seller?.id) {
+      return next(new AuthError("Only sellers can access visitor analytics."));
+    }
+
+    const data = await fetchShopVisitorAnalytics(req.seller.id);
+    res.status(200).json(data);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getShopTopSellingProducts = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.seller?.id) {
+      return next(
+        new AuthError("Only sellers can access top selling products.")
+      );
+    }
+
+    const data = await fetchShopTopSellingProducts(req.seller.id);
+    res.status(200).json(data);
+  } catch (error) {
+    return next(error);
   }
 };
