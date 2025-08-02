@@ -116,7 +116,6 @@ const RecentOrdersTable: React.FC = () => {
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-          {/* Desktop Table */}
           <table className="w-full hidden md:table">
             <thead>
               <tr className="border-b border-gray-200">
@@ -192,8 +191,6 @@ const RecentOrdersTable: React.FC = () => {
               )}
             </tbody>
           </table>
-
-          {/* Mobile Cards */}
           <div className="md:hidden space-y-3">
             {orders.length === 0 ? (
               <div className="text-center py-8 text-gray-500">

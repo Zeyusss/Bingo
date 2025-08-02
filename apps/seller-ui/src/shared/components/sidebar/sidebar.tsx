@@ -11,6 +11,7 @@ import SidebarItem from "./sidebar.item";
 import HomeIcon from "apps/seller-ui/src/app/assets/icons/home";
 import SidebarMenu from "./sidebar.menu";
 import {
+  BarChart3,
   BellPlus,
   BellRing,
   CalendarPlus,
@@ -91,6 +92,17 @@ const SidebarBarWrapper = () => {
                 icon={<ListOrdered fill={getIconColor("/dashboard/orders")} />}
                 isActive={activeSidebar === "/dashboard/orders"}
                 href="/dashboard/orders"
+              />
+              <SidebarItem
+                title="Analytics"
+                icon={
+                  <BarChart3
+                    size={22}
+                    color={getIconColor("/dashboard/analytics")}
+                  />
+                }
+                isActive={activeSidebar === "/dashboard/analytics"}
+                href="/dashboard/analytics"
               />
               <SidebarItem
                 title="Payments"

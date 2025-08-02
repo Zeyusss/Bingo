@@ -84,81 +84,128 @@ const RevenueChart: React.FC = () => {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="h-64">
+        <div className="h-80">
           <ResponsiveLine
             data={data || []}
-            margin={{ top: 20, right: 20, bottom: 50, left: 60 }}
+            margin={{ top: 30, right: 30, bottom: 60, left: 80 }}
             xScale={{ type: "point" }}
             yScale={{
               type: "linear",
-              min: "auto",
+              min: 0,
               max: "auto",
               stacked: false,
               reverse: false,
             }}
             yFormat=" >-$,.0f"
-            curve="cardinal"
+            curve="monotoneX"
+            lineWidth={3}
             axisTop={null}
             axisRight={null}
             axisBottom={{
-              tickSize: 5,
-              tickPadding: 5,
+              tickSize: 0,
+              tickPadding: 8,
               tickRotation: 0,
               legend: "Month",
-              legendOffset: 36,
+              legendOffset: 40,
               legendPosition: "middle",
             }}
             axisLeft={{
-              tickSize: 5,
-              tickPadding: 5,
+              tickSize: 0,
+              tickPadding: 12,
               tickRotation: 0,
-              legend: "Revenue ($)",
-              legendOffset: -50,
+              legend: "Revenue",
+              legendOffset: -60,
               legendPosition: "middle",
               format: " >-$,.0f",
             }}
-            pointSize={8}
-            pointColor={{ theme: "background" }}
-            pointBorderWidth={2}
+            pointSize={10}
+            pointColor={{ from: "color" }}
+            pointBorderWidth={3}
             pointBorderColor={{ from: "serieColor" }}
             pointLabelYOffset={-12}
             enableArea={true}
-            areaOpacity={0.1}
+            areaBaselineValue={0}
+            areaOpacity={0.15}
             useMesh={true}
-            colors={["#10b981"]}
+            enableSlices="x"
+            colors={["#3b82f6"]}
             theme={{
+              background: "transparent",
               axis: {
+                domain: {
+                  line: {
+                    stroke: "transparent",
+                  },
+                },
                 ticks: {
+                  line: {
+                    stroke: "transparent",
+                  },
                   text: {
-                    fontSize: 12,
+                    fontSize: 13,
                     fill: "#6b7280",
+                    fontWeight: 500,
                   },
                 },
                 legend: {
                   text: {
-                    fontSize: 12,
+                    fontSize: 14,
                     fill: "#374151",
-                    fontWeight: 500,
+                    fontWeight: 600,
                   },
                 },
               },
               grid: {
                 line: {
-                  stroke: "#f3f4f6",
+                  stroke: "#f1f5f9",
                   strokeWidth: 1,
+                  strokeDasharray: "2 4",
+                },
+              },
+              crosshair: {
+                line: {
+                  stroke: "#3b82f6",
+                  strokeWidth: 1,
+                  strokeOpacity: 0.5,
+                  strokeDasharray: "6 6",
                 },
               },
               tooltip: {
                 container: {
                   background: "#ffffff",
-                  color: "#374151",
-                  fontSize: 12,
-                  borderRadius: 8,
+                  color: "#1f2937",
+                  fontSize: 14,
+                  fontWeight: 500,
+                  borderRadius: 12,
                   boxShadow:
-                    "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
-                  border: "1px solid #e5e7eb",
+                    "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                  border: "1px solid #e2e8f0",
+                  padding: "12px 16px",
                 },
               },
+            }}
+            sliceTooltip={({ slice }) => {
+              return (
+                <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-3">
+                  <div className="text-sm font-semibold text-gray-900 mb-2">
+                    {slice.points[0].data.xFormatted}
+                  </div>
+                  {slice.points.map((point) => (
+                    <div key={point.id} className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: point.seriesColor }}
+                      />
+                      <span className="text-sm text-gray-600">
+                        Revenue:
+                      </span>
+                      <span className="text-sm font-semibold text-gray-900">
+                        ${point.data.yFormatted}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              );
             }}
           />
         </div>
