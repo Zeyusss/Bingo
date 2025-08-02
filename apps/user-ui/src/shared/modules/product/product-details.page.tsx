@@ -11,16 +11,20 @@ import useLocationTracking from "apps/user-ui/src/hooks/useLocationTracking";
 import useDeviceTracking from "apps/user-ui/src/hooks/useDeviceTracking";
 import ProductCard from "../../components/cards/product-card";
 import axiosInstance from "apps/user-ui/src/utils/axiosInstance";
+import { isProtected } from "apps/user-ui/src/utils/protected";
+import { useRouter } from "next/navigation";
 
 const ProductDetails = ({ productDetails }: { productDetails: any }) => {
   const { user, isLoading } = useUser();
   const location = useLocationTracking();
   const deviceInfo = useDeviceTracking();
-
+  const router = useRouter()
+  const [isChatLoading,setIsChatLoading] = useState(false)
   const [currentImage, setCurrentImage] = useState(
     productDetails?.images[0]?.url
   );
   const [currentIndex, setCurrentIndex] = useState(0);
+
 
   const [isSelected, setIsSelected] = useState(
     productDetails?.colors?.[0] || ""
@@ -79,6 +83,22 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
   useEffect(()=>{
     fetchFilteredProducts();
   },[priceRange])
+
+
+    const handleChat = async ()=>{
+  if(isChatLoading){
+   return;
+  }
+  setIsChatLoading(true);
+  try {
+    const res = await axiosInstance.post("/chatting/api/create-user-conversationGroup",{sellerId:productDetails?.Shop?.sellerId},isProtected)
+  router.push(`/inbox?conversationId=${res.data.conversation.id}`);
+  } catch (error) {
+    console.log(error);
+  }finally{
+    setIsChatLoading(false)
+  }
+  }
   return (
     <div className="w-full bg-[#f5f5f5] py-5">
       <div className="w-[90%] bg-white lg:w-[80%] mx-auto pt-6 grid grid-cols-1 lg:grid-cols-[28%_44%_28%] gap-6 overflow-hidden">
@@ -341,6 +361,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
             </div>
             <Link
             href={"#"}
+            onClick={()=> handleChat()}
             className="text-blue-500 text-sm flex items-center gap-1"
             >
             <MessageSquareText/> Chat Now

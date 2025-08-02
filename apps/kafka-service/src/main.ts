@@ -1,19 +1,27 @@
-import {kafka} from "@packages/utils/kafka";
-import { updateUserAnalytics } from "./services/analytics.service";
+import { kafka } from "@packages/utils/kafka";
+import {
+  updateUserAnalytics,
+  updateShopAnalytics,
+} from "./services/analytics.service";
 
-const consumer = kafka.consumer({groupId:"user-events-group"});
+const consumer = kafka.consumer({ groupId: "user-events-group" });
 
-const eventQueue : any[] = [];
+const eventQueue: any[] = [];
 
-const processQueue = async()=>{
-  if(eventQueue.length === 0) return;
+const processQueue = async () => {
+  if (eventQueue.length === 0) return;
 
   const events = [...eventQueue];
   eventQueue.length = 0;
 
-  for(const event of events){
-    if(event.action === "shop_visit"){
-      // update shop analytics 
+  for (const event of events) {
+    if (event.action === "shop_visit") {
+      // update shop analytics
+      try {
+        await updateShopAnalytics(event);
+      } catch (error) {
+        console.log("Error processing shop analytics:", error);
+      }
     }
     const validActions = [
       "add_to_wishlist",
@@ -21,31 +29,31 @@ const processQueue = async()=>{
       "product_view",
       "remove_from_cart",
       "remove_from_wishlist",
-    ]
-    if(!event.action || !validActions.includes(event.action)){
+    ];
+    if (!event.action || !validActions.includes(event.action)) {
       continue;
     }
     try {
       await updateUserAnalytics(event);
     } catch (error) {
-      console.log("Error processing event :",error)
+      console.log("Error processing event :", error);
     }
   }
 };
 
-setInterval(processQueue,3000);  // 3 sec
+setInterval(processQueue, 3000); // 3 sec
 
 //kafka consumer
-export const consumeKafkaMessages = async()=>{
-await consumer.connect()
-await consumer.subscribe({topic:"users-events",fromBeginning:false})
-await consumer.run({
-  eachMessage : async({message}) =>{
-    if(!message.value) return;
-    const event = JSON.parse(message.value.toString())
-    eventQueue.push(event);
-  }
-})
-}
+export const consumeKafkaMessages = async () => {
+  await consumer.connect();
+  await consumer.subscribe({ topic: "users-events", fromBeginning: false });
+  await consumer.run({
+    eachMessage: async ({ message }) => {
+      if (!message.value) return;
+      const event = JSON.parse(message.value.toString());
+      eventQueue.push(event);
+    },
+  });
+};
 
-consumeKafkaMessages().catch(console.error)
+consumeKafkaMessages().catch(console.error);

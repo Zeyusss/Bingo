@@ -27,24 +27,23 @@ enum UserRole {
 }
 
 model users {
-  id            String         @id @default(auto()) @map("_id") @db.ObjectId
-  name          String
-  email         String         @unique
-  password      String
-  role          UserRole       @default(user)
-  following     String[]
-  avatarId      String?        @db.ObjectId
-  avatar        images?        @relation("UserAvatar", fields: [avatarId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  shopReviews   shopReviws[]
-  images        images[]       @relation("UserImages")
-  followedShops ShopFollower[]
-  orders        orders[]
-  isBlocked     Boolean        @default(false)
-  isDeleted     Boolean        @default(false)
-  deletedAt     DateTime?
-  blockedAt     DateTime?
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  email       String       @unique
+  password    String
+  role        UserRole     @default(user)
+  avatarId    String?      @db.ObjectId
+  avatar      images?      @relation("UserAvatar", fields: [avatarId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  shopReviews shopReviws[]
+  images      images[]     @relation("UserImages")
+  following   followers[]  @relation("user_follows")
+  orders      orders[]
+  isBlocked   Boolean      @default(false)
+  isDeleted   Boolean      @default(false)
+  deletedAt   DateTime?
+  blockedAt   DateTime?
 }
 
 model shopReviws {
@@ -79,8 +78,9 @@ model shops {
   updatedAt     DateTime       @updatedAt
   products      products[]
   images        images[]       @relation("ShopImages")
-  followers     ShopFollower[]
+  followers     followers[]    @relation("shop_followers")
   orders        orders[]
+  analytics     shopAnalytics?
   isDeleted     Boolean?       @default(false)
   deletedAt     DateTime?
 }
@@ -189,15 +189,6 @@ model userAnalytics {
   updatedAt       DateTime @updatedAt
 }
 
-model ShopFollower {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  shop      shops    @relation(fields: [shopId], references: [id])
-  shopId    String   @db.ObjectId
-  user      users    @relation(fields: [userId], references: [id])
-  userId    String   @db.ObjectId
-  createdAt DateTime @default(now())
-}
-
 model order_items {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
   orderId         String   @db.ObjectId
@@ -276,8 +267,24 @@ model uniqueShopVisitors {
   @@unique([shopId, userId])
 }
 
+model followers {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  shop      shops    @relation("shop_followers", fields: [shopId], references: [id], onDelete: Cascade)
+  shopId    String   @db.ObjectId
+  user      users    @relation("user_follows", fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @db.ObjectId
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([shopId, userId])
+  @@map("shop_followers")
+}
+
 model shopAnalytics {
   id            String @id @default(auto()) @map("_id") @db.ObjectId
+  shopId        String @unique @db.ObjectId
+  shop          shops  @relation(fields: [shopId], references: [id], onDelete: Cascade)
   totalVisitors Int    @default(0)
 
   countryStats Json?
