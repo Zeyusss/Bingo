@@ -135,3 +135,63 @@ export const updateProductAnalytics = async (event: any) => {
     console.log("Error updating product analytics:", error);
   }
 };
+
+export const updateShopAnalytics = async (event: any) => {
+  try {
+    if (!event.shopId) return;
+
+    // Get or create shop analytics
+    const existingAnalytics = await prisma.shopAnalytics.findUnique({
+      where: { shopId: event.shopId },
+    });
+
+    const updateFields: any = {
+      lastVisitedAt: new Date(),
+    };
+
+    // Update visitor count for shop visits
+    if (event.action === "shop_visit") {
+      updateFields.totalVisitors = { increment: 1 };
+    }
+
+    // Update location stats
+    if (event.country || event.city) {
+      const currentStats = existingAnalytics?.countryStats || {};
+
+      if (event.country) {
+        const countryKey = event.country;
+        currentStats[countryKey] = (currentStats[countryKey] || 0) + 1;
+        updateFields.countryStats = currentStats;
+      }
+
+      if (event.city) {
+        const cityKey = event.city;
+        currentStats[cityKey] = (currentStats[cityKey] || 0) + 1;
+        updateFields.cityStats = currentStats;
+      }
+    }
+
+    // Update device stats
+    if (event.device) {
+      const currentDeviceStats = existingAnalytics?.deviceStats || {};
+      const deviceKey = event.device;
+      currentDeviceStats[deviceKey] = (currentDeviceStats[deviceKey] || 0) + 1;
+      updateFields.deviceStats = currentDeviceStats;
+    }
+
+    await prisma.shopAnalytics.upsert({
+      where: { shopId: event.shopId },
+      update: updateFields,
+      create: {
+        shopId: event.shopId,
+        totalVisitors: event.action === "shop_visit" ? 1 : 0,
+        lastVisitedAt: new Date(),
+        countryStats: event.country ? { [event.country]: 1 } : {},
+        cityStats: event.city ? { [event.city]: 1 } : {},
+        deviceStats: event.device ? { [event.device]: 1 } : {},
+      },
+    });
+  } catch (error) {
+    console.log("Error updating shop analytics:", error);
+  }
+};

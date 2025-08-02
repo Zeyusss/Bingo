@@ -1,9 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 
 declare global {
-namespace globalThis {
-var prismadb: PrismaClient | undefined;
-}   
+  namespace globalThis {
+    var prismadb: PrismaClient | undefined;
+  }
 }
 
 const prisma = new PrismaClient();
