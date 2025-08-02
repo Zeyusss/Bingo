@@ -17,7 +17,16 @@ import axiosInstance from 'apps/seller-ui/src/utils/axiosInstance';
 import { useMutation, useQuery,useQueryClient } from '@tanstack/react-query';
 import Image from 'next/image';
 import DeleteConfirmationModal from 'apps/seller-ui/src/shared/components/modals/delete.confirmation.modal';
-
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "apps/seller-ui/src/shared/components/ui/table"
+import { Input } from "apps/seller-ui/src/shared/components/ui/input"
+import { Skeleton } from "apps/seller-ui/src/shared/components/ui/skeleton"
 const fetchProducts = async ()=>{
     const res = await axiosInstance.get("/product/api/get-shop-products");
     return res?.data?.products;
@@ -171,93 +180,77 @@ const ProductList = () => {
         setShowDeleteModal(true);
     }
 
-  return (
-    <div className="min-h-screen" style={{ background: '#FDFAFB' }}>
-      <div className="max-w-6xl mx-auto">
-        <h1
-          className="text-3xl font-extrabold mt-8 mb-1 text-gray-900 drop-shadow-lg"
-          style={{ letterSpacing: '-0.02em' }}
-        >
-          All Products
-        </h1>
-        <div
-          className="mb-3"
-          style={{
-            height: 3,
-            width: 48,
-            background: 'var(--primary, #60a5fa)',
-            borderRadius: 2,
-          }}
-        />
-        <div className='flex items-center mb-4'>
-          <Link href="/dashboard" className='text-[#80Deea] cursor-pointer hover:underline'>Dashboard</Link>
-          <ChevronRight size={20} className='opacity-[.8]'/>
-          <span className='text-gray-800'>All Products</span>
+    return (
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Products</h1>
+          <p className="text-gray-600 mt-1">Manage your products</p>
         </div>
-        <div className='w-full max-w-6xl flex flex-col items-center'>
-          <div className='w-full glassy-card border border-gray-200 bg-white/60 rounded-2xl shadow-2xl p-4 sm:p-8 flex flex-col items-center'>
-            <div className='w-full my-4 flex items-center bg-white/40 p-2 rounded-md border border-gray-200'>
-              <Search size={18} className='text-gray-500 mr-2' />
-              <input type="text"
-                placeholder='Search Products...'
-                className='w-full bg-transparent text-gray-900 outline-none placeholder:text-gray-400'
-                value={globalFilter}
-                onChange={(e)=> setGlobalFilter(e.target.value)}
-              />
-            </div>
-            {/* Table */}
-            <div className='w-full overflow-x-auto rounded-lg p-0 mt-2 flex justify-center'>
-              {isLoading ? (
-                <p className='text-center text-gray-900'>Loading Products...</p>
-              ):(
-                <table className='w-full text-gray-900 rounded-xl overflow-hidden shadow-lg bg-white/80 border border-gray-200 text-center'>
-                  <thead className='bg-white/60'>
-                    {table.getHeaderGroups().map((headerGroup)=>(
-                      <tr key={headerGroup.id} className='border-b border-gray-200'>
-                        {headerGroup.headers.map((header)=>(
-                          <th key={header.id} className='p-3 text-sm font-semibold tracking-wide text-gray-700 text-center'>
-                            {header.isPlaceholder?null:flexRender(header.column.columnDef.header,header.getContext())}
-                          </th>
-                        ))}
-                      </tr>
-                    ))}
-                  </thead>
-                  <tbody>
-                    {table.getRowModel().rows.map((row)=>(
-                      <tr key={row.id}
-                        className='border-b border-gray-200 hover:bg-gray-100 transition group'>
-                        {row.getVisibleCells().map((cell)=>(
-                          <td key={cell.id} className='p-3 text-center group-hover:text-gray-900 transition'>
-                            {flexRender(cell.column.columnDef.cell,cell.getContext())}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-              {showDeleteModal && (
-                <DeleteConfirmationModal
-                  product={selectedProduct}
-                  onClose={()=> setShowDeleteModal(false)}
-                  onConfirm={()=> deleteMutation.mutate(selectedProduct?.id)}
-                  onRestore={()=> restoreMutation.mutate(selectedProduct?.id)}
-                />
-              )}
-            </div>
-          </div>
-        </div>
+        <div className="text-sm text-gray-500">{products.length} products</div>
       </div>
-      <style jsx global>{`
-        .glassy-card {
-          box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-          background: rgba(255,255,255,0.7);
-          border-radius: 20px;
-          border: 1px solid #e5e7eb;
-        }
-      `}</style>
-    </div>
-  )
-}
 
-export default ProductList
+      <div className="flex flex-col sm:flex-row gap-4">
+        <Input
+          placeholder="Search products..."
+          value={globalFilter}
+          onChange={(e) => setGlobalFilter(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {table.getHeaderGroups()[0].headers.map((header) => (
+                <TableHead key={header.id} className="text-center">
+                  {flexRender(header.column.columnDef.header, header.getContext())}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8">
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
+                    <span>Loading products...</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                  No products found
+                </TableCell>
+              </TableRow>
+            ) : (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id} className="text-center">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {showDeleteModal && (
+        <DeleteConfirmationModal
+          product={selectedProduct}
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={() => deleteMutation.mutate(selectedProduct?.id)}
+          onRestore={() => restoreMutation.mutate(selectedProduct?.id)}
+        />
+      )}
+    </div>
+  );
+};
+
+export default ProductList;
