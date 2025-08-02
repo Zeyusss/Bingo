@@ -162,14 +162,15 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="w-full">
-      <div className="md:w-[80%] mx-auto pt-5">
-        <div className="flex h-[80vh] shadow-sm overflow-hidden">
-          <div className="w-[320px] border-r border-r-gray-200 bg-gray-50">
-            <div className="p-4 border-b border-b-gray-200 text-lg font-semibold text-gray-800">
+    <div className="w-full bg-gray-50">
+      <div className="md:w-[90%] mx-auto pt-5">
+        <div className="flex flex-col md:flex-row h-[80vh] rounded-lg shadow border overflow-hidden">
+          {/* Chat Sidebar */}
+          <div className="w-full md:w-[320px] border-r bg-white shadow-inner">
+            <div className="p-4 border-b text-lg font-semibold text-gray-800">
               Messages
             </div>
-            <div className="divide-y divide-gray-200">
+            <div className="divide-y">
               {isLoading ? (
                 <div className="py-5 text-sm text-center text-gray-500">
                   Loading...
@@ -186,8 +187,8 @@ const ChatPage = () => {
                     <button
                       key={chat.conversationId}
                       onClick={() => handleChatSelect(chat)}
-                      className={`w-full text-left px-4 py-3 transition hover:bg-blue-200 ${
-                        isActive ? "bg-blue-100" : ""
+                      className={`w-full text-left px-4 py-3 transition hover:bg-gray-50 ${
+                        isActive ? "bg-gray-100" : ""
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -196,11 +197,11 @@ const ChatPage = () => {
                           alt={chat.user?.name}
                           width={36}
                           height={36}
-                          className="rounded-full border w-[40px] h-[40px] object-cover border-gray-200"
+                          className="rounded-full object-cover border w-10 h-10"
                         />
                         <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-800 font-semibold">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-gray-800">
                               {chat.user?.name}
                             </span>
                             {chat.user?.isOnline && (
@@ -209,7 +210,7 @@ const ChatPage = () => {
                           </div>
                           <div className="flex items-center justify-between">
                             <p className="text-xs text-gray-500 truncate max-w-[170px]">
-                              {chat.lastMessage || ""}{" "}
+                              {chat.lastMessage || ""}
                             </p>
                             {chat?.unreadCount > 0 && (
                               <span className="ml-2 inline-flex items-center justify-center min-w-[16px] h-[16px] px-[6px] rounded-full text-[10px] font-semibold bg-blue-600 text-white">
@@ -225,16 +226,18 @@ const ChatPage = () => {
               )}
             </div>
           </div>
-          <div className="flex flex-col flex-1 bg-gray-100">
+
+          {/* Chat Window */}
+          <div className="flex-1 flex flex-col bg-gray-100">
             {selectedChat ? (
               <>
-                <div className="p-4 border-b border-b-gray-200 bg-white flex items-center gap-3">
+                <div className="p-4 border-b bg-white flex items-center gap-3 shadow-sm">
                   <Image
                     src={selectedChat.user?.avatar || ""}
                     alt={selectedChat.user.name}
                     width={40}
                     height={40}
-                    className="rounded-full border w-[40px] h-[40px] object-cover border-gray-200"
+                    className="rounded-full border object-cover w-10 h-10"
                   />
                   <div>
                     <h2 className="text-gray-800 font-semibold text-base">
@@ -248,31 +251,29 @@ const ChatPage = () => {
 
                 <div
                   ref={messageContainerRef}
-                  className="flex-1 overflow-y-auto px-6 py-6 space-y-4 text-sm"
+                  className="flex-1 overflow-y-auto px-6 py-6 space-y-4 text-sm bg-gray-50"
                 >
-                  {messages?.map((msg: any, index: number) => (
+                  {messages.map((msg: any, index: number) => (
                     <div
                       key={index}
                       className={`flex flex-col ${
                         msg.senderType === "seller"
                           ? "items-end ml-auto"
                           : "items-start"
-                      } max-w-[80%]`}
+                      } max-w-[75%]`}
                     >
                       <div
                         className={`${
                           msg.senderType === "seller"
                             ? "bg-blue-600 text-white"
-                            : "bg-white text-gray-800"
-                        } px-4 py-2 rounded-lg shadow-sm w-fit`}
+                            : "bg-white text-gray-800 border border-gray-200"
+                        } px-4 py-2 rounded-xl shadow-sm`}
                       >
                         {msg.text || msg.content}
                       </div>
                       <div
-                        className={`text-[11px] text-gray-400 mt-1 flex items-center gap-1 ${
-                          msg.senderType === "seller"
-                            ? "mr-1 justify-end"
-                            : "ml-1"
+                        className={`text-[11px] text-gray-400 mt-1 ${
+                          msg.senderType === "seller" ? "text-right" : "text-left"
                         }`}
                       >
                         {msg.time ||
