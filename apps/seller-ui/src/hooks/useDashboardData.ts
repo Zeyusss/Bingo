@@ -58,6 +58,7 @@ export interface ShopStatsData {
   ordersToday: number;
   totalRevenue: number;
   conversionRate: number;
+  averageRating: number;
 }
 
 export interface SystemStatsData {
@@ -166,8 +167,8 @@ export function useShopStats() {
 }
 
 export function useSystemStats() {
-  return useQuery<SystemStatsData>({
-    queryKey: QUERY_KEYS.SYSTEM_STATS,
+  return useQuery<ShopStatsData>({
+    queryKey: QUERY_KEYS.SHOP_STATS,
     queryFn: () => fetcher(`${BASE_URL}/seller/api/dashboard/shop-stats`),
     staleTime: 1 * 60 * 1000,
     refetchInterval: 2 * 60 * 1000,

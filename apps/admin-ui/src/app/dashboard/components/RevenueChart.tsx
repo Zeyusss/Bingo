@@ -1,12 +1,19 @@
-import React from 'react';
-import { ResponsiveLine } from '@nivo/line';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/Card';
-import { Skeleton } from './ui/Skeleton';
-import { useRevenueData } from '../hooks/useDashboardData';
-import { TrendingUp, DollarSign } from 'lucide-react';
+import React from "react";
+import { ResponsiveLine } from "@nivo/line";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "./ui/Card";
+import { Skeleton } from "./ui/Skeleton";
+import { useRevenueData } from "../hooks/useDashboardData";
+import { TrendingUp, DollarSign, AlertCircle, RefreshCw } from "lucide-react";
+import { Button } from "./ui/Button";
 
 const RevenueChart: React.FC = () => {
-  const { data, isLoading, error } = useRevenueData();
+  const { data, isLoading, error, refetch } = useRevenueData();
 
   if (isLoading) {
     return (
@@ -31,22 +38,105 @@ const RevenueChart: React.FC = () => {
     return (
       <Card className="h-full">
         <CardHeader>
-          <CardTitle className="text-red-600">Revenue Chart</CardTitle>
-          <CardDescription>Failed to load revenue data</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-red-600">
+                <DollarSign className="h-5 w-5" />
+                Revenue Chart
+              </CardTitle>
+              <CardDescription>Failed to load revenue data</CardDescription>
+            </div>
+            <Button
+              onClick={() => refetch()}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Retry
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-64 text-gray-500">
-            Unable to load chart data
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
+              <p className="text-gray-500">Unable to load chart data</p>
+              <p className="text-sm text-gray-400">
+                {error instanceof Error ? error.message : "An error occurred"}
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  const totalRevenue = data?.[0]?.data?.reduce((sum: number, point: any) => sum + point.y, 0) || 0;
+  const totalRevenue =
+    data?.[0]?.data?.reduce((sum: number, point: any) => sum + point.y, 0) || 0;
   const currentMonth = data?.[0]?.data?.[data[0].data.length - 1]?.y || 0;
   const previousMonth = data?.[0]?.data?.[data[0].data.length - 2]?.y || 0;
-  const growth = previousMonth > 0 ? ((currentMonth - previousMonth) / previousMonth) * 100 : 0;
+  const growth =
+    previousMonth > 0
+      ? ((currentMonth - previousMonth) / previousMonth) * 100
+      : 0;
+
+  // Format month names properly
+  const formatMonth = (monthStr: string) => {
+    if (!monthStr) return "";
+    const months = {
+      "01": "Jan",
+      "02": "Feb",
+      "03": "Mar",
+      "04": "Apr",
+      "05": "May",
+      "06": "Jun",
+      "07": "Jul",
+      "08": "Aug",
+      "09": "Sep",
+      "10": "Oct",
+      "11": "Nov",
+      "12": "Dec",
+    };
+
+    // Handle different date formats
+    if (monthStr.includes("-")) {
+      const parts = monthStr.split("-");
+      if (parts.length >= 2) {
+        const month = parts[1];
+        return months[month as keyof typeof months] || monthStr;
+      }
+    }
+
+    // Handle month names directly
+    const month = monthStr.substring(0, 3).toLowerCase();
+    const monthMap: { [key: string]: string } = {
+      jan: "Jan",
+      feb: "Feb",
+      mar: "Mar",
+      apr: "Apr",
+      may: "May",
+      jun: "Jun",
+      jul: "Jul",
+      aug: "Aug",
+      sep: "Sep",
+      oct: "Oct",
+      nov: "Nov",
+      dec: "Dec",
+    };
+
+    return monthMap[month] || monthStr;
+  };
+
+  // Process data to format month names
+  const processedData =
+    data?.map((series) => ({
+      ...series,
+      data: series.data.map((point) => ({
+        ...point,
+        x: formatMonth(point.x),
+      })),
+    })) || [];
 
   return (
     <Card className="h-full hover:shadow-lg transition-shadow duration-200">
@@ -63,20 +153,23 @@ const RevenueChart: React.FC = () => {
           </div>
           <div className="flex items-center gap-1 text-sm text-green-600">
             <TrendingUp className="h-4 w-4" />
-            <span className="font-medium">{growth > 0 ? '+' : ''}{growth.toFixed(1)}%</span>
+            <span className="font-medium">
+              {growth > 0 ? "+" : ""}
+              {growth.toFixed(1)}%
+            </span>
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="h-64">
           <ResponsiveLine
-            data={data || []}
+            data={processedData}
             margin={{ top: 20, right: 20, bottom: 50, left: 60 }}
-            xScale={{ type: 'point' }}
+            xScale={{ type: "point" }}
             yScale={{
-              type: 'linear',
-              min: 'auto',
-              max: 'auto',
+              type: "linear",
+              min: "auto",
+              max: "auto",
               stacked: false,
               reverse: false,
             }}
@@ -88,58 +181,66 @@ const RevenueChart: React.FC = () => {
               tickSize: 5,
               tickPadding: 5,
               tickRotation: 0,
-              legend: 'Month',
+              legend: "Month",
               legendOffset: 36,
-              legendPosition: 'middle',
+              legendPosition: "middle",
             }}
             axisLeft={{
               tickSize: 5,
               tickPadding: 5,
               tickRotation: 0,
-              legend: 'Revenue ($)',
+              legend: "Revenue ($)",
               legendOffset: -50,
-              legendPosition: 'middle',
-              format: ' >-$,.0f',
+              legendPosition: "middle",
             }}
-            pointSize={8}
-            pointColor={{ theme: 'background' }}
+            pointSize={10}
+            pointColor={{ theme: "background" }}
             pointBorderWidth={2}
-            pointBorderColor={{ from: 'serieColor' }}
+            pointBorderColor={{ from: "serieColor" }}
             pointLabelYOffset={-12}
+            useMesh={true}
+            colors={["#10b981"]}
+            lineWidth={3}
             enableArea={true}
             areaOpacity={0.1}
-            useMesh={true}
-            colors={['#10b981']}
             theme={{
               axis: {
-                ticks: {
-                  text: {
-                    fontSize: 12,
-                    fill: '#6b7280',
+                domain: {
+                  line: {
+                    stroke: "#d1d5db",
                   },
                 },
                 legend: {
                   text: {
+                    fill: "#6b7280",
                     fontSize: 12,
-                    fill: '#374151',
-                    fontWeight: 500,
+                  },
+                },
+                ticks: {
+                  line: {
+                    stroke: "#d1d5db",
+                    strokeWidth: 1,
+                  },
+                  text: {
+                    fill: "#6b7280",
+                    fontSize: 11,
                   },
                 },
               },
               grid: {
                 line: {
-                  stroke: '#f3f4f6',
+                  stroke: "#f3f4f6",
                   strokeWidth: 1,
                 },
               },
               tooltip: {
                 container: {
-                  background: '#ffffff',
-                  color: '#374151',
+                  background: "#ffffff",
+                  color: "#374151",
                   fontSize: 12,
-                  borderRadius: 8,
-                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-                  border: '1px solid #e5e7eb',
+                  borderRadius: 6,
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                  border: "1px solid #e5e7eb",
                 },
               },
             }}

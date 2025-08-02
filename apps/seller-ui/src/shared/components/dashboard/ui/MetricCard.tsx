@@ -30,8 +30,8 @@ export const MetricCard: React.FC<MetricCardProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <Card className={className}>
-        <CardHeader className="pb-2">
+      <Card className={cn("bg-white border border-gray-200", className)}>
+        <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <Skeleton className="h-4 w-24" />
             <Skeleton className="h-5 w-5 rounded" />
@@ -56,31 +56,34 @@ export const MetricCard: React.FC<MetricCardProps> = ({
     }
   };
 
-  const getTrendVariant = () => {
+  const getTrendColor = () => {
     switch (trend?.direction) {
       case "up":
-        return "success";
+        return "text-green-600 bg-green-50 border-green-200";
       case "down":
-        return "error";
+        return "text-red-600 bg-red-50 border-red-200";
       default:
-        return "default";
+        return "text-gray-600 bg-gray-50 border-gray-200";
     }
   };
 
   return (
     <Card
-      className={cn("hover:shadow-lg transition-all duration-200", className)}
+      className={cn(
+        "bg-white border border-gray-200 hover:shadow-md transition-all duration-200",
+        className
+      )}
     >
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium text-gray-600">
             {title}
           </CardTitle>
-          {icon && <div className="text-gray-400">{icon}</div>}
+          {icon && <div className="text-gray-500">{icon}</div>}
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
+        <div className="space-y-3">
           <div className="text-2xl font-bold text-gray-900">
             {typeof value === "number" ? value.toLocaleString() : value}
           </div>
@@ -89,17 +92,18 @@ export const MetricCard: React.FC<MetricCardProps> = ({
               <p className="text-xs text-gray-500 flex-1">{description}</p>
             )}
             {trend && (
-              <Badge
-                variant={getTrendVariant()}
-                size="sm"
-                className="ml-2 flex items-center gap-1"
+              <div
+                className={cn(
+                  "ml-2 flex items-center gap-1 px-2 py-1 rounded-md border text-xs font-medium",
+                  getTrendColor()
+                )}
               >
                 {getTrendIcon()}
                 <span>
                   {trend.value > 0 ? "+" : ""}
                   {trend.value}%
                 </span>
-              </Badge>
+              </div>
             )}
           </div>
         </div>

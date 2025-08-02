@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import useUser from "../../hooks/useUser";
 import axiosInstance from "../../utils/axiosInstance";
@@ -12,24 +12,28 @@ const ClientRestrictionWrapper = ({
   const { user, isLoading } = useUser();
   const [showModal, setShowModal] = useState(false);
   const router = useRouter();
-  const [hasLoggedOut, setHasLoggedOut] = useState(false);
+  const hasLoggedOutRef = useRef(false);
 
   useEffect(() => {
-    if (!isLoading && user && (user.isBlocked || user.isDeleted)) {
+    if (
+      !isLoading &&
+      user &&
+      (user.isBlocked || user.isDeleted) &&
+      !hasLoggedOutRef.current
+    ) {
       setShowModal(true);
-      if (!hasLoggedOut) {
-        setTimeout(() => {
-          axiosInstance
-            .get("/api/logout-user", { withCredentials: true })
-            .catch(() => {})
-            .finally(() => {
-              setHasLoggedOut(true);
-              router.replace("/login");
-            });
-        }, 1500); 
-      }
+      hasLoggedOutRef.current = true;
+
+      setTimeout(() => {
+        axiosInstance
+          .get("/api/logout-user", { withCredentials: true })
+          .catch(() => {})
+          .finally(() => {
+            router.replace("/login");
+          });
+      }, 1500);
     }
-  }, [user, isLoading, router, hasLoggedOut]);
+  }, [user, isLoading, router]);
 
   if (showModal) {
     return (
