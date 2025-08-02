@@ -132,7 +132,6 @@ export default function TopSellingProducts() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {/* Summary Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
@@ -158,7 +157,6 @@ export default function TopSellingProducts() {
             </div>
           </div>
 
-          {/* Products List */}
           <div className="space-y-3">
             <h4 className="font-medium text-gray-900">Top 5 Products</h4>
             {data?.map((product: TopProduct, index: number) => (
@@ -169,7 +167,6 @@ export default function TopSellingProducts() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                {/* Rank Badge */}
                 <div className="flex-shrink-0">
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
@@ -186,7 +183,7 @@ export default function TopSellingProducts() {
                   </div>
                 </div>
 
-                {/* Product Image */}
+
                 <div className="flex-shrink-0">
                   <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-red-100 rounded-lg flex items-center justify-center">
                     {product.image ? (
@@ -201,7 +198,6 @@ export default function TopSellingProducts() {
                   </div>
                 </div>
 
-                {/* Product Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <h5 className="font-medium text-gray-900 truncate">
@@ -219,7 +215,6 @@ export default function TopSellingProducts() {
                   </p>
                 </div>
 
-                {/* Sales Data */}
                 <div className="text-right hidden sm:block">
                   <div className="font-medium text-gray-900">
                     {product.totalSold.toLocaleString()}
@@ -230,7 +225,6 @@ export default function TopSellingProducts() {
                   </div>
                 </div>
 
-                {/* Mobile Sales Data */}
                 <div className="text-right sm:hidden">
                   <div className="font-medium text-gray-900 text-sm">
                     {product.totalSold.toLocaleString()} sold
@@ -243,7 +237,6 @@ export default function TopSellingProducts() {
             ))}
           </div>
 
-          {/* Performance Indicator */}
           {data && data.length > 0 && (
             <div className="mt-6 p-4 bg-blue-50 rounded-lg">
               <div className="flex items-center justify-between">

@@ -290,28 +290,70 @@ export async function fetchShopWorldActivity(sellerId: string) {
 
   if (!shop) return [];
 
-
   const shopAnalytics = await prisma.shopAnalytics.findUnique({
     where: { shopId: shop.id },
   });
 
-  if (!shopAnalytics || !shopAnalytics.countryStats) return [];
+  if (!shopAnalytics || !shopAnalytics.countryStats) {
+    return [];
+  }
 
+
+  const ordersData = await prisma.orders.findMany({
+    where: {
+      shopId: shop.id,
+      status: 'Paid',
+      shippingAddressSnapshot: { not: null }
+    },
+    select: {
+      id: true,
+      shippingAddressSnapshot: true
+    }
+  });
+
+
+  const countryOrdersMap: Record<string, number> = {};
+  const countryCitiesMap: Record<string, Set<string>> = {};
+
+  ordersData.forEach(order => {
+    try {
+      const shippingAddress = order.shippingAddressSnapshot as any;
+      if (shippingAddress && typeof shippingAddress === 'object') {
+        const country = shippingAddress.country;
+        const city = shippingAddress.city;
+        
+        if (country) {
+          
+          countryOrdersMap[country] = (countryOrdersMap[country] || 0) + 1;
+          
+         
+          if (!countryCitiesMap[country]) {
+            countryCitiesMap[country] = new Set();
+          }
+          if (city) {
+            countryCitiesMap[country].add(city);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Invalid shipping address data for order:', order.id);
+    }
+  });
 
   const worldActivity = Object.entries(
     shopAnalytics.countryStats as Record<string, number>
   )
     .filter(([country]) => COUNTRY_COORDS[country])
     .map(([country, visitors]) => {
-
-      const countryOrders = 0; 
+      const countryOrders = countryOrdersMap[country] || 0;
+      const cities = Array.from(countryCitiesMap[country] || new Set());
 
       return {
         lat: COUNTRY_COORDS[country].lat,
         lng: COUNTRY_COORDS[country].lng,
         orders: countryOrders,
         visitors: visitors,
-        cities: [],
+        cities: cities,
         country,
         conversionRate:
           visitors > 0

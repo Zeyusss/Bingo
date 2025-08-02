@@ -215,9 +215,7 @@ export default function VisitorAnalytics() {
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          {/* Top Performers Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Top Country */}
             {topCountry && (
               <motion.div
                 className="bg-gray-50 p-4 rounded-lg border border-gray-200"
@@ -251,8 +249,6 @@ export default function VisitorAnalytics() {
                 </div>
               </motion.div>
             )}
-
-            {/* Top State */}
             {topState && topState.state && topState.state !== "Unknown" && (
               <motion.div
                 className="bg-gray-50 p-4 rounded-lg border border-gray-200"
@@ -285,7 +281,6 @@ export default function VisitorAnalytics() {
             )}
           </div>
 
-          {/* Countries List */}
           {countries && countries.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -328,8 +323,6 @@ export default function VisitorAnalytics() {
               ))}
             </div>
           )}
-
-          {/* Locations List */}
           {locations && locations.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
