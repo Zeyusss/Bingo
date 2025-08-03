@@ -193,7 +193,7 @@ const SellerProfile = ({
     <div>
       <div className="relative w-full flex justify-center">
         <Image
-          src={shop?.coverBanner || "/images/default-cover.jpg"}
+          src={shop?.coverBanner || "https://ik.imagekit.io/w7lwh7wre/cover-handmade.webp?updatedAt=1754243111497"}
           alt="Shop Cover Banner"
           className="w-full h-[400px] object-cover"
           width={1200}
@@ -210,7 +210,7 @@ const SellerProfile = ({
                 src={
                   typeof shop?.avatar === "string"
                     ? shop.avatar
-                    : shop?.avatar?.url || "/images/default-cover.jpg"
+                    : shop?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"
                 }
                 alt="Seller Avatar"
                 layout="fill"
