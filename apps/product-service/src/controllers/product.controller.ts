@@ -1,10 +1,12 @@
-import { discount_codes, sellers, products } from './../../../../node_modules/.prisma/client/index.d';
 import { AuthError, NotFoundError, ValidationError } from "@packages/error-handler";
 import { imagekit } from '@packages/libs/imagekit';
 import prisma from "@packages/libs/prisma";
 import { NextFunction, Request, Response } from "express";
 import { Prisma } from '@prisma/client';
 
+
+const DEFAULT_PROFILE_IMAGE = "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756";
+const DEFAULT_COVER_IMAGE = "https://ik.imagekit.io/w7lwh7wre/cover-handmade.webp?updatedAt=175424311149";
 
 //get product category
 export const getCategories = async (
@@ -848,6 +850,8 @@ try {
     const enrichedShops = shops.map((shop) => {
         return {
             ...shop,
+            avatar: shop.avatar?.url || DEFAULT_PROFILE_IMAGE, 
+            coverBanner: shop.coverBanner || DEFAULT_COVER_IMAGE, 
             followersCount: shop._count.followers,
             totalSales: salesByShop[shop.id] || 0,
         };

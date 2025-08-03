@@ -114,7 +114,7 @@ const ProductDetailsCard = ({
         <div className="flex-1 flex flex-col gap-4 min-w-[250px]">
           <div className="flex items-center gap-3 mb-2">
             <Image
-              src={data?.Shop?.avatar}
+              src={data?.Shop?.avatar || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"}
               alt="Shop Logo"
               width={48}
               height={48}

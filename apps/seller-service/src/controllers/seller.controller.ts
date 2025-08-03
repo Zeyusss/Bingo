@@ -7,6 +7,10 @@ import {
 } from "@packages/error-handler";
 import { imagekit } from "@packages/libs/imagekit";
 import prisma from "@packages/libs/prisma";
+
+
+const DEFAULT_PROFILE_IMAGE = "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756";
+const DEFAULT_COVER_IMAGE = "https://ik.imagekit.io/w7lwh7wre/cover-handmade.webp?updatedAt=175424311149";
 import {
   fetchShopRevenueData,
   fetchShopStats,
@@ -255,6 +259,7 @@ export const getSellerInfo = async (
     const shop = await prisma.shops.findUnique({
       where: { id: req.params.id },
       include: {
+        avatar: true, // Include the avatar relationship
         reviews: {
           include: {
             user: {
@@ -293,9 +298,23 @@ export const getSellerInfo = async (
       },
     });
 
+    // Apply default images to shop and user avatars in reviews
+    const shopWithDefaults = {
+      ...shop,
+      avatar: shop?.avatar?.url || DEFAULT_PROFILE_IMAGE, // Get URL from avatar relationship
+      coverBanner: shop?.coverBanner || DEFAULT_COVER_IMAGE,
+      reviews: shop?.reviews?.map(review => ({
+        ...review,
+        user: {
+          ...review.user,
+          avatar: review.user?.avatar?.url || DEFAULT_PROFILE_IMAGE, // Handle user avatar relationship
+        },
+      })) || [],
+    };
+
     res.status(201).json({
       success: true,
-      shop,
+      shop: shopWithDefaults,
       followersCount,
       productsCount,
       eventsCount,

@@ -193,7 +193,7 @@ const SellerProfile = ({
     <div>
       <div className="relative w-full flex justify-center">
         <Image
-          src={shop?.coverBanner || "/images/default-cover.jpg"}
+          src={shop?.coverBanner || "https://ik.imagekit.io/w7lwh7wre/cover-handmade.webp?updatedAt=175424311149"}
           alt="Shop Cover Banner"
           className="w-full h-[400px] object-cover"
           width={1200}
@@ -210,7 +210,7 @@ const SellerProfile = ({
                 src={
                   typeof shop?.avatar === "string"
                     ? shop.avatar
-                    : shop?.avatar?.url || "/images/default-cover.jpg"
+                    : shop?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"
                 }
                 alt="Seller Avatar"
                 layout="fill"
@@ -454,19 +454,13 @@ const SellerProfile = ({
                 >
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
-                      {review.user?.avatar ? (
-                        <Image
-                          src={review.user.avatar}
-                          alt={review.user.name}
-                          width={40}
-                          height={40}
-                          className="rounded-full"
-                        />
-                      ) : (
-                        <span className="text-sm font-semibold text-gray-600">
-                          {review.user?.name?.charAt(0) || "U"}
-                        </span>
-                      )}
+                      <Image
+                        src={review.user?.avatar || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"}
+                        alt={review.user?.name || "User"}
+                        width={40}
+                        height={40}
+                        className="rounded-full object-cover"
+                      />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
