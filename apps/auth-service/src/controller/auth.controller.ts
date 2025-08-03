@@ -18,11 +18,14 @@ import bcrypt from "bcryptjs";
 import jwt, { JsonWebTokenError } from "jsonwebtoken";
 import { setCookie } from "../utils/cookies/setCookie";
 import Stripe from "stripe";
-import { sendLog } from "@packages/utils/logs/send-logs";
+import { createLogger } from "@packages/utils/logs/structured-logger";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-06-30.basil",
 });
+
+// Initialize structured logger for auth service
+const logger = createLogger('auth-service');
 
 // Register a new user
 export const userRegistration = async (
@@ -30,23 +33,65 @@ export const userRegistration = async (
   res: Response,
   next: NextFunction
 ) => {
+  const requestId = req.headers['x-request-id'] as string || `reg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const requestLogger = logger.forRequest(requestId, undefined, {
+    ip: req.ip || req.connection?.remoteAddress,
+    userAgent: req.headers['user-agent']
+  });
+
   try {
-    validateRegistrationData(req.body, "user");
     const { email, name } = req.body;
+    
+    await requestLogger.info('User registration attempt started', {
+      metadata: { email, name, registrationType: 'user' }
+    });
+
+    validateRegistrationData(req.body, "user");
+    
+    const startTime = Date.now();
     const existiongUser = await prisma.users.findUnique({
       where: { email },
     });
+    const dbQueryTime = Date.now() - startTime;
+    
+    await requestLogger.dbQuery('SELECT * FROM users WHERE email = ?', dbQueryTime, {
+      metadata: { operation: 'check_existing_user' }
+    });
+
     if (existiongUser) {
+      await requestLogger.warning('User registration failed: Email already exists', {
+        metadata: { email, reason: 'duplicate_email' }
+      });
       return next(new ValidationError("User already exists with this email"));
     }
+
     await checkOtpRestrictions(email);
     await trackOtpRequests(email);
+    
+    const otpStartTime = Date.now();
     await sendOtp(email, name, "user-activation-mail");
+    const otpDuration = Date.now() - otpStartTime;
+    
+    await requestLogger.externalApiCall('email-service', '/send-otp', otpDuration, 200, {
+      metadata: { email, otpType: 'user-activation-mail' }
+    });
+    
+    await requestLogger.success('User registration OTP sent successfully', {
+      metadata: { email, name }
+    });
+
     return res.status(200).json({
       status: "success",
       message: "OTP sent to your email. Please check your inbox.",
     });
-  } catch (error) {
+  } catch (error: any) {
+    await requestLogger.error(`User registration failed: ${error.message}`, {
+      metadata: { 
+        error: error.name,
+        stack: error.stack,
+        email: req.body?.email
+      }
+    });
     return next(error);
   }
 };
@@ -98,31 +143,75 @@ export const userLogin = async (
   res: Response,
   next: NextFunction
 ) => {
+  const requestId = req.headers['x-request-id'] as string || `login_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const requestLogger = logger.forRequest(requestId, undefined, {
+    ip: req.ip || req.connection?.remoteAddress,
+    userAgent: req.headers['user-agent']
+  });
+
   try {
     const { email, password } = req.body;
+    
+    await requestLogger.info('User login attempt started', {
+      metadata: { email, loginType: 'user' }
+    });
+
     if (!email || !password) {
+      await requestLogger.warning('Login failed: Missing credentials', {
+        metadata: { reason: 'missing_credentials', hasEmail: !!email, hasPassword: !!password }
+      });
       return next(new ValidationError("Email and password are required"));
     }
 
+    const dbStartTime = Date.now();
     const user = await prisma.users.findUnique({
       where: { email },
     });
+    const dbQueryTime = Date.now() - dbStartTime;
+    
+    await requestLogger.dbQuery('SELECT * FROM users WHERE email = ?', dbQueryTime, {
+      metadata: { operation: 'user_lookup' }
+    });
 
     if (!user) {
+      await requestLogger.authFailure('User not found', {
+        metadata: { email, reason: 'user_not_found' }
+      });
       return next(new AuthError("User not found"));
     }
+
     if (user.isBlocked || user.isDeleted) {
+      await requestLogger.securityEvent(
+        `Login attempt on restricted account: ${user.isBlocked ? 'blocked' : 'deleted'}`,
+        'medium',
+        {
+          userId: user.id,
+          metadata: { email, isBlocked: user.isBlocked, isDeleted: user.isDeleted }
+        }
+      );
       return res.status(403).json({
         message:
           "Your account is currently restricted. Please contact support or the site administration for assistance.",
         restricted: true,
       });
     }
+
+    const passwordCheckStart = Date.now();
     const isMatch = await bcrypt.compare(password, user.password!);
+    const passwordCheckTime = Date.now() - passwordCheckStart;
+    
+    await requestLogger.performanceMetric('password_check_duration', passwordCheckTime, 'ms');
+
     if (!isMatch) {
+      await requestLogger.authFailure('Invalid password', {
+        userId: user.id,
+        metadata: { email, reason: 'invalid_password' }
+      });
       return next(new AuthError("Invalid email or password"));
     }
 
+    // Clear existing cookies for security
+    await requestLogger.debug('Clearing existing authentication cookies');
     res.clearCookie("access_Token", {
       httpOnly: true,
       secure: false,
@@ -160,6 +249,7 @@ export const userLogin = async (
       path: "/",
     });
 
+    const tokenStartTime = Date.now();
     const accessToken = jwt.sign(
       { id: user.id, role: "user" },
       process.env.ACCESS_TOKEN_SECRET as string,
@@ -170,16 +260,37 @@ export const userLogin = async (
       process.env.REFRESH_TOKEN_SECRET as string,
       { expiresIn: "7d" }
     );
+    const tokenGenerationTime = Date.now() - tokenStartTime;
+    
+    await requestLogger.performanceMetric('token_generation_duration', tokenGenerationTime, 'ms', {
+      userId: user.id
+    });
 
     setCookie(res, "access_Token", accessToken);
     setCookie(res, "refresh_Token", refreshToken);
+
+    await requestLogger.authSuccess(user.id, {
+      metadata: { 
+        email,
+        loginMethod: 'email_password',
+        tokenExpiry: '15m',
+        refreshTokenExpiry: '7d'
+      }
+    });
 
     return res.status(200).json({
       status: "success",
       message: "Login successful",
       user: { id: user.id, name: user.name, email: user.email },
     });
-  } catch (error) {
+  } catch (error: any) {
+    await requestLogger.error(`User login failed: ${error.message}`, {
+      metadata: { 
+        error: error.name,
+        stack: error.stack,
+        email: req.body?.email
+      }
+    });
     return next(error);
   }
 };
@@ -246,11 +357,6 @@ export const refreshToken = async (
 export const getUser = async (req: any, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
-    await sendLog({
-      type: "success",
-      message : `User data retrieved ${user?.email}`,
-      source : "auth-service"
-    })
     return res.status(201).json({
       success: true,
       user,

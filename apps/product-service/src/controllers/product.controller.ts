@@ -297,6 +297,71 @@ try {
 }
 
 
+// update product
+export const updateProduct = async (
+    req: any,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const { productId } = req.params;
+        const {
+            title,
+            detailed_description,
+            regular_price,
+            sale_price,
+            category,
+            subCategory,
+            stock,
+            tags
+        } = req.body;
+
+
+        let whereCondition: any = { id: productId };
+        
+        if (req.user?.role === 'seller') {
+            whereCondition.Shop = {
+                sellerId: req.user.id
+            };
+        }
+        
+        const existingProduct = await prisma.products.findFirst({
+            where: whereCondition
+        });
+
+        if (!existingProduct) {
+            return next(
+                new NotFoundError("Product not found or you don't have permission to update it")
+            );
+        }
+
+        const updatedProduct = await prisma.products.update({
+            where: {
+                id: productId
+            },
+            data: {
+                title: title || existingProduct.title,
+                detailed_description: detailed_description || existingProduct.detailed_description,
+                regular_price: regular_price ? parseFloat(regular_price) : existingProduct.regular_price,
+                sale_price: sale_price ? parseFloat(sale_price) : existingProduct.sale_price,
+                category: category || existingProduct.category,
+                subCategory: subCategory || existingProduct.subCategory,
+                stock: stock !== undefined ? parseInt(stock) : existingProduct.stock,
+                tags: tags ? (Array.isArray(tags) ? tags : tags.split(',').map((tag: string) => tag.trim())) : existingProduct.tags,
+                updatedAt: new Date()
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Product updated successfully",
+            product: updatedProduct
+        });
+    } catch (error) {
+        return next(error);
+    }
+};
+
 //restore product 
 
 export const restoreProduct = async (
@@ -651,8 +716,6 @@ export const getFilteredShops = async (
 )=>{
     try {
         let { category = [], country = [], page = 1, limit = 12 } = req.query;
-
-        // Parse category and country as arrays
         if (typeof category === 'string') category = category.split(',');
         if (typeof country === 'string') country = country.split(',');
 
@@ -750,25 +813,22 @@ export const topShops = async (
     next:NextFunction
 )=>{
 try {
-    // aggregate total sales per shop from orders
+
     const orders = await prisma.orders.findMany({
         select: { shopId: true, total: true }
     });
 
-    // sum sales by shopId
+
     const salesByShop: Record<string, number> = {};
     for (const order of orders) {
         if (!order.shopId) continue;
         salesByShop[order.shopId] = (salesByShop[order.shopId] || 0) + (order.total || 0);
     }
 
-    // get top 10 shopIds by sales
     const topShopIds = Object.entries(salesByShop)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10)
         .map(([shopId]) => shopId);
-
-    // fetch the corresponding shop details
     const shops = await prisma.shops.findMany({
         where: {
             id: { in: topShopIds },
@@ -785,7 +845,6 @@ try {
         },
     });
 
-    // merge sales with shop data
     const enrichedShops = shops.map((shop) => {
         return {
             ...shop,
@@ -793,8 +852,6 @@ try {
             totalSales: salesByShop[shop.id] || 0,
         };
     });
-
-    // sort again by totalSales (in case order changed)
     const top10Shops = enrichedShops.sort((a, b) => b.totalSales - a.totalSales);
     return res.status(200).json({ shops: top10Shops });
 } catch (error) {

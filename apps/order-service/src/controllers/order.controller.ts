@@ -6,7 +6,7 @@ import { NotFoundError, ValidationError } from "@packages/error-handler";
 import prisma from "@packages/libs/prisma";
 import { Prisma } from "@prisma/client";
 import { sendEmail } from "../utils/send-email";
-import { sendLog } from "@packages/utils/logs/send-logs";
+import { createLogger } from "@packages/utils/logs/structured-logger";
 
 interface AuthenticatedRequest extends Request {
   user?: any;
@@ -16,6 +16,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-06-30.basil",
 });
 
+
+const logger = createLogger('order-service');
+
 // create payment intent
 export const createPaymentIntent = async (
   req: AuthenticatedRequest,
@@ -23,7 +26,7 @@ export const createPaymentIntent = async (
   next: NextFunction
 ) => {
   const { amount, sellerStripeAccountId, sessionId } = req.body;
-  const minimumAmount = 50; // EGP
+  const minimumAmount = 50;
   if (amount < minimumAmount) {
     return res.status(400).json({
       error: `Minimum order amount is ${minimumAmount} EGP. Current amount: ${amount} EGP`,

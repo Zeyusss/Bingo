@@ -1,8 +1,10 @@
 "use client";
 import useAdmin from "apps/admin-ui/src/hooks/useAdmin";
 import useSidebar from "apps/admin-ui/src/hooks/useSidebar";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect } from "react";
+import axiosInstance from "apps/admin-ui/src/utils/axiosInstance";
+import { toast } from "react-hot-toast";
 import Box from "../box";
 import Link from "next/link";
 import { Sidebar } from "./sidebar.styles";
@@ -28,7 +30,19 @@ import PaymentIcon from "../../../assets/icons/payment";
 const SidebarWrapper = () => {
   const { activeSidebar, setActiveSidebar } = useSidebar();
   const pathName = usePathname();
+  const router = useRouter();
   const { admin } = useAdmin();
+
+  const handleLogout = async () => {
+    try {
+      await axiosInstance.get('http://localhost:6001/api/logout-user');
+      toast.success('Logged out successfully!');
+      router.push('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Logout failed. Please try again.');
+    }
+  };
 
   useEffect(() => {
     setActiveSidebar(pathName);
@@ -181,12 +195,18 @@ const SidebarWrapper = () => {
               />
             </SidebarMenu>
             <SidebarMenu title="Extras">
-              <SidebarItem
-                isActive={activeSidebar === "/logout"}
-                title="Logout"
-                href="/"
-                icon={<LogOut size={20} color={getIconColor("/logout")} />}
-              />
+              <div
+                className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-100"
+                onClick={handleLogout}
+                style={{
+                  color: "var(--text)",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                }}
+              >
+                <LogOut size={20} color={getIconColor("/logout")} />
+                <span>Logout</span>
+              </div>
             </SidebarMenu>
           </div>
         </Sidebar.Body>

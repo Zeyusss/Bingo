@@ -1,4 +1,8 @@
+// Load environment variables
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../../.env') });
+
 import { errorMiddleware } from '@packages/error-handler/error-middleware';
+import { createLoggingMiddleware, createErrorLoggingMiddleware } from '@packages/middleware/logging.middleware';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -18,6 +22,9 @@ credentials: true ,
 app.use(express.json());
 app.use(cookieParser());
 
+// Add logging middleware
+app.use(createLoggingMiddleware('auth-service'));
+
 app.get('/', (req, res) => {
     res.send({ 'message': 'Hello API'});
 });
@@ -30,6 +37,8 @@ app.get("/docs-json", (req, res) => {
 // Routes
 app.use('/api', router); 
 
+
+app.use(createErrorLoggingMiddleware('auth-service'));
 app.use(errorMiddleware)
 
 const port = process.env.PORT || 6001;

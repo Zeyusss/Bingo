@@ -140,7 +140,7 @@ export const updateShopAnalytics = async (event: any) => {
   try {
     if (!event.shopId) return;
 
-    // Get or create shop analytics
+    
     const existingAnalytics = await prisma.shopAnalytics.findUnique({
       where: { shopId: event.shopId },
     });
@@ -149,11 +149,11 @@ export const updateShopAnalytics = async (event: any) => {
       lastVisitedAt: new Date(),
     };
 
-    // Update visitor count for shop visits
+    
     if (event.action === "shop_visit") {
       updateFields.totalVisitors = { increment: 1 };
 
-      // Track unique visitor if userId is provided
+      
       if (event.userId) {
         try {
           await prisma.uniqueShopVisitors.upsert({
@@ -178,30 +178,32 @@ export const updateShopAnalytics = async (event: any) => {
       }
     }
 
-    // Update location stats
+   
     if (event.country || event.city) {
       const currentCountryStats = existingAnalytics?.countryStats || {};
       const currentCityStats = existingAnalytics?.cityStats || {};
 
-      if (event.country) {
-        const countryKey = event.country;
-        currentCountryStats[countryKey] =
-          (currentCountryStats[countryKey] || 0) + 1;
+      if (event.country && typeof event.country === 'string') {
+        const countryKey = event.country as string;
+        (currentCountryStats as Record<string, number>)[countryKey] =
+          ((currentCountryStats as Record<string, number>)[countryKey] || 0) + 1;
         updateFields.countryStats = currentCountryStats;
       }
 
-      if (event.city) {
-        const cityKey = event.city;
-        currentCityStats[cityKey] = (currentCityStats[cityKey] || 0) + 1;
+      if (event.city && typeof event.city === 'string') {
+        const cityKey = event.city as string;
+        (currentCityStats as Record<string, number>)[cityKey] = 
+          ((currentCityStats as Record<string, number>)[cityKey] || 0) + 1;
         updateFields.cityStats = currentCityStats;
       }
     }
 
-    // Update device stats
-    if (event.device) {
+   
+    if (event.device && typeof event.device === 'string') {
       const currentDeviceStats = existingAnalytics?.deviceStats || {};
-      const deviceKey = event.device;
-      currentDeviceStats[deviceKey] = (currentDeviceStats[deviceKey] || 0) + 1;
+      const deviceKey = event.device as string;
+      (currentDeviceStats as Record<string, number>)[deviceKey] = 
+        ((currentDeviceStats as Record<string, number>)[deviceKey] || 0) + 1;
       updateFields.deviceStats = currentDeviceStats;
     }
 

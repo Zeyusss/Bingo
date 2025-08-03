@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "apps/admin-ui/src/utils/axiosInstance";
 import { Button } from "../../shared/components/ui/button";
 import { Input } from "../../shared/components/ui/input";
+import HelpModal, { HelpSection } from "../../shared/components/HelpModal";
+import HelpButton from "../../shared/components/HelpButton";
 import {
   Table,
   TableBody,
@@ -20,6 +22,102 @@ type OrdersApiResponse = {
 };
 
 const OrdersPage = () => {
+  const [showHelpModal, setShowHelpModal] = useState(false);
+
+
+  const helpSections: HelpSection[] = [
+    {
+      title: "Overview",
+      content: "The Orders Management page provides comprehensive oversight of all customer orders across your platform. Monitor order status, track payments, and manage the complete order lifecycle from placement to fulfillment.",
+      subsections: [
+        {
+          title: "Order Tracking",
+          content: "Monitor all orders in real-time with status updates and payment information"
+        },
+        {
+          title: "Order Management",
+          content: "View order details, update status, and manage customer communications"
+        },
+        {
+          title: "Financial Overview",
+          content: "Track order values, payment status, and revenue analytics"
+        }
+      ]
+    },
+    {
+      title: "Order Status Types",
+      content: "Understanding different order states:",
+      subsections: [
+        {
+          title: "Pending",
+          content: "Orders awaiting payment confirmation or processing"
+        },
+        {
+          title: "Paid",
+          content: "Orders with confirmed payment, ready for fulfillment"
+        },
+        {
+          title: "Cancelled",
+          content: "Orders that have been cancelled by customer or system"
+        }
+      ]
+    },
+    {
+      title: "Search & Filtering",
+      content: "Efficiently find and organize orders:",
+      subsections: [
+        {
+          title: "Search Function",
+          content: "Search by Order ID, shop name, or buyer information"
+        },
+        {
+          title: "Status Filtering",
+          content: "Filter orders by status (All, Paid, Pending, Cancelled) to focus on specific order types"
+        },
+        {
+          title: "Date Sorting",
+          content: "Orders are displayed with creation dates for chronological tracking"
+        }
+      ]
+    },
+    {
+      title: "Order Information",
+      content: "Key order details displayed:",
+      subsections: [
+        {
+          title: "Order Details",
+          content: "Order ID, associated shop, buyer information, and total amount"
+        },
+        {
+          title: "Status Tracking",
+          content: "Both payment status and order fulfillment status"
+        },
+        {
+          title: "Timeline",
+          content: "Order creation date and status update history"
+        }
+      ]
+    },
+    {
+      title: "Best Practices",
+      content: "Effective order management:",
+      subsections: [
+        {
+          title: "Response Time",
+          content: "Monitor pending orders regularly and ensure timely processing"
+        },
+        {
+          title: "Customer Communication",
+          content: "Keep customers informed of order status changes and delays"
+        },
+        {
+          title: "Quality Control",
+          content: "Review orders for accuracy before marking as fulfilled"
+        }
+      ]
+    }
+  ];
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -59,8 +157,14 @@ const OrdersPage = () => {
           </h1>
           <p className="text-gray-600 mt-1">Manage all orders</p>
         </div>
-        <div className="text-sm text-gray-500">
-          {filteredOrders.length} orders
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-500">
+            {filteredOrders.length} orders
+          </div>
+          <HelpButton
+            onClick={() => setShowHelpModal(true)}
+            text="Orders Help"
+          />
         </div>
       </div>
       <div className="flex flex-col sm:flex-row gap-4">
@@ -218,6 +322,15 @@ const OrdersPage = () => {
         </Button>
       </div>
       {/* Modals for delete/restore can be added here if needed */}
+      
+      {/* Orders Management Help Modal */}
+      <HelpModal
+        isOpen={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
+        title="Orders Management Guide"
+        description="Learn how to effectively manage and track customer orders throughout the complete order lifecycle on your platform."
+        sections={helpSections}
+      />
     </div>
   );
 };
