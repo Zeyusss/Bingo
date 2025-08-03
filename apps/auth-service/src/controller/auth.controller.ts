@@ -18,6 +18,7 @@ import bcrypt from "bcryptjs";
 import jwt, { JsonWebTokenError } from "jsonwebtoken";
 import { setCookie } from "../utils/cookies/setCookie";
 import Stripe from "stripe";
+import { sendLog } from "@packages/utils/logs/send-logs";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-06-30.basil",
@@ -245,6 +246,11 @@ export const refreshToken = async (
 export const getUser = async (req: any, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
+    await sendLog({
+      type: "success",
+      message : `User data retrieved ${user?.email}`,
+      source : "auth-service"
+    })
     return res.status(201).json({
       success: true,
       user,

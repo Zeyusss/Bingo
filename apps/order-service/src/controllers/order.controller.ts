@@ -6,6 +6,7 @@ import { NotFoundError, ValidationError } from "@packages/error-handler";
 import prisma from "@packages/libs/prisma";
 import { Prisma } from "@prisma/client";
 import { sendEmail } from "../utils/send-email";
+import { sendLog } from "@packages/utils/logs/send-logs";
 
 interface AuthenticatedRequest extends Request {
   user?: any;
@@ -22,8 +23,6 @@ export const createPaymentIntent = async (
   next: NextFunction
 ) => {
   const { amount, sellerStripeAccountId, sessionId } = req.body;
-
-  // Minimum amount validation for Stripe (50 EGP = 5000 kuruş)
   const minimumAmount = 50; // EGP
   if (amount < minimumAmount) {
     return res.status(400).json({
@@ -682,7 +681,6 @@ export const getUserOrders = async (
       },
     });
 
-    // Fetch shipping addresses for all orders that have shippingAddressId
     const ordersWithAddresses = await Promise.all(
       orders.map(async (order) => {
         let shippingAddress = null;
@@ -698,7 +696,6 @@ export const getUserOrders = async (
             );
           }
         }
-        // Use shipping address snapshot if the address was deleted
         const finalShippingAddress =
           shippingAddress || order.shippingAddressSnapshot;
         return {
