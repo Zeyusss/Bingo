@@ -1,3 +1,6 @@
+// Load environment variables
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../../.env') });
+
 import express from 'express';
 import WebSocket from "ws";
 import http from "http"

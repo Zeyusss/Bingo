@@ -6,6 +6,8 @@ import axios from "axios";
 import { Button } from "../../shared/components/ui/button";
 import { Input } from "../../shared/components/ui/input";
 import { Modal } from "../../shared/components/ui/modal";
+import HelpModal, { HelpSection } from "../../shared/components/HelpModal";
+import HelpButton from "../../shared/components/HelpButton";
 import {
   Table,
   TableBody,
@@ -29,6 +31,109 @@ interface EditSellerData {
 }
 
 const SellersPage = () => {
+  const [showHelpModal, setShowHelpModal] = useState(false);
+
+  const helpSections: HelpSection[] = [
+    {
+      title: "Overview",
+      content: "The Withdraw/Sellers Management page provides comprehensive oversight of seller accounts and withdrawal requests. Monitor seller performance, manage withdrawal approvals, and maintain seller relationships effectively.",
+      subsections: [
+        {
+          title: "Seller Management",
+          content: "View and manage all seller accounts, their status, and account information"
+        },
+        {
+          title: "Withdrawal Processing",
+          content: "Review and process seller withdrawal requests with proper verification"
+        },
+        {
+          title: "Financial Oversight",
+          content: "Monitor seller earnings, withdrawal patterns, and financial activities"
+        }
+      ]
+    },
+    {
+      title: "Seller Account Management",
+      content: "Comprehensive seller account tools:",
+      subsections: [
+        {
+          title: "Account Information",
+          content: "View seller profiles, contact details, registration dates, and account status"
+        },
+        {
+          title: "Edit Seller Details",
+          content: "Update seller information including name, email, and contact information"
+        },
+        {
+          title: "Block/Unblock Sellers",
+          content: "Temporarily restrict seller access while preserving account data"
+        },
+        {
+          title: "Account Deletion",
+          content: "Permanently remove seller accounts when necessary (use with caution)"
+        }
+      ]
+    },
+    {
+      title: "Withdrawal Management",
+      content: "Process and manage seller withdrawals:",
+      subsections: [
+        {
+          title: "Withdrawal Requests",
+          content: "Review pending withdrawal requests with amounts and seller details"
+        },
+        {
+          title: "Verification Process",
+          content: "Verify seller identity, account standing, and withdrawal eligibility"
+        },
+        {
+          title: "Approval/Rejection",
+          content: "Approve legitimate withdrawals or reject with clear reasons"
+        },
+        {
+          title: "Payment Processing",
+          content: "Process approved withdrawals through secure payment methods"
+        }
+      ]
+    },
+    {
+      title: "Financial Monitoring",
+      content: "Track seller financial activities:",
+      subsections: [
+        {
+          title: "Earnings Overview",
+          content: "Monitor seller revenue, commission rates, and total earnings"
+        },
+        {
+          title: "Withdrawal History",
+          content: "Review past withdrawal requests, amounts, and processing dates"
+        },
+        {
+          title: "Fraud Detection",
+          content: "Identify suspicious withdrawal patterns or unusual account activities"
+        }
+      ]
+    },
+    {
+      title: "Best Practices",
+      content: "Effective seller and withdrawal management:",
+      subsections: [
+        {
+          title: "Verification Standards",
+          content: "Maintain consistent verification processes and documentation requirements"
+        },
+        {
+          title: "Communication",
+          content: "Keep sellers informed about withdrawal status and any required actions"
+        },
+        {
+          title: "Security",
+          content: "Implement robust security measures for financial transactions and data protection"
+        }
+      ]
+    }
+  ];
+
   const [searchTerm, setSearchTerm] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedSeller, setSelectedSeller] = useState<Seller | null>(null);
@@ -162,7 +267,13 @@ const SellersPage = () => {
           </h1>
           <p className="text-gray-600 mt-1">Manage all sellers</p>
         </div>
-        <div className="text-sm text-gray-500">{sellers.length} sellers</div>
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-500">{sellers.length} sellers</div>
+          <HelpButton
+            onClick={() => setShowHelpModal(true)}
+            text="Withdraw Help"
+          />
+        </div>
       </div>
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
@@ -339,6 +450,15 @@ const SellersPage = () => {
           </div>
         </div>
       </Modal>
+      
+      {/* Withdraw/Sellers Management Help Modal */}
+      <HelpModal
+        isOpen={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
+        title="Withdraw & Sellers Management Guide"
+        description="Learn how to effectively manage seller accounts, process withdrawal requests, and maintain secure financial operations on your platform."
+        sections={helpSections}
+      />
     </div>
   );
 };

@@ -8,7 +8,6 @@ import {
 } from "../utils/dashboardData";
 import prisma from "@packages/libs/prisma";
 import { ValidationError } from "@packages/error-handler";
-import { UserRole } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 
 export async function getRevenue(
@@ -99,11 +98,16 @@ export const getAllProducts = async (
           id: true,
           title: true,
           slug: true,
+          detailed_description: true, 
+          short_description: true, 
           sale_price: true,
+          regular_price: true, 
           stock: true,
           createdAt: true,
           ratings: true,
           category: true,
+          subCategory: true, 
+          tags: true, 
           images: {
             select: { url: true },
             take: 1,

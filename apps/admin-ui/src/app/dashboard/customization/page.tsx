@@ -2,9 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import { Search, Plus, Trash2, Edit, GripVertical } from "lucide-react";
+import axiosInstance from "apps/admin-ui/src/utils/axiosInstance";
 import { Button } from "../../shared/components/ui/button";
 import { Input } from "../../shared/components/ui/input";
 import { Modal } from "../../shared/components/ui/modal";
+import HelpModal, { HelpSection } from "../../shared/components/HelpModal";
+import HelpButton from "../../shared/components/HelpButton";
 import {
   Table,
   TableBody,
@@ -22,7 +25,6 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
-  DragOverEvent,
   DragStartEvent,
 } from "@dnd-kit/core";
 import {
@@ -46,8 +48,6 @@ type Subcategory = {
   name: string;
   categoryId: string;
 };
-
-const apiBase = process.env.NEXT_PUBLIC_SERVER_URI;
 
 
 const SortableCategoryRow = ({
@@ -175,6 +175,105 @@ const SortableSubcategoryItem = ({
 };
 
 const CustomizationPage: React.FC = () => {
+  const [showHelpModal, setShowHelpModal] = useState(false);
+
+  const helpSections: HelpSection[] = [
+    {
+      title: "Overview",
+      content: "The Customization page provides comprehensive control over your platform's visual and organizational elements. Manage categories, configure sliders, and organize gallery content to create an engaging user experience.",
+      subsections: [
+        {
+          title: "Category Management",
+          content: "Create, organize, and manage product categories and subcategories with drag-and-drop functionality"
+        },
+        {
+          title: "Visual Customization",
+          content: "Configure sliders, banners, and gallery displays for enhanced visual appeal"
+        },
+        {
+          title: "Content Organization",
+          content: "Structure your platform content for optimal user navigation and discovery"
+        }
+      ]
+    },
+    {
+      title: "Category Management",
+      content: "Comprehensive category organization tools:",
+      subsections: [
+        {
+          title: "Add Categories",
+          content: "Create new main categories to organize your products and services"
+        },
+        {
+          title: "Add Subcategories",
+          content: "Create subcategories within existing categories for detailed organization"
+        },
+        {
+          title: "Drag & Drop Reordering",
+          content: "Easily reorder categories and subcategories by dragging them to new positions"
+        },
+        {
+          title: "Search & Filter",
+          content: "Quickly find specific categories or subcategories using the search function"
+        }
+      ]
+    },
+    {
+      title: "Visual Elements",
+      content: "Customize your platform's visual appearance:",
+      subsections: [
+        {
+          title: "Slider Configuration",
+          content: "Manage homepage sliders, promotional banners, and featured content displays"
+        },
+        {
+          title: "Gallery Management",
+          content: "Organize and display image galleries, product showcases, and visual content"
+        },
+        {
+          title: "Layout Control",
+          content: "Configure how content is displayed and organized across your platform"
+        }
+      ]
+    },
+    {
+      title: "Advanced Features",
+      content: "Powerful customization capabilities:",
+      subsections: [
+        {
+          title: "Bulk Operations",
+          content: "Perform bulk actions on multiple categories or subcategories simultaneously"
+        },
+        {
+          title: "Import/Export",
+          content: "Import category structures or export existing configurations for backup"
+        },
+        {
+          title: "Template Management",
+          content: "Create and manage templates for consistent category and content organization"
+        }
+      ]
+    },
+    {
+      title: "Best Practices",
+      content: "Effective customization strategies:",
+      subsections: [
+        {
+          title: "User Experience",
+          content: "Organize categories logically and maintain consistent naming conventions"
+        },
+        {
+          title: "Performance",
+          content: "Optimize images and content for fast loading times and smooth navigation"
+        },
+        {
+          title: "Maintenance",
+          content: "Regularly review and update categories, remove unused items, and keep content fresh"
+        }
+      ]
+    }
+  ];
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -212,9 +311,8 @@ const CustomizationPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${apiBase}/admin/api/config`);
-      if (!res.ok) throw new Error("Failed to fetch categories");
-      const data = await res.json();
+      const res = await axiosInstance.get(`/admin/api/config`);
+      const data = res.data;
 
       const transformedCategories = (data.categories || []).map(
         (cat: string, index: number) => ({
@@ -282,18 +380,10 @@ const CustomizationPage: React.FC = () => {
 
 
           const categoryNames = newCategories.map((cat) => cat.name);
-          const res = await fetch(
-            `${apiBase}/admin/api/config/categories/reorder`,
-            {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ categories: categoryNames }),
-            }
+          const res = await axiosInstance.put(
+            `/admin/api/config/categories/reorder`,
+            { categories: categoryNames }
           );
-
-          if (!res.ok) {
-            throw new Error("Failed to reorder categories");
-          }
 
           toast.success("Category order updated!");
         }
@@ -339,22 +429,14 @@ const CustomizationPage: React.FC = () => {
           );
           if (!sourceCategory) throw new Error("Source category not found");
 
-          const res = await fetch(
-            `${apiBase}/admin/api/config/subcategories/move`,
+          const res = await axiosInstance.put(
+            `/admin/api/config/subcategories/move`,
             {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                subcategoryName: activeSubcategory.name,
-                fromCategory: sourceCategory.name,
-                toCategory: targetCategory.name,
-              }),
+              subcategoryName: activeSubcategory.name,
+              fromCategory: sourceCategory.name,
+              toCategory: targetCategory.name,
             }
           );
-
-          if (!res.ok) {
-            throw new Error("Failed to move subcategory");
-          }
 
           toast.success("Subcategory moved to new category!");
         }
@@ -396,21 +478,13 @@ const CustomizationPage: React.FC = () => {
             setCategories(newCategories);
 
             const subcategoryNames = newSubcategories.map((sub) => sub.name);
-            const res = await fetch(
-              `${apiBase}/admin/api/config/subcategories/reorder`,
+            const res = await axiosInstance.put(
+              `/admin/api/config/subcategories/reorder`,
               {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  categoryName: category.name,
-                  subcategories: subcategoryNames,
-                }),
+                categoryName: category.name,
+                subcategories: subcategoryNames,
               }
             );
-
-            if (!res.ok) {
-              throw new Error("Failed to reorder subcategories");
-            }
 
             toast.success("Subcategory order updated!");
           }
@@ -427,12 +501,9 @@ const CustomizationPage: React.FC = () => {
     if (!newCategory.trim()) return;
     try {
       setLoading(true);
-      const res = await fetch(`${apiBase}/admin/api/config/category`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ categoryName: newCategory }),
+      const res = await axiosInstance.post(`/admin/api/config/category`, {
+        categoryName: newCategory
       });
-      if (!res.ok) throw new Error();
       await fetchCategories();
       setNewCategory("");
       setIsAddCategoryModalOpen(false);
@@ -447,15 +518,10 @@ const CustomizationPage: React.FC = () => {
     if (!selectedCategory || !newSubcategory.trim()) return;
     try {
       setLoading(true);
-      const res = await fetch(`${apiBase}/admin/api/config/subcategory`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          categoryName: selectedCategory,
-          subcategoryName: newSubcategory,
-        }),
+      const res = await axiosInstance.post(`/admin/api/config/subcategory`, {
+        categoryName: selectedCategory,
+        subcategoryName: newSubcategory,
       });
-      if (!res.ok) throw new Error();
       await fetchCategories();
       setNewSubcategory("");
       setSelectedCategory("");
@@ -473,22 +539,18 @@ const CustomizationPage: React.FC = () => {
     try {
       setLoading(true);
       if (deleteItem.type === "category") {
-        const res = await fetch(
-          `${apiBase}/admin/api/config/category/${encodeURIComponent(
+        const res = await axiosInstance.delete(
+          `/admin/api/config/category/${encodeURIComponent(
             deleteItem.category
-          )}`,
-          { method: "DELETE" }
+          )}`
         );
-        if (!res.ok) throw new Error();
         toast.success("Category deleted successfully!");
       } else {
-        const res = await fetch(
-          `${apiBase}/admin/api/config/subcategory/${encodeURIComponent(
+        const res = await axiosInstance.delete(
+          `/admin/api/config/subcategory/${encodeURIComponent(
             deleteItem.category
-          )}/${encodeURIComponent(deleteItem.subcategory!)}`,
-          { method: "DELETE" }
+          )}/${encodeURIComponent(deleteItem.subcategory!)}`
         );
-        if (!res.ok) throw new Error();
         toast.success("Subcategory deleted successfully!");
       }
       await fetchCategories();
@@ -554,8 +616,14 @@ const CustomizationPage: React.FC = () => {
             Manage your store's categories, slider, and gallery
           </p>
         </div>
-        <div className="text-sm text-gray-500">
-          {filteredCategories.length} categories
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-500">
+            {filteredCategories.length} categories
+          </div>
+          <HelpButton
+            onClick={() => setShowHelpModal(true)}
+            text="Customization Help"
+          />
         </div>
       </div>
       <div className="flex flex-col sm:flex-row gap-4">
@@ -825,6 +893,15 @@ const CustomizationPage: React.FC = () => {
           </div>
         </div>
       </Modal>
+      
+      {/* Customization Management Help Modal */}
+      <HelpModal
+        isOpen={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
+        title="Customization Management Guide"
+        description="Learn how to effectively customize your platform's visual elements, manage categories, and organize content for optimal user experience."
+        sections={helpSections}
+      />
     </div>
   );
 };

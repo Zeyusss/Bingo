@@ -1,18 +1,11 @@
 "use client";
 import React, { useMemo, useState } from "react";
-import {
-  useReactTable,
-  getCoreRowModel,
-  getFilteredRowModel,
-  flexRender,
-} from "@tanstack/react-table";
-import { Search, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "apps/admin-ui/src/utils/axiosInstance";
-import Link from "next/link";
 import { Button } from "../../shared/components/ui/button";
 import { Input } from "../../shared/components/ui/input";
-import { Modal } from "../../shared/components/ui/modal";
+import HelpModal, { HelpSection } from "../../shared/components/HelpModal";
+import HelpButton from "../../shared/components/HelpButton";
 import {
   Table,
   TableBody,
@@ -29,6 +22,110 @@ type OrdersApiResponse = {
 };
 
 const PaymentsPage = () => {
+  const [showHelpModal, setShowHelpModal] = useState(false);
+
+
+  const helpSections: HelpSection[] = [
+    {
+      title: "Overview",
+      content: "The Payments page provides comprehensive oversight of all financial transactions on your platform. Monitor payment status, track revenue, and manage payment-related issues with detailed transaction information.",
+      subsections: [
+        {
+          title: "Payment Tracking",
+          content: "Monitor all payments in real-time with status updates and transaction details"
+        },
+        {
+          title: "Revenue Management",
+          content: "Track payment amounts, fees, and net revenue across all transactions"
+        },
+        {
+          title: "Financial Oversight",
+          content: "Review payment patterns, identify issues, and ensure payment security"
+        }
+      ]
+    },
+    {
+      title: "Payment Status Types",
+      content: "Understanding different payment states:",
+      subsections: [
+        {
+          title: "Paid",
+          content: "Successfully completed payments with confirmed transactions"
+        },
+        {
+          title: "Pending",
+          content: "Payments awaiting processing or confirmation"
+        },
+        {
+          title: "Failed",
+          content: "Payments that were unsuccessful due to various reasons"
+        },
+        {
+          title: "Refunded",
+          content: "Payments that have been returned to customers"
+        }
+      ]
+    },
+    {
+      title: "Search & Filtering",
+      content: "Efficiently find and organize payments:",
+      subsections: [
+        {
+          title: "Search Function",
+          content: "Search by Order ID, shop name, buyer information, or transaction details"
+        },
+        {
+          title: "Status Filtering",
+          content: "Filter payments by status to focus on specific transaction types"
+        },
+        {
+          title: "Date Range",
+          content: "Filter payments by date ranges for financial reporting"
+        }
+      ]
+    },
+    {
+      title: "Payment Information",
+      content: "Key payment details displayed:",
+      subsections: [
+        {
+          title: "Transaction Details",
+          content: "Order ID, payment amount, fees, and net amounts"
+        },
+        {
+          title: "Party Information",
+          content: "Buyer details, seller information, and shop associations"
+        },
+        {
+          title: "Payment Methods",
+          content: "Payment gateway, method used, and transaction references"
+        },
+        {
+          title: "Timeline",
+          content: "Payment date, processing time, and status change history"
+        }
+      ]
+    },
+    {
+      title: "Best Practices",
+      content: "Effective payment management:",
+      subsections: [
+        {
+          title: "Regular Monitoring",
+          content: "Review payment statuses regularly and address failed payments promptly"
+        },
+        {
+          title: "Dispute Resolution",
+          content: "Handle payment disputes quickly and maintain clear communication"
+        },
+        {
+          title: "Financial Reconciliation",
+          content: "Regularly reconcile payments with bank statements and gateway reports"
+        }
+      ]
+    }
+  ];
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -66,8 +163,14 @@ const PaymentsPage = () => {
           <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
           <p className="text-gray-600 mt-1">Manage all payments</p>
         </div>
-        <div className="text-sm text-gray-500">
-          {filteredOrders.length} payments
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-500">
+            {filteredOrders.length} payments
+          </div>
+          <HelpButton
+            onClick={() => setShowHelpModal(true)}
+            text="Payments Help"
+          />
         </div>
       </div>
       <div className="flex flex-col sm:flex-row gap-4">
@@ -205,6 +308,15 @@ const PaymentsPage = () => {
           Next
         </Button>
       </div>
+      
+      {/* Payments Management Help Modal */}
+      <HelpModal
+        isOpen={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
+        title="Payments Management Guide"
+        description="Learn how to effectively monitor and manage all financial transactions, track revenue, and handle payment-related operations on your platform."
+        sections={helpSections}
+      />
     </div>
   );
 };

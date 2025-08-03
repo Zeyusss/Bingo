@@ -1,5 +1,5 @@
 import express, {Router} from "express";
-import { createDiscountCodes, createProduct, deleteDiscountCode, deleteProduct, deleteProductImage, getAllEvents, getAllProducts, getCategories, getDiscountCodes, getFilteredEvents, getFilteredProducts, getFilteredShops, getProductDetails, getShopProducts, restoreProduct, searchProducts, topShops, uploadProductImage } from "../controllers/product.controller";
+import { createDiscountCodes, createProduct, deleteDiscountCode, deleteProduct, deleteProductImage, getAllEvents, getAllProducts, getCategories, getDiscountCodes, getFilteredEvents, getFilteredProducts, getFilteredShops, getProductDetails, getShopProducts, restoreProduct, searchProducts, topShops, updateProduct, uploadProductImage } from "../controllers/product.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 
 
@@ -15,6 +15,7 @@ router.delete("/delete-product-image",isAuthenticated,deleteProductImage);
 router.post("/create-product",isAuthenticated,createProduct);
 router.get("/get-shop-products",isAuthenticated,getShopProducts);
 router.delete("/delete-product/:productId",isAuthenticated,deleteProduct);
+router.put("/update-product/:productId",isAuthenticated,updateProduct);
 router.put("/restore-product/:productId",isAuthenticated,restoreProduct);
 router.get("/get-all-products",getAllProducts);
 router.get("/get-all-events",getAllEvents);

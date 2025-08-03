@@ -2,9 +2,13 @@
 import React, { useMemo, useState } from "react";
 import axiosInstance from "apps/admin-ui/src/utils/axiosInstance";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button } from "../../shared/components/ui/button";
 import { Input } from "../../shared/components/ui/input";
-import { Modal } from "../../shared/components/ui/modal";
+import { Button } from "../../shared/components/ui/button";
+import EditProductModal from "../../shared/components/modals/EditProductModal";
+import ViewProductModal from "../../shared/components/modals/ViewProductModal";
+import DeleteConfirmationModal from "../../shared/components/modals/delete.confirmation.modal";
+import HelpModal, { HelpSection } from "../../shared/components/HelpModal";
+import HelpButton from "../../shared/components/HelpButton";
 import {
   Table,
   TableBody,
@@ -29,9 +33,121 @@ const restoreProduct = async (productId: string) => {
 };
 
 const ProductsPage = () => {
+  const [showHelpModal, setShowHelpModal] = useState(false);
+
+  // Help content for products management
+  const helpSections: HelpSection[] = [
+    {
+      title: "Overview",
+      content: "The Products Management page provides comprehensive oversight of all products listed on your platform. Monitor product catalog, manage inventory, and oversee seller product listings with powerful search and filtering tools.",
+      subsections: [
+        {
+          title: "Product Catalog",
+          content: "View all products across all sellers with detailed information and status"
+        },
+        {
+          title: "Inventory Management",
+          content: "Monitor stock levels, pricing, and product availability"
+        },
+        {
+          title: "Quality Control",
+          content: "Review product listings, manage approvals, and ensure platform standards"
+        }
+      ]
+    },
+    {
+      title: "Search & Filtering",
+      content: "Efficiently find and organize products:",
+      subsections: [
+        {
+          title: "Search Function",
+          content: "Search products by name, category, or seller information"
+        },
+        {
+          title: "Category Filtering",
+          content: "Filter by product categories to focus on specific product types"
+        },
+        {
+          title: "Advanced Filters",
+          content: "Sort by price, availability, seller, and other product attributes"
+        }
+      ]
+    },
+    {
+      title: "Product Actions",
+      content: "Available product management operations:",
+      subsections: [
+        {
+          title: "View Details",
+          content: "Access complete product information including images, descriptions, and specifications"
+        },
+        {
+          title: "Edit Products",
+          content: "Modify product details, pricing, and availability status"
+        },
+        {
+          title: "Delete/Restore",
+          content: "Remove products from listings or restore previously deleted items"
+        },
+        {
+          title: "Status Management",
+          content: "Approve, reject, or flag products for review"
+        }
+      ]
+    },
+    {
+      title: "Product Information",
+      content: "Key product details displayed:",
+      subsections: [
+        {
+          title: "Basic Details",
+          content: "Product name, category, price, and seller information"
+        },
+        {
+          title: "Inventory Status",
+          content: "Stock levels, availability, and inventory tracking"
+        },
+        {
+          title: "Performance Metrics",
+          content: "Sales data, views, and customer ratings"
+        }
+      ]
+    },
+    {
+      title: "Best Practices",
+      content: "Effective product management:",
+      subsections: [
+        {
+          title: "Quality Standards",
+          content: "Maintain consistent product quality and accurate descriptions"
+        },
+        {
+          title: "Category Organization",
+          content: "Ensure products are properly categorized for better discoverability"
+        },
+        {
+          title: "Regular Reviews",
+          content: "Periodically review product listings for accuracy and compliance"
+        }
+      ]
+    }
+  ];
+
   const [searchTerm, setSearchTerm] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>();
+  const [editFormData, setEditFormData] = useState({
+    title: '',
+    detailed_description: '',
+    regular_price: '',
+    sale_price: '',
+    category: '',
+    subCategory: '',
+    stock: '',
+    tags: ''
+  });
   const [page, setPage] = useState(1);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const limit = 10;
@@ -78,6 +194,52 @@ const ProductsPage = () => {
     setSelectedProduct(product);
     setShowDeleteModal(true);
   };
+
+  const openEditModal = (product: any) => {
+    const mappedData = {
+      title: product.title || '',
+      detailed_description: product.detailed_description || product.short_description || '',
+      regular_price: product.regular_price ? product.regular_price.toString() : '',
+      sale_price: product.sale_price ? product.sale_price.toString() : '',
+      category: product.category || '',
+      subCategory: product.subCategory || product.subcategory || '', // Handle case variations
+      stock: product.stock ? product.stock.toString() : '0',
+      tags: Array.isArray(product.tags) ? product.tags.join(', ') : (typeof product.tags === 'string' ? product.tags : '')
+    };
+    
+    setSelectedProduct(product);
+    setEditFormData(mappedData);
+    setShowEditModal(true);
+  };
+
+  const openViewModal = (product: any) => {
+    setSelectedProduct(product);
+    setShowViewModal(true);
+  };
+
+  const updateProductMutation = useMutation({
+    mutationFn: async (data: any) => {
+      console.log('Updating product with data:', data); // Debug log
+      const response = await axiosInstance.put(`http://localhost:6002/api/update-product/${selectedProduct?.id}`, {
+        ...data,
+        tags: data.tags ? data.tags.split(',').map((tag: string) => tag.trim()) : [],
+      });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      console.log('Product updated successfully:', data); // Debug log
+      queryClient.invalidateQueries({ queryKey: ['all-products'] });
+      setShowEditModal(false);
+      setSelectedProduct(null);
+    },
+    onError: (error) => {
+      console.error('Failed to update product:', error); // Debug log
+    },
+  });
+
+  const handleSaveProduct = () => {
+    updateProductMutation.mutate(editFormData);
+  };
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -87,8 +249,14 @@ const ProductsPage = () => {
           </h1>
           <p className="text-gray-600 mt-1">Manage all products</p>
         </div>
-        <div className="text-sm text-gray-500">
-          {filteredProducts.length} products
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-500">
+            {filteredProducts.length} products
+          </div>
+          <HelpButton
+            onClick={() => setShowHelpModal(true)}
+            text="Products Help"
+          />
         </div>
       </div>
       <div className="flex flex-col sm:flex-row gap-4">
@@ -226,14 +394,12 @@ const ProductsPage = () => {
                     </span>
                   </TableCell>
                   <TableCell className="text-center">
-                    <div className="flex gap-3 justify-center">
+                    <div className="flex items-center space-x-2">
                       <Button
                         variant="outline"
                         size="sm"
                         className="text-blue-600 hover:text-blue-800 border-blue-200 hover:bg-blue-50"
-                        onClick={() =>
-                          (window.location.href = `/product/${product.id}`)
-                        }
+                        onClick={() => openViewModal(product)}
                       >
                         View
                       </Button>
@@ -241,9 +407,7 @@ const ProductsPage = () => {
                         variant="outline"
                         size="sm"
                         className="text-yellow-600 hover:text-yellow-800 border-yellow-200 hover:bg-yellow-50"
-                        onClick={() =>
-                          (window.location.href = `/product/edit/${product.id}`)
-                        }
+                        onClick={() => openEditModal(product)}
                       >
                         Edit
                       </Button>
@@ -262,38 +426,30 @@ const ProductsPage = () => {
             )}
           </TableBody>
         </Table>
-        {showDeleteModal && (
-          <Modal
-            isOpen={showDeleteModal}
+        {showDeleteModal && selectedProduct && (
+          <DeleteConfirmationModal
+            product={selectedProduct}
             onClose={() => setShowDeleteModal(false)}
-            title="Delete Product"
-            size="sm"
-          >
-            <div className="space-y-4">
-              <p>Are you sure you want to delete this product?</p>
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowDeleteModal(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => deleteMutation.mutate(selectedProduct?.id)}
-                >
-                  Delete
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => restoreMutation.mutate(selectedProduct?.id)}
-                >
-                  Restore
-                </Button>
-              </div>
-            </div>
-          </Modal>
+            onConfirm={() => deleteMutation.mutate(selectedProduct?.id)}
+            onRestore={() => restoreMutation.mutate(selectedProduct?.id)}
+          />
         )}
+
+        <EditProductModal
+          product={selectedProduct}
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          editFormData={editFormData}
+          setEditFormData={setEditFormData}
+          onSave={handleSaveProduct}
+          isSaving={updateProductMutation.isPending}
+        />
+
+        <ViewProductModal
+          product={selectedProduct}
+          isOpen={showViewModal}
+          onClose={() => setShowViewModal(false)}
+        />
       </div>
       <div className="flex justify-center items-center gap-2 mt-4">
         <Button
@@ -320,6 +476,15 @@ const ProductsPage = () => {
           Next
         </Button>
       </div>
+      
+      {/* Products Management Help Modal */}
+      <HelpModal
+        isOpen={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
+        title="Products Management Guide"
+        description="Learn how to effectively manage your product catalog, monitor inventory, and oversee seller product listings with comprehensive tools and best practices."
+        sections={helpSections}
+      />
     </div>
   );
 };

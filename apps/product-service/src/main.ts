@@ -1,7 +1,11 @@
+// Load environment variables
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../../.env') });
+
 import express from 'express';
 import "./jobs/product-crone.job"
 import cors from 'cors';
 import { errorMiddleware } from '@packages/error-handler/error-middleware';
+import { createLoggingMiddleware, createErrorLoggingMiddleware } from '@packages/middleware/logging.middleware';
 import cookieParser from 'cookie-parser';
 import router from './routes/product.routes';
 import swaggerUi from 'swagger-ui-express';
@@ -20,7 +24,10 @@ app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ limit: '5mb', extended: true }));
 app.use(cookieParser());
 
-// Root route
+
+app.use(createLoggingMiddleware('product-service'));
+
+
 app.get('/', (req, res) => {
     res.send({ 'message': 'Product Service is running'});
 });
@@ -36,6 +43,8 @@ app.get("/docs-json", (req, res) => {
 // Routes
 app.use('/api', router); 
 
+
+app.use(createErrorLoggingMiddleware('product-service'));
 app.use(errorMiddleware)
 
 const port = process.env.PORT || 6002;

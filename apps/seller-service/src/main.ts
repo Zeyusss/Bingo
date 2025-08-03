@@ -1,4 +1,8 @@
+// Load environment variables
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../../.env') });
+
 import { errorMiddleware } from "@packages/error-handler/error-middleware";
+import { createLoggingMiddleware, createErrorLoggingMiddleware } from '@packages/middleware/logging.middleware';
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -17,6 +21,9 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
+
+app.use(createLoggingMiddleware('seller-service'));
+
 app.get("/", (req, res) => {
   res.send({ message: "Seller Service API" });
 });
@@ -24,7 +31,9 @@ app.get("/", (req, res) => {
 // routes
 app.use("/api", router);
 
-// Error middleware
+
+app.use(createErrorLoggingMiddleware('seller-service'));
+
 app.use(errorMiddleware);
 
 const port = process.env.PORT || 6003;

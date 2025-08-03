@@ -16,6 +16,8 @@ import {
 import { Button } from "../../shared/components/ui/button";
 import { Input } from "../../shared/components/ui/input";
 import { Modal } from "../../shared/components/ui/modal";
+import HelpModal, { HelpSection } from "../../shared/components/HelpModal";
+import HelpButton from "../../shared/components/HelpButton";
 import { Modal as ConfirmModal } from "../../shared/components/ui/modal";
 import {
   Table,
@@ -44,6 +46,106 @@ interface EditUserData {
 }
 
 const UsersPage = () => {
+  const [showHelpModal, setShowHelpModal] = useState(false);
+
+
+  const helpSections: HelpSection[] = [
+    {
+      title: "Overview",
+      content: "The Users Management page allows you to view, manage, and moderate all platform users including customers, sellers, and administrators. Monitor user activity, manage permissions, and maintain platform security.",
+      subsections: [
+        {
+          title: "User Types",
+          content: "Admin (platform administrators), Seller (merchants and vendors), User (customers and buyers)"
+        },
+        {
+          title: "Management Actions",
+          content: "View profiles, edit information, block/unblock users, delete accounts, manage permissions"
+        },
+        {
+          title: "Monitoring",
+          content: "Track user activity, registration trends, and account status changes"
+        }
+      ]
+    },
+    {
+      title: "Search & Filtering",
+      content: "Efficiently find and organize users:",
+      subsections: [
+        {
+          title: "Search Function",
+          content: "Search users by name, email, or ID using the search bar"
+        },
+        {
+          title: "Role Filtering",
+          content: "Filter by user type: All, Admin, Seller, or User to focus on specific groups"
+        },
+        {
+          title: "Status Filters",
+          content: "Toggle to show deleted or blocked users for comprehensive management"
+        }
+      ]
+    },
+    {
+      title: "User Actions",
+      content: "Available management operations:",
+      subsections: [
+        {
+          title: "View Details",
+          content: "Click the eye icon to view complete user profile, activity history, and statistics"
+        },
+        {
+          title: "Edit Information",
+          content: "Modify user details including name, email, role, and contact information"
+        },
+        {
+          title: "Block/Unblock",
+          content: "Temporarily restrict user access while preserving account data"
+        },
+        {
+          title: "Delete Account",
+          content: "Permanently remove user accounts (use with caution - this action cannot be undone)"
+        }
+      ]
+    },
+    {
+      title: "User Details View",
+      content: "Comprehensive user information:",
+      subsections: [
+        {
+          title: "Profile Information",
+          content: "View personal details, contact information, and account creation date"
+        },
+        {
+          title: "Activity Metrics",
+          content: "For sellers: view shop sales, unique buyers, product value, and purchase analytics"
+        },
+        {
+          title: "Account Status",
+          content: "Monitor verification status, account restrictions, and recent activity"
+        }
+      ]
+    },
+    {
+      title: "Best Practices",
+      content: "Effective user management guidelines:",
+      subsections: [
+        {
+          title: "Security",
+          content: "Regularly review admin permissions, monitor suspicious activity, use blocking before deletion"
+        },
+        {
+          title: "Communication",
+          content: "Notify users of account changes, provide clear reasons for restrictions"
+        },
+        {
+          title: "Data Protection",
+          content: "Handle user data responsibly, respect privacy settings, maintain audit trails"
+        }
+      ]
+    }
+  ];
+
   const [page, setPage] = useState(1);
   const limit = 10;
   const [roleFilter, setRoleFilter] = useState<
@@ -432,9 +534,15 @@ const UsersPage = () => {
             Manage all users, sellers, and admins
           </p>
         </div>
-        <div className="text-sm text-gray-500">
-          {filteredEntities.length} of {meta.totalUsers || entities.length}{" "}
-          users
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-500">
+            {filteredEntities.length} of {meta.totalUsers || entities.length}{" "}
+            users
+          </div>
+          <HelpButton
+            onClick={() => setShowHelpModal(true)}
+            text="Users Help"
+          />
         </div>
       </div>
 
@@ -1104,6 +1212,15 @@ const UsersPage = () => {
           <div className="text-gray-500">No details available.</div>
         )}
       </Modal>
+
+      {/* Users Management Help Modal */}
+      <HelpModal
+        isOpen={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
+        title="Users Management Guide"
+        description="Learn how to effectively manage users, sellers, and administrators on your platform with comprehensive tools and best practices."
+        sections={helpSections}
+      />
     </div>
   );
 };

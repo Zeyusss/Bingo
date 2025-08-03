@@ -1,4 +1,8 @@
+// Load environment variables
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../../.env') });
+
 import { errorMiddleware } from '@packages/error-handler/error-middleware';
+import { createLoggingMiddleware, createErrorLoggingMiddleware } from '@packages/middleware/logging.middleware';
 import  cookieParser  from 'cookie-parser';
 import express from 'express';
 import cors from "cors"
@@ -23,6 +27,8 @@ app.use(express.json());
 app.use(cookieParser())
 
 
+app.use(createLoggingMiddleware('order-service'));
+
 app.get('/', (req, res) => {
   res.send({ message: 'Welcome to order-service!' });
 });
@@ -30,6 +36,8 @@ app.get('/', (req, res) => {
 // routes
 app.use("/api",router);
 
+
+app.use(createErrorLoggingMiddleware('order-service'));
 app.use(errorMiddleware)
 
 const port = process.env.PORT || 6004;
