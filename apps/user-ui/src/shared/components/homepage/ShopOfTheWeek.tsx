@@ -5,7 +5,7 @@ const ShopOfTheWeek = ({ shop }: { shop: any }) => {
   return (
     <div className="bg-gradient-to-r from-yellow-50 to-blue-50 rounded-xl shadow-md p-6 flex flex-col md:flex-row items-center gap-6 mb-10">
       <img
-        src={shop.avatar || "/default-cover.jpg"}
+        src={shop.avatar || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"}
         alt={shop.name}
         className="w-24 h-24 rounded-full border-4 border-white shadow-md object-cover"
       />

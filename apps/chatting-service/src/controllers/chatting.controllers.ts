@@ -135,7 +135,7 @@ export const getUserConversations = async (
               id: seller?.id || null,
             name: seller?.shop?.name || "Unknown",
             isOnline,
-            avatar: seller?.shop?.avatar || null,
+            avatar: seller?.shop?.avatar || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756",
           },
           lastMessage:
             lastMessage?.content || "Say something to start a conversation",
@@ -215,7 +215,7 @@ export const getSellerConversations = async (
             id: user?.id || null,
             name: user?.name || "Unknown",
             isOnline,
-            avatar: user?.avatar || null,
+            avatar: user?.avatar || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756",
           },
           lastMessage:
             lastMessage?.content || "Say something to start a conversation",
@@ -299,7 +299,7 @@ export const fetchMessages = async (
       seller: {
         id: seller?.id || null,
         name: seller?.shop?.name || "Unknowm",
-        avatar: seller?.shop?.avatar || null,
+        avatar: seller?.shop?.avatar || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756",
         isOnline,
       },
       currentPage: page,
@@ -373,7 +373,7 @@ export const fetchSellerMessages = async (
       user: {
         id: user?.id || null,
         name: user?.name || "Unknowm",
-        avatar: user?.avatar || null,
+        avatar: user?.avatar || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756",
         isOnline,
       },
       currentPage: page,
