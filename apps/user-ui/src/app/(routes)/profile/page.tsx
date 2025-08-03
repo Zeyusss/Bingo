@@ -133,7 +133,7 @@ onClick = {()=> logOutHandler()}
 {activeTab === "Profile" && !isLoading && user ? (
     <div className='space-y-4 text-sm text-gray-700'>
     <div className='flex items-center gap-3'>
-<Image src={user?.avatar || "/default-avatar.png"} alt=""
+<Image src={user?.avatar || "https://ik.imagekit.io/w7lwh7wre/cover-handmade.webp?updatedAt=1754243111497"} alt=""
 width={60}
 height={60}
 className='w-16 h-16 rounded-full border border-gray-200'
