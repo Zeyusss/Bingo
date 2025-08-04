@@ -60,7 +60,7 @@ export async function generateMetadata({
       type: "website",
       images: [
         {
-          url: data?.shop?.avatar || "/default-shop.png",
+          url: data?.shop?.avatar || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756",
           width: 800,
           height: 600,
           alt: data?.shop?.name || "Shop Logo",
@@ -73,7 +73,7 @@ export async function generateMetadata({
       description:
         data?.shop?.bio ||
         "Explore products and services from trusted sellers on Bingo.",
-      images: [data?.shop?.avatar || "/default-shop.png"],
+      images: [data?.shop?.avatar || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"],
     },
   };
 }
