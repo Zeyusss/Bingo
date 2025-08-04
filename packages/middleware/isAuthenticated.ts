@@ -39,14 +39,21 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
     } else if (decoded.role === "seller") {
       account = await prisma.sellers.findUnique({
         where: { id: decoded.id },
-        include: { shop: true },
+        include: { 
+          shop: {
+            include: {
+              avatar: {
+                select: {
+                  id: true,
+                  url: true,
+                },
+              },
+            },
+          },
+        },
       });
       req.seller = account;
     }
-
-    // Debug logs
-    console.log("Decoded JWT:", decoded);
-    console.log("Account found:", account);
 
     if (!account) {
       return res

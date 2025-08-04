@@ -742,7 +742,13 @@ export const getFilteredShops = async (
                 include : {
                     sellers:true,
                     followers:true,
-                    products:true,
+                    reviews:true,
+                    avatar: {
+                        select: {
+                            id: true,
+                            url: true
+                        }
+                    }
                 }
             }),
             prisma.shops.count({where:filters})
@@ -750,8 +756,24 @@ export const getFilteredShops = async (
 
         const totalPages = Math.ceil(total/parsedLimit);
 
+        // Calculate ratings for each shop
+        const shopsWithRatings = shops.map(shop => {
+            const shopReviews = (shop as any).reviews || [];
+            const rating = shopReviews.length > 0 
+                ? shopReviews.reduce((sum: number, review: any) => sum + review.rating, 0) / shopReviews.length
+                : null;
+            
+            return {
+                ...shop,
+                rating: rating ? Math.round(rating * 10) / 10 : null, // Round to 1 decimal
+                avatar: (shop as any).avatar || null,
+                // Remove reviews from response to keep it clean
+                reviews: undefined
+            };
+        });
+
         res.json({
-            shops,
+            shops: shopsWithRatings,
             pagination:{
                 total,
                 page:parsedPage,

@@ -114,7 +114,7 @@ const ProductDetailsCard = ({
         <div className="flex-1 flex flex-col gap-4 min-w-[250px]">
           <div className="flex items-center gap-3 mb-2">
             <Image
-              src={data?.Shop?.avatar || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"}
+              src={data?.Shop?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"}
               alt="Shop Logo"
               width={48}
               height={48}
@@ -142,7 +142,7 @@ const ProductDetailsCard = ({
             {data?.regular_price && data.regular_price > data.sale_price && (
               <span className="text-lg text-gray-400 line-through">${data.regular_price}</span>
             )}
-            <span className="ml-2"><Ratings rating={typeof data?.ratings === 'number' ? data.ratings : 5} /></span>
+            <span className="ml-2"><Ratings rating={typeof data?.ratings === 'number' ? data.ratings : 0} showTextFallback={true} /></span>
           </div>
 
           <div className="flex items-center  mt-4">

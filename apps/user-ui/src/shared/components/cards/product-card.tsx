@@ -92,7 +92,8 @@ const ProductCard = ({
 
         <div className="mt-1">
           <Ratings
-            rating={typeof product?.ratings === "number" ? product.ratings : 5}
+            rating={typeof product?.ratings === "number" ? product.ratings : 0}
+            showTextFallback={true}
           />
         </div>
 

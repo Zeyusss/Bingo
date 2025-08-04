@@ -164,7 +164,7 @@ export const updateProfilePictures = async (
   next: NextFunction
 ) => {
   try {
-    const { editType, imageUrl } = req.body;
+    const { editType, imageUrl, fileId } = req.body;
     if (!editType || !imageUrl) {
       return next(new ValidationError("Missing required fields!"));
     }
@@ -173,26 +173,93 @@ export const updateProfilePictures = async (
       return next(new AuthError("Only sellers can update profile picture."));
     }
 
-    const updateField =
-      editType === "cover" ? { coverBanner: imageUrl } : { avatar: imageUrl };
-
-    const updatedSeller = await prisma.shops.update({
+    // Get the shop first
+    const shop = await prisma.shops.findUnique({
       where: { sellerId: req.seller.id },
-      data: updateField,
-      select: {
-        id: true,
-        avatar: true,
-        coverBanner: true,
-      },
+      include: { avatar: true },
     });
 
-    res.status(200).json({
-      success: true,
-      message: `${
-        editType === "cover" ? "Cover photo" : "Avatar"
-      } updated successfully!`,
-      updatedSeller,
-    });
+    if (!shop) {
+      return next(new NotFoundError("Shop not found"));
+    }
+
+    if (editType === "cover") {
+      // Cover image is still a direct string field
+      const updatedShop = await prisma.shops.update({
+        where: { sellerId: req.seller.id },
+        data: { coverBanner: imageUrl },
+        include: {
+          avatar: {
+            select: {
+              id: true,
+              url: true,
+            },
+          },
+        },
+      });
+
+      res.status(200).json({
+        success: true,
+        message: "Cover photo updated successfully!",
+        shop: {
+          ...updatedShop,
+          avatar: updatedShop.avatar?.url || DEFAULT_PROFILE_IMAGE,
+          coverBanner: updatedShop.coverBanner || DEFAULT_COVER_IMAGE,
+        },
+      });
+    } else {
+      // Avatar is a relation to images table
+      let imageRecord;
+      
+      if (shop.avatar) {
+        // Update existing image record
+        imageRecord = await prisma.images.update({
+          where: { id: shop.avatar.id },
+          data: {
+            url: imageUrl,
+            file_id: fileId || shop.avatar.file_id,
+          },
+        });
+      } else {
+        // Create new image record
+        imageRecord = await prisma.images.create({
+          data: {
+            url: imageUrl,
+            file_id: fileId || `shop_avatar_${Date.now()}`,
+            shopId: shop.id,
+          },
+        });
+
+        // Update shop to reference the new image
+        await prisma.shops.update({
+          where: { id: shop.id },
+          data: { avatarId: imageRecord.id },
+        });
+      }
+
+      // Get updated shop with avatar relation
+      const updatedShop = await prisma.shops.findUnique({
+        where: { id: shop.id },
+        include: {
+          avatar: {
+            select: {
+              id: true,
+              url: true,
+            },
+          },
+        },
+      });
+
+      res.status(200).json({
+        success: true,
+        message: "Avatar updated successfully!",
+        shop: {
+          ...updatedShop,
+          avatar: updatedShop?.avatar?.url || DEFAULT_PROFILE_IMAGE,
+          coverBanner: updatedShop?.coverBanner || DEFAULT_COVER_IMAGE,
+        },
+      });
+    }
   } catch (error) {
     return next(error);
   }
@@ -230,19 +297,24 @@ export const editSellerProfile = async (
         address,
         opening_hours,
       },
-      select: {
-        id: true,
-        name: true,
-        bio: true,
-        address: true,
-        opening_hours: true,
-        updatedAt: true,
+      include: {
+        avatar: {
+          select: {
+            id: true,
+            url: true,
+          },
+        },
       },
     });
+    
     res.status(200).json({
       success: true,
-      message: "Shop pfile updated succesfully!",
-      updatedShop,
+      message: "Shop profile updated successfully!",
+      shop: {
+        ...updatedShop,
+        avatar: updatedShop.avatar?.url || DEFAULT_PROFILE_IMAGE,
+        coverBanner: updatedShop.coverBanner || DEFAULT_COVER_IMAGE,
+      },
     });
   } catch (error) {
     return next(error);
@@ -266,7 +338,12 @@ export const getSellerInfo = async (
               select: {
                 id: true,
                 name: true,
-                avatar: true,
+                avatar: {
+                  select: {
+                    id: true,
+                    url: true,
+                  },
+                },
               },
             },
           },
@@ -303,7 +380,7 @@ export const getSellerInfo = async (
       ...shop,
       avatar: shop?.avatar?.url || DEFAULT_PROFILE_IMAGE, // Get URL from avatar relationship
       coverBanner: shop?.coverBanner || DEFAULT_COVER_IMAGE,
-      reviews: shop?.reviews?.map(review => ({
+      reviews: shop?.reviews?.map((review: any) => ({
         ...review,
         user: {
           ...review.user,

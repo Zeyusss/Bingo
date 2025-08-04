@@ -9,14 +9,12 @@ import axiosInstance from "apps/user-ui/src/utils/axiosInstance";
 import {
   Calendar,
   Clock,
-  Globe,
   Heart,
   MapPin,
   Star,
   Users,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import ProductCard from "../../components/cards/product-card";
 import useLocationTracking from "apps/user-ui/src/hooks/useLocationTracking";
@@ -455,7 +453,7 @@ const SellerProfile = ({
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
                       <Image
-                        src={review.user?.avatar || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"}
+                        src={review.user?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"}
                         alt={review.user?.name || "User"}
                         width={40}
                         height={40}
