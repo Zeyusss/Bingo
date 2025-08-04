@@ -322,11 +322,32 @@ export const refreshToken = async (
     let account;
 
     if (decoded.role === "user") {
-      account = await prisma.users.findUnique({ where: { id: decoded.id } });
+      account = await prisma.users.findUnique({ 
+        where: { id: decoded.id },
+        include: {
+          avatar: {
+            select: {
+              id: true,
+              url: true
+            }
+          }
+        }
+      });
     } else if (decoded.role === "seller") {
       account = await prisma.sellers.findUnique({
         where: { id: decoded.id },
-        include: { shop: true },
+        include: { 
+          shop: {
+            include: {
+              avatar: {
+                select: {
+                  id: true,
+                  url: true
+                }
+              }
+            }
+          }
+        },
       });
     }
 
@@ -679,9 +700,19 @@ export const getSeller = async (
 ) => {
   try {
     const seller = req.seller;
+    
+    const formattedSeller = {
+      ...seller,
+      shop: seller.shop ? {
+        ...seller.shop,
+        avatar: seller.shop.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756",
+        coverBanner: seller.shop.coverBanner || "https://ik.imagekit.io/w7lwh7wre/cover-handmade.webp?updatedAt=175424311149",
+      } : null,
+    };
+    
     return res.status(201).json({
       success: true,
-      seller,
+      seller: formattedSeller,
     });
   } catch (error) {
     return next(error);

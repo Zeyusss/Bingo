@@ -8,7 +8,9 @@ interface ShopCardProps {
     id: string;
     name: string;
     description?: string;
-    avatar: string;
+    avatar?: {
+      url: string;
+    };
     coverBanner?: string;
     address?: string;
     followers?: any[];
@@ -29,7 +31,6 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
 
   return (
     <div className="w-full rounded-md cursor-pointer bg-white border border-gray-200 shadow-sm overflow-hidden transition hover:shadow-lg">
-      {/* cover */}
       <div className="h-[120px] w-full relative">
         <Image
           src={
@@ -41,12 +42,11 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
           className="object-cover w-full h-full"
         />
       </div>
-      {/* Avatar */}
       <div className="relative flex justify-center -mt-8">
         <div className="w-16 h-16 rounded-full border-4 border-white overflow-hidden shadow bg-white">
           <Image
             src={
-              shop.avatar ||
+              shop.avatar?.url ||
               "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"
             }
             alt={shop.name}
@@ -56,7 +56,6 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
           />
         </div>
       </div>
-      {/* shop info */}
       <div className="px-4 pb-4 pt-2 text-center">
         <h3 className="text-base font-semibold text-gray-800 line-clamp-1">
           {shop?.name}
@@ -64,7 +63,6 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
         <p className="text-xs text-gray-500 mt-0.5">
           {shop?.followers?.length ?? 0} Followers
         </p>
-        {/* address + rating */}
         <div className="flex items-center justify-center text-xs text-gray-500 mt-2 gap-4 flex-wrap">
           {shop.address && (
             <span className="flex items-center gap-1 max-w-[120px]">
@@ -77,7 +75,6 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
             {shop.rating ?? "N/A"}
           </span>
         </div>
-        {/* categories */}
         {displayedCategories.length > 0 && (
           <div className="mt-3 flex flex-wrap justify-center gap-2 text-xs">
             {displayedCategories.map((cat: string, idx: number) => (
@@ -95,7 +92,6 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
             )}
           </div>
         )}
-        {/* visit button */}
         <div className="mt-4">
           <Link
             href={`/shop/${shop.id}`}

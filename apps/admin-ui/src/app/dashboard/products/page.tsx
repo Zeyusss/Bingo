@@ -35,7 +35,7 @@ const restoreProduct = async (productId: string) => {
 const ProductsPage = () => {
   const [showHelpModal, setShowHelpModal] = useState(false);
 
-  // Help content for products management
+
   const helpSections: HelpSection[] = [
     {
       title: "Overview",
@@ -202,7 +202,7 @@ const ProductsPage = () => {
       regular_price: product.regular_price ? product.regular_price.toString() : '',
       sale_price: product.sale_price ? product.sale_price.toString() : '',
       category: product.category || '',
-      subCategory: product.subCategory || product.subcategory || '', // Handle case variations
+      subCategory: product.subCategory || product.subcategory || '',
       stock: product.stock ? product.stock.toString() : '0',
       tags: Array.isArray(product.tags) ? product.tags.join(', ') : (typeof product.tags === 'string' ? product.tags : '')
     };
@@ -219,7 +219,6 @@ const ProductsPage = () => {
 
   const updateProductMutation = useMutation({
     mutationFn: async (data: any) => {
-      console.log('Updating product with data:', data); // Debug log
       const response = await axiosInstance.put(`http://localhost:6002/api/update-product/${selectedProduct?.id}`, {
         ...data,
         tags: data.tags ? data.tags.split(',').map((tag: string) => tag.trim()) : [],
@@ -227,13 +226,12 @@ const ProductsPage = () => {
       return response.data;
     },
     onSuccess: (data) => {
-      console.log('Product updated successfully:', data); // Debug log
       queryClient.invalidateQueries({ queryKey: ['all-products'] });
       setShowEditModal(false);
       setSelectedProduct(null);
     },
     onError: (error) => {
-      console.error('Failed to update product:', error); // Debug log
+      console.error('Failed to update product:', error); 
     },
   });
 
@@ -384,7 +382,7 @@ const ProductsPage = () => {
                         <path d="M12 .587l3.668 7.568L24 9.423l-6 5.849L19.335 24 12 19.771 4.665 24 6 15.272 0 9.423l8.332-1.268z" />
                       </svg>
                       <span className="text-gray-900">
-                        {product.ratings || 5}
+                        {product.ratings || "N/A"}
                       </span>
                     </div>
                   </TableCell>

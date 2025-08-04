@@ -130,7 +130,7 @@ const ProductList = () => {
                 cell : ({row}:any)=>(
                     <div className='flex items-center justify-center gap-1 text-yellow-400'>
                         <Star fill='#fde04' size={18}/> {" "}
-                        <span className='text-gray-900'>{row.original.ratings || 5}</span>
+                        <span className='text-gray-900'>{row.original.ratings || "N/A"}</span>
                     </div>
                 )
             },

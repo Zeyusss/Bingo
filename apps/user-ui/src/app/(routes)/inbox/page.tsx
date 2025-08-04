@@ -203,7 +203,7 @@ const page = () => {
                     >
                       <div className="flex items-center gap-3">
                         <Image
-                          src={chat.seller?.avatar || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"}
+                          src={chat.seller?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"}
                           alt={chat.seller?.name}
                           width={36}
                           height={36}
@@ -241,7 +241,7 @@ const page = () => {
               <>
                 <div className="p-4 border-b border-b-gray-200 bg-white flex items-center gap-3">
                   <Image
-                    src={selectedChat.seller?.avatar || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"}
+                    src={selectedChat.seller?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"}
                     alt={selectedChat.seller?.name}
                     width={40}
                     height={40}

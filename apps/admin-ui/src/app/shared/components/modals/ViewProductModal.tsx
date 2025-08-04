@@ -109,7 +109,7 @@ const ViewProductModal: React.FC<ViewProductModalProps> = ({
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Rating</p>
-                  <p className="text-2xl font-bold text-yellow-600">{product.ratings || 5.0}</p>
+                  <p className="text-2xl font-bold text-yellow-600">{product.ratings || "N/A"}</p>
                 </div>
                 <Star className="h-8 w-8 text-yellow-500" />
               </div>
