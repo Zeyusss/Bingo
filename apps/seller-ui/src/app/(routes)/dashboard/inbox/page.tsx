@@ -193,7 +193,7 @@ const ChatPage = () => {
                     >
                       <div className="flex items-center gap-3">
                         <Image
-                          src={chat.user?.avatar || ""}
+                          src={chat.user?.avatar || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"}
                           alt={chat.user?.name}
                           width={36}
                           height={36}
@@ -233,7 +233,7 @@ const ChatPage = () => {
               <>
                 <div className="p-4 border-b bg-white flex items-center gap-3 shadow-sm">
                   <Image
-                    src={selectedChat.user?.avatar || ""}
+                    src={selectedChat.user?.avatar || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"}
                     alt={selectedChat.user.name}
                     width={40}
                     height={40}
