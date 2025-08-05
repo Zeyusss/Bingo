@@ -1,6 +1,6 @@
 import React from "react";
 import SidebarWrapper from "../shared/components/sidebar";
-import { QueryProvider } from "./providers/QueryProvider";
+import { QueryProvider } from "../shared/components/providers/QueryProvider";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   return (

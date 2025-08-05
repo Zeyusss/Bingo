@@ -8,7 +8,7 @@ import {
   CardDescription,
 } from "./ui/Card";
 import { Skeleton } from "./ui/Skeleton";
-import { useRevenueData } from "../hooks/useDashboardData";
+import { useRevenueData } from "../../../hooks/useDashboardData";
 import { TrendingUp, DollarSign, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "./ui/Button";
 
@@ -130,9 +130,9 @@ const RevenueChart: React.FC = () => {
 
   // Process data to format month names
   const processedData =
-    data?.map((series) => ({
+    data?.map((series:any) => ({
       ...series,
-      data: series.data.map((point) => ({
+      data: series.data.map((point:any) => ({
         ...point,
         x: formatMonth(point.x),
       })),

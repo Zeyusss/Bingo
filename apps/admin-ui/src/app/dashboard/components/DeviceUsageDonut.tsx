@@ -9,7 +9,7 @@ import {
   CardDescription,
 } from "./ui/Card";
 import { Skeleton } from "./ui/Skeleton";
-import { useDeviceUsage } from "../hooks/useDashboardData";
+import { useDeviceUsage } from "../../../hooks/useDashboardData";
 import {
   Smartphone,
   Tablet,
@@ -185,7 +185,7 @@ const DeviceUsageDonut: React.FC = () => {
 
         {/* Device Summary */}
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {chartData.map((device) => (
+          {chartData.map((device:any) => (
             <div
               key={device.id}
               className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"

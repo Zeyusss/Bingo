@@ -1,134 +1,176 @@
 "use client";
 import Link from "next/link";
-import React, { useState } from "react";
-import { Search } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { ShoppingCart, Menu } from "lucide-react";
 import ProfileIcon from "../../assets/svgs/profile-icon";
 import HeartIcon from "../../assets/svgs/heart-icon";
-import { CartBagIconComponent } from "../../assets/svgs/cart-icon";
-import Headerbottom from "./Header-bottom";
+import CompareIcon from "../../assets/svgs/compare-icon";
 import useUser from "../../hooks/useUser";
 import "../../styles/root.css";
 import { useStore } from "../../store";
-import axiosInstance from "../../utils/axiosInstance";
+import TopBar from "../components/homepage/TopBar";
+import CategoryBar from "./CategoryBar";
+import SidebarMobile from "./SidebarMobile";
+import MobileBottomNav from "./MobileBottomNav";
+import AdvancedSearchBar from "../components/search/AdvancedSearchBar";
+import { useRouter } from "next/navigation";
+
 const Header = () => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { user, isLoading } = useUser();
-  const wishlist = useStore((state:any)=> state.wishlist);
-  const cart = useStore ((state:any)=> state.cart)
-  const totalCartItems = cart.reduce((sum: number, item: any) => sum + (item.quantity ?? 1), 0);
+  const wishlist = useStore((state: any) => state.wishlist);
+  const cart = useStore((state: any) => state.cart);
+  const compare = useStore((state: any) => state.compare);
+  const totalCartItems = cart.reduce(
+    (sum: number, item: any) => sum + (item.quantity ?? 1),
+    0
+  );
 
-  const [searchQuery,setSearchQuery] = useState("");
-  const [suggestions,setSuggestions] = useState<any[]>([]);
-  const [loadingSuggestions,setLoadingSuggestions] = useState(false);
+  const router = useRouter();
+  const [showMobileHeader, setShowMobileHeader] = useState(true);
 
-  const handleSearchClick = async ()=>{
-    if (!searchQuery.trim()) return;
-    setLoadingSuggestions(true);
-    try {
-      const rest = await axiosInstance.get("")
-    } catch (error) {
-      
+useEffect(() => {
+  let lastScrollY = window.scrollY;
+  let ticking = false;
+
+  const updateScroll = () => {
+    const currentScrollY = window.scrollY;
+    setShowMobileHeader(currentScrollY < lastScrollY);
+    lastScrollY = currentScrollY;
+    ticking = false;
+  };
+
+  const handleScroll = () => {
+    if (!ticking) {
+      requestAnimationFrame(updateScroll);
+      ticking = true;
     }
-  }
+  };
+
+  window.addEventListener("scroll", handleScroll);
+  return () => window.removeEventListener("scroll", handleScroll);
+}, []);
+
+  const handleSearch = (query: string, filters?: any) => {
+    const params = new URLSearchParams();
+    if (query) params.set('q', query);
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value && value !== '' && value !== 'relevance') {
+          if (Array.isArray(value) && value.length > 0) {
+            params.set(key, value.join(','));
+          } else if (typeof value === 'boolean') {
+            params.set(key, value.toString());
+          } else {
+            params.set(key, value.toString());
+          }
+        }
+      });
+    }
+    router.push(`/search?${params.toString()}`);
+  };
+
   return (
     <div className="w-full">
-      <div className="w-[80%] m-auto flex items-center justify-between py-4">
-        <div>
-          <Link href={"/"}>
-            <span className="text-2xl font-500 text-black">Bingo</span>
+      <TopBar />
+
+      <div
+        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 lg:hidden border-b bg-white transition-transform duration-300 ${
+          showMobileHeader ? "translate-y-0" : "-translate-y-full"
+        }`}
+      >
+        <Menu className="cursor-pointer" onClick={() => setIsSidebarOpen(true)} />
+        <Link href="/" className="text-xl font-bold text-black">
+          Bingo
+        </Link>
+        <Link href="/cart" className="relative">
+          <ShoppingCart className="w-5 h-5 text-black" />
+          {totalCartItems > 0 && (
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 text-white text-[10px] rounded-full flex items-center justify-center">
+              {totalCartItems}
+            </div>
+          )}
+        </Link>
+      </div>
+
+
+      <div className="h-[60px] lg:hidden" />
+
+
+      <div className="w-[80%] m-auto items-center justify-between py-4 hidden lg:flex">
+        <Link href={"/"}>
+          <span className="text-2xl font-semibold text-black">Bingo</span>
+        </Link>
+
+        <div className="w-[50%] relative">
+          <AdvancedSearchBar
+            placeholder="Search for handmade products..."
+            onSearch={handleSearch}
+            className="w-full"
+          />
+        </div>
+
+        <div className="flex items-center gap-4">
+          <Link
+            href="/compare"
+            className="relative w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200"
+          >
+            <CompareIcon />
+            {compare.length > 0 && (
+              <div className="absolute -top-1 -right-1 bg-black text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center border border-white">
+                {compare.length}
+              </div>
+            )}
+          </Link>
+
+          <Link
+            href="/wishlist"
+            className="relative w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200"
+          >
+            <HeartIcon />
+            {wishlist.length > 0 && (
+              <div className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center border border-white">
+                {wishlist.length}
+              </div>
+            )}
+          </Link>
+
+          {!isLoading && user ? (
+            <Link
+              href="/profile"
+              className="px-4 py-2 rounded-full bg-gray-100 flex items-center gap-2 border border-gray-200 hover:bg-gray-200"
+            >
+              <ProfileIcon />
+              <span className="text-sm font-medium">{user?.name?.split(" ")[0]}</span>
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="px-4 py-2 rounded-full bg-gray-100 flex items-center gap-2 border border-gray-200 hover:bg-gray-200"
+            >
+              <ProfileIcon />
+              <span className="text-sm font-medium">Login / Register</span>
+            </Link>
+          )}
+
+          <Link
+            href="/cart"
+            className="relative w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"
+          >
+            <ShoppingCart className="text-black w-5 h-5" />
+            {totalCartItems > 0 && (
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 text-white text-[10px] font-semibold rounded-full flex items-center justify-center border border-white">
+                {totalCartItems}
+              </div>
+            )}
           </Link>
         </div>
-        <div className="w-[50%] relative">
-          <input
-            className="w-full font-Poppins font-medium border-[2.5px] outline-none h-[55px] px-4 border-black rounded"
-            type="text"
-            placeholder="Search For Products..."
-            value={searchQuery}
-            onChange={(e)=> setSearchQuery(e.target.value)}
-          />
-          <div onClick={handleSearchClick} className="w-[60px] cursor-pointer flex items-center justify-center h-[55px] absolute top-0 right-0 bg-black rounded">
-            <Search color="#fff" />
-          </div>
-          {/* Suggestions dropdown */}
-          {suggestions.length > 0 && (
-            <div className="absolute w-full top-[60px] bg-white border">
-            {suggestions.map((item)=>(
-              <Link
-              href={`/product/${item.slug}`}
-              key={item.id}
-              onClick={()=>{
-                setSuggestions([]);
-                setSearchQuery("");
-                
-              }}
-              className="black px-4 py-2 text-sm hover:bg-blue-500"
-              >
-              {item.title}
-              </Link>
-            ))}
-            </div>
-          )}
-          {loadingSuggestions &&(
-            <div className="absolute w-full top-[60px] bg-white border">
-              Searching...
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-8">
-          <div className="flex items-center gap-2">
-            {!isLoading && user ? (
-              <>
-                <Link
-                  href={"/profile"}
-                  className="border-2 w-[50px] h-[50px] flex items-center justify-center rounded-full border-gray-300"
-                >
-                  <ProfileIcon />
-                </Link>
-                <Link href={"/profile"}>
-                  <span className="block font-medium text-gray-600">
-                    Hello,
-                  </span>
-                  <span className="font-semibold text-black">
-                    {user?.name?.split(" ")[0]}
-                  </span>
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link
-                  href={"/login"}
-                  className="border-2 w-[50px] h-[50px] flex items-center justify-center rounded-full border-gray-300"
-                >
-                  <ProfileIcon />
-                </Link>
-                <Link href={"/login"}>
-                  <span className="block font-medium text-gray-600">
-                    Hello,
-                  </span>
-                  <span className="font-semibold text-black">
-                    {isLoading ? "..." : "Sign In"}
-                  </span>
-                </Link>
-              </>
-            )}
-          </div>
-          <div className="flex items-center gap-5">
-            <Link href={"/wishlist"} className="relative">
-              <HeartIcon />
-              <div className="w-6 h-6 border-2 rounded-full flex items-center justify-center absolute top-[-10px] right-[-10px] border-white bg-black">
-                <span className="text-white font-medium text-sm">{wishlist?.length}</span>
-              </div>
-            </Link>
-            <Link href={"/cart"} className="relative">
-              <CartBagIconComponent />
-              <div className="w-6 h-6 border-2 rounded-full flex items-center justify-center absolute top-[-10px] right-[-10px] border-white bg-black">
-                <span className="text-white font-medium text-sm">{totalCartItems}</span>
-              </div>
-            </Link>
-          </div>
-        </div>
       </div>
+
       <div className="border-b border-gray-300" />
-      <Headerbottom />
+      <CategoryBar />
+      <SidebarMobile isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <MobileBottomNav />
     </div>
   );
 };

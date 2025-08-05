@@ -49,7 +49,7 @@ class LoggerService {
             if (this.reconnectAttempts <= this.maxReconnectAttempts) {
                 console.warn(`[Logger] Connection failed, retrying in ${this.reconnectDelay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
                 await new Promise(resolve => setTimeout(resolve, this.reconnectDelay));
-                this.reconnectDelay *= 2; // Exponential backoff
+                this.reconnectDelay *= 2;
                 return this.connect();
             }
             
@@ -75,7 +75,6 @@ class LoggerService {
             metadata
         } = params;
 
-        // Validate and sanitize sensitive data
         const sanitizedMessage = this.sanitizeMessage(message);
         const sanitizedMetadata = this.sanitizeMetadata(metadata);
 
@@ -95,26 +94,23 @@ class LoggerService {
             await this.producer.send({
                 topic: "logs",
                 messages: [{
-                    key: source, // Partition by source for better distribution
+                    key: source, 
                     value: JSON.stringify(logPayload),
                     timestamp: Date.now().toString()
                 }],
             });
         } catch (error) {
-            // Mark as disconnected to trigger reconnection on next send
             this.isConnected = false;
             
-            // Fallback to console logging if Kafka fails
+            
             console.error('[Logger] Failed to send log to Kafka:', error);
             console.log(`[${logPayload.timestamp}] ${source} [${type.toUpperCase()}] ${sanitizedMessage}`);
             
-            // Re-throw for caller to handle if needed
             throw error;
         }
     }
 
     private sanitizeMessage(message: string): string {
-        // Remove sensitive patterns
         const sensitivePatterns = [
             /password[\s]*[:=][\s]*["']?[^\s"']+["']?/gi,
             /token[\s]*[:=][\s]*["']?[^\s"']+["']?/gi,
@@ -158,10 +154,10 @@ class LoggerService {
     }
 }
 
-// Singleton instance
+
 const loggerService = new LoggerService();
 
-// Export the main function for backward compatibility
+
 export async function sendLog(params: {
     type?: "info" | "error" | "warning" | "success" | "debug";
     message: string;
@@ -173,10 +169,9 @@ export async function sendLog(params: {
     return loggerService.sendLog(params);
 }
 
-// Export logger service for advanced usage
+
 export { loggerService };
 
-// Graceful shutdown
 process.on('SIGINT', async () => {
     console.log('[Logger] Shutting down gracefully...');
     await loggerService.disconnect();

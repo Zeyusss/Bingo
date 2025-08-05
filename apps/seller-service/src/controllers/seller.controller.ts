@@ -173,7 +173,6 @@ export const updateProfilePictures = async (
       return next(new AuthError("Only sellers can update profile picture."));
     }
 
-    // Get the shop first
     const shop = await prisma.shops.findUnique({
       where: { sellerId: req.seller.id },
       include: { avatar: true },
@@ -184,7 +183,6 @@ export const updateProfilePictures = async (
     }
 
     if (editType === "cover") {
-      // Cover image is still a direct string field
       const updatedShop = await prisma.shops.update({
         where: { sellerId: req.seller.id },
         data: { coverBanner: imageUrl },
@@ -208,11 +206,9 @@ export const updateProfilePictures = async (
         },
       });
     } else {
-      // Avatar is a relation to images table
       let imageRecord;
       
       if (shop.avatar) {
-        // Update existing image record
         imageRecord = await prisma.images.update({
           where: { id: shop.avatar.id },
           data: {
@@ -221,7 +217,6 @@ export const updateProfilePictures = async (
           },
         });
       } else {
-        // Create new image record
         imageRecord = await prisma.images.create({
           data: {
             url: imageUrl,
@@ -230,14 +225,13 @@ export const updateProfilePictures = async (
           },
         });
 
-        // Update shop to reference the new image
         await prisma.shops.update({
           where: { id: shop.id },
           data: { avatarId: imageRecord.id },
         });
       }
 
-      // Get updated shop with avatar relation
+
       const updatedShop = await prisma.shops.findUnique({
         where: { id: shop.id },
         include: {
@@ -331,7 +325,7 @@ export const getSellerInfo = async (
     const shop = await prisma.shops.findUnique({
       where: { id: req.params.id },
       include: {
-        avatar: true, // Include the avatar relationship
+        avatar: true, 
         reviews: {
           include: {
             user: {
@@ -375,16 +369,16 @@ export const getSellerInfo = async (
       },
     });
 
-    // Apply default images to shop and user avatars in reviews
+
     const shopWithDefaults = {
       ...shop,
-      avatar: shop?.avatar?.url || DEFAULT_PROFILE_IMAGE, // Get URL from avatar relationship
+      avatar: shop?.avatar?.url || DEFAULT_PROFILE_IMAGE, 
       coverBanner: shop?.coverBanner || DEFAULT_COVER_IMAGE,
       reviews: shop?.reviews?.map((review: any) => ({
         ...review,
         user: {
           ...review.user,
-          avatar: review.user?.avatar?.url || DEFAULT_PROFILE_IMAGE, // Handle user avatar relationship
+          avatar: review.user?.avatar?.url || DEFAULT_PROFILE_IMAGE, 
         },
       })) || [],
     };
@@ -1074,7 +1068,6 @@ export const trackShopVisitor = async (
       },
     });
 
-    // Update shop analytics
     await prisma.shopAnalytics.upsert({
       where: { shopId },
       update: {

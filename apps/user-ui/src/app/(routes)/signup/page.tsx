@@ -42,7 +42,7 @@ const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
         if (prev <= 1) {
           clearInterval(interval);
           setCanResend(true);
-          return 0; 
+          return 0;
         }
         return prev - 1;
       });
@@ -75,7 +75,7 @@ const verifyOtpMutation = useMutation({
       `${process.env.NEXT_PUBLIC_SERVER_URL}/api/verify-user`,
       {
         ...userData,
-        otp: otp.join(""), 
+        otp: otp.join(""),
       }
     );
 
@@ -118,25 +118,36 @@ const resendOtp = ()=>{
   }
 }
 
-  return (
-    <div className="w-full py-10 min-h-[85vh]">
-      <h1 className="text-4xl font-Poppins font-semibold text-center">
-        SignUp
+  return ( 
+    <>
+     <div className="bg-cover bg-center h-[50vh] relative" style={{ backgroundImage: "url('/header.jpg')" }}>
+      <div className="absolute inset-0  flex items-center justify-start ">
+            <div className="text-white pl-10" style={{ marginLeft: '0px' }}>
+          <h1 className="text-7xl font-bold text-white mb-4">My account</h1>
+          <nav className="text-lg text-white">
+            <Link href="/" className="hover:underline">Home</Link>
+            <span className="mx-2">/</span>
+            <span className="text-white font-bold ">My account</span>
+          </nav>
+        </div>
+      </div>
+    </div>
+  
+      <div className=" flex items-center justify-center  px-4 ">
+           <div className="w-full max-w-4xl flex flex-col md:flex-row  rounded-2xl overflow-hidden ">
+    
+
+      <div className="space-y-5">
+        <div className="md:w-[480px] p-8 ">
+  <h1 className="text-2xl font-bold  mb-6">
+       REGISTER
       </h1>
-      <p className="text-center text-lg font-medium py-3">
-        Home . SignUp
-      </p>
-      <div className="w-full flex justify-center">
-        <div className="md:w-[480px] p-8 bg-white shadow rounded-lg">
-          <h3 className="text-3xl font-semibold text-center mb-2">
-            SignUp to Bingo
-          </h3>
-          <p className="text-center mb-4">
+          {/* <p className="text-center mb-4">
             Already have an Account?{" "}
             <Link href="/login" className="text-blue-500">
               Login
             </Link>
-          </p>
+          </p> */}
 
           <GoogleButton />
 
@@ -147,14 +158,14 @@ const resendOtp = ()=>{
           </div>
 {!showOtp ? (          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                         <div>
-              <label className="block text-gray-700 mb-1">Name</label>
+              <label className="block font-medium text-gray-700 mb-1">Username</label>
               <input
                 type="text"
                 placeholder="Full Name"
                 className="w-full p-2 border border-gray-300 outline-0 rounded"
                 {...register("name", {
                   required: "Name is required",
-                  
+
                 })}
               />
               {errors.email && (
@@ -162,7 +173,7 @@ const resendOtp = ()=>{
               )}
             </div>
             <div>
-              <label className="block text-gray-700 mb-1">Email</label>
+              <label className="block font-medium text-gray-700 mb-1">Email</label>
               <input
                 type="email"
                 placeholder="Email Address"
@@ -181,7 +192,7 @@ const resendOtp = ()=>{
             </div>
 
             <div>
-              <label className="block text-gray-700 mb-1">Password</label>
+              <label className="block font-medium text-gray-700 mb-1">Password</label>
               <div className='relative'>
               <input
                 type={passwordVisible ? "text" : "password"}
@@ -206,14 +217,14 @@ const resendOtp = ()=>{
             <button
               type="submit"
               disabled =  {signUpMutation.isPending}
-              className="w-full bg-black text-white p-2 rounded hover:bg-blue-600"
+              className="w-full bg-[#F59A57] text-white font-bold py-3 rounded-full"
             >
               {signUpMutation.isPending ? "Signing Up..." : "Sign Up"}
             </button>
              {signUpMutation?.isError && signUpMutation.error instanceof AxiosError && (
               <p className='text-red-500 text-sm mt-1'>{String(signUpMutation.error.response?.data?.message || signUpMutation.error.message)}</p>
             )}
-          
+
           </form>) : ( <div>
             <h3 className='text-xl font-semibold text-center mb-4'>
             Enter OTP
@@ -257,8 +268,25 @@ const resendOtp = ()=>{
           </div>)}
 
         </div>
-      </div>
+        </div>
+        <div className="hidden md:block w-px bg-gray-300" />
+
+         <div className="w-full md:w-1/2  flex flex-col items-center justify-center p-10 text-center">
+          <h2 className="text-2xl  font-bold  mb-4">LOGIN</h2>
+          <p className="text-gray-600 mb-6 leading-8">
+            Registering for this site allows you to access your order status and history.
+            Just fill in the fields below, and we'll get a new account set up for you in no time.
+            We will only ask you for information necessary to make the purchase process faster and easier.
+          </p>
+          <button className=" text-black px-6 py-2 rounded-full font-semibold shadow">
+           <Link href="/login" >
+              Login
+            </Link>
+          </button>
+        </div>
     </div>
+    </div>
+    </>
   );
 };
 

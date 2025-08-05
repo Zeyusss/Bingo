@@ -20,7 +20,6 @@ const useLocationTracking = ()=> {
     const [location , setLocation] = useState<{country:string; city : string} | null>(null);
 
     useEffect(()=>{
-        // Only run on client
         const stored = getStoredLocation();
         if(stored) {
             setLocation(stored);
