@@ -8,7 +8,7 @@ import {
 } from "./ui/Card";
 import { Badge } from "./ui/Badge";
 import { Skeleton, SkeletonTable } from "./ui/Skeleton";
-import { useRecentOrders } from "../hooks/useDashboardData";
+import { useRecentOrders } from "../../../hooks/useDashboardData";
 import {
   ShoppingCart,
   Eye,
@@ -148,7 +148,7 @@ const RecentOrdersTable: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                orders.map((order) => (
+                orders.map((order:any) => (
                   <tr
                     key={order.id}
                     className="border-b border-gray-100 hover:bg-gray-50"
@@ -190,7 +190,7 @@ const RecentOrdersTable: React.FC = () => {
               No recent orders found
             </div>
           ) : (
-            orders.map((order) => (
+            orders.map((order:any) => (
               <div
                 key={order.id}
                 className="bg-gray-50 rounded-lg p-4 border border-gray-200"

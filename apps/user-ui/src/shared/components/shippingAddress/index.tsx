@@ -6,7 +6,11 @@ import { Plus, X, MapPin, Edit, Trash2 } from "lucide-react";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 
-const ShippingAddressSection = () => {
+interface ShippingAddressSectionProps {
+  onSelectAddress?: (id: string) => void;
+}
+
+const ShippingAddressSection: React.FC<ShippingAddressSectionProps> = ({ onSelectAddress }) => {
   const [showModal, setShowModal] = useState(false);
   const [editAddress, setEditAddress] = useState<any>(null);
   const queryClient = useQueryClient();

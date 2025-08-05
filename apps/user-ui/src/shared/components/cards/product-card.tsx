@@ -1,10 +1,9 @@
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
-
-import { Eye, Heart, ShoppingBag } from "lucide-react";
-import Ratings from "../ratings";
+import { Heart, Eye, ShoppingCart, BarChart3 } from "lucide-react";
 import ProductDetailsCard from "./product-details";
 import { useStore } from "apps/user-ui/src/store";
+import { useComparisonStore } from "../../../store/comparisonStore";
 import useUser from "apps/user-ui/src/hooks/useUser";
 import useLocationTracking from "apps/user-ui/src/hooks/useLocationTracking";
 import useDeviceTracking from "apps/user-ui/src/hooks/useDeviceTracking";
@@ -12,118 +11,110 @@ import useDeviceTracking from "apps/user-ui/src/hooks/useDeviceTracking";
 const ProductCard = ({
   product,
   isEvent,
+  view = "grid",
+  isWishlist = false,
+  source = 'product_page'
 }: {
   product: any;
   isEvent?: boolean;
+  view?: "list" | "grid";
+  isWishlist?: boolean;
+  hideHeart?: boolean;
+  source?: 'search' | 'product_page' | 'category' | 'recommendation';
 }) => {
   const [timeleft, setTimeLeft] = useState("");
   const [open, setOpen] = useState(false);
   const { user } = useUser();
-  const location = useLocationTracking()
+  const location = useLocationTracking();
   const deviceInfo = useDeviceTracking();
   const addToCart = useStore((state: any) => state.addToCart);
   const addToWishlist = useStore((state: any) => state.addToWishlist);
   const removeFromWishlist = useStore((state: any) => state.removeFromWishlist);
   const wishlist = useStore((state: any) => state.wishlist);
   const isWishlisted = wishlist.some((item: any) => item.id === product.id);
+  
+
+  const { addProduct, removeProduct, isProductInComparison, canAddMore } = useComparisonStore();
+  const isInComparison = isProductInComparison(product.id);
+  const hasDiscount =
+    product.sale_price && product.sale_price < product.regular_price;
+  const isNew =
+    product?.createdAt &&
+    Date.now() - new Date(product.createdAt).getTime() <
+      7 * 24 * 60 * 60 * 1000;
 
   useEffect(() => {
     if (isEvent && product?.ending_date) {
-      const interval = setInterval(() => {
+      const updateTimeLeft = () => {
         const endTime = new Date(product.ending_date).getTime();
         const now = Date.now();
         const diff = endTime - now;
 
         if (diff <= 0) {
           setTimeLeft("Expired");
-          clearInterval(interval);
-          return;
+          return false; 
         }
+        
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
         const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
         const minutes = Math.floor((diff / (1000 * 60)) % 60);
-        setTimeLeft(`${days}d ${hours}h ${minutes}m left with this price.`);
-      }, 1000);
+        
+        let updateText;
+        if (days > 1) {
+          updateText = `${days}d ${hours}h left with this price.`;
+        } else if (hours > 1) {
+          updateText = `${hours}h ${minutes}m left with this price.`;
+        } else {
+          const seconds = Math.floor((diff / 1000) % 60);
+          updateText = `${minutes}m ${seconds}s left with this price.`;
+        }
+        
+        setTimeLeft(updateText);
+        return true; 
+      };
+
+
+      if (updateTimeLeft()) {
+        const endTime = new Date(product.ending_date).getTime();
+        const now = Date.now();
+        const diff = endTime - now;
+        
+        let intervalTime;
+        if (diff > 24 * 60 * 60 * 1000) {
+          intervalTime = 10 * 60 * 1000; 
+        } else if (diff > 60 * 60 * 1000) {
+          intervalTime = 60 * 1000; 
+        } else {
+          intervalTime = 10 * 1000;
+        }
+        
+        const interval = setInterval(() => {
+          if (!updateTimeLeft()) {
+            clearInterval(interval);
+          }
+        }, intervalTime);
+        
+        return () => clearInterval(interval);
+      }
     } else {
       setTimeLeft("");
     }
   }, [isEvent, product?.ending_date]);
 
   return (
-    <div className="w-full min-h-[390px] bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 relative overflow-hidden group border border-gray-100 hover:border-blue-200">
-      {isEvent && (
-        <div className="absolute top-3 left-3 bg-gradient-to-r from-red-500 to-orange-400 text-white text-xs font-bold py-1 px-3 rounded-full shadow-lg animate-pulse z-20">
-          OFFER
-        </div>
-      )}
-      {product?.stock <= 5 && (
-        <div className="absolute top-3 right-3 bg-yellow-300 text-gray-800 text-xs font-bold py-1 px-3 rounded-full shadow z-20">
-          Limited Stock
-        </div>
-      )}
+    <div className="relative bg-white rounded-xl p-4 group shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden h-full flex flex-col justify-between">
+      <div className="transition-transform duration-500 ease-in-out group-hover:-translate-y-2 relative">
+        {/* NEW Badge */}
+        {isNew && (
+          <span className="absolute top-2 left-2 bg-green-600 text-white text-[10px] font-semibold px-2 py-[2px] rounded-full z-10">
+            NEW
+          </span>
+        )}
 
-      <Link href={`/product/${product?.slug}`} className="block group">
-        <img
-          src={
-            product?.images?.[0]?.url ||
-            "https://images.unsplash.com/photo-1610513320995-1ad4bbf25e55?q=80&w=1470&auto=format&fit=crop"
-          }
-          alt={product?.title}
-          width={300}
-          height={300}
-          className="w-full h-[210px] object-cover rounded-t-2xl group-hover:scale-105 transition-transform duration-300 bg-gray-50 border-b border-gray-100"
-          loading="lazy"
-        />
-      </Link>
-
-      <div className="p-4 flex flex-col gap-2">
-        <Link
-          href={`/shop/${product?.Shop?.id}`}
-          className="block text-blue-700 text-xs font-semibold hover:underline mb-1"
-        >
-          {product?.Shop?.name}
-        </Link>
-
-        <Link href={`/product/${product?.slug}`}>
-          <h3 className="text-gray-900 font-bold text-base line-clamp-2 hover:text-blue-600 transition">
-            {product?.title}
-          </h3>
-        </Link>
-
-        <div className="mt-1">
-          <Ratings
-            rating={typeof product?.ratings === "number" ? product.ratings : 0}
-            showTextFallback={true}
-          />
-        </div>
-
-        <div className="flex items-center gap-2 mt-2">
-          {product?.sale_price && (
-            <span className="text-green-600 font-bold text-lg">
-              ${product.sale_price}
-            </span>
-          )}
-          {product?.regular_price &&
-            product.regular_price > product.sale_price && (
-              <span className="text-gray-400 line-through text-sm ml-1">
-                ${product.regular_price}
-              </span>
-            )}
-        </div>
-      </div>
-
-      {isEvent && timeleft && (
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-20 bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-medium shadow z-20">
-          {timeleft}
-        </div>
-      )}
-      <div className="absolute z-10 flex flex-col gap-3 right-4 top-4 items-end">
-        <button
-          className="bg-white rounded-full p-2 shadow-md hover:bg-red-50 transition group"
-          title="Add to Wishlist"
-          aria-label="Add to Wishlist"
-        >
-          <Heart
+        {/* Wishlist Icon */}
+        {!isWishlist && (
+          <button
+            className="absolute top-2 right-2 z-10"
             onClick={() =>
               isWishlisted
                 ? removeFromWishlist(product.id, user, location, deviceInfo)
@@ -134,36 +125,149 @@ const ProductCard = ({
                     deviceInfo
                   )
             }
-            className="cursor-pointer group-hover:scale-110 transition text-gray-400 group-hover:text-red-500"
-            size={22}
-            fill={isWishlisted ? "red" : "transparent"}
-            stroke={isWishlisted ? "red" : "#4B5563"}
-          />
-        </button>
-        <button
-          className="bg-white rounded-full p-2 shadow-md hover:bg-blue-50 transition group"
-          title="Quick View"
-          aria-label="Quick View"
-          onClick={() => setOpen(!open)}
-        >
-          <Eye
-            className="cursor-pointer text-[#4b5563] group-hover:text-blue-600 group-hover:scale-110 transition"
-            size={22}
-          />
-        </button>
-        <button
-          className="bg-white rounded-full p-2 shadow-md hover:bg-green-50 transition group"
-          title="Add to Cart"
-          aria-label="Add to Cart"
-        >
-          <ShoppingBag
-            size={21}
-            className="cursor-pointer text-[#4b5563] group-hover:text-green-600 group-hover:scale-110 transition"
-            onClick={()=> addToCart({...product, quantity: 1 }, user, location, deviceInfo)}
-          />
-        </button>
+          >
+            <Heart
+              size={20}
+              fill={isWishlisted ? "red" : "transparent"}
+              stroke={isWishlisted ? "red" : "#888"}
+              className="text-gray-500 hover:text-red-500 transition"
+            />
+          </button>
+        )}
+
+
+        <Link href={`/product/${product?.slug}`} className="block">
+          <div className="w-full h-[240px] bg-white flex items-center justify-center">
+            <img
+              src={
+                product?.images?.[0]?.url ||
+                "https://images.unsplash.com/photo-1610513320995-1ad4bbf25e55?q=80&w=1470&auto=format&fit=crop"
+              }
+              alt={product?.title}
+              className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
+            />
+          </div>
+        </Link>
+
+        {/* Title + Category */}
+        <Link href={`/product/${product.slug}`}>
+          <h3 className="text-sm font-semibold text-gray-900 mt-3 mb-1 hover:text-blue-600 line-clamp-1 transition-colors">
+            {product.title}
+          </h3>
+        </Link>
+        <p className="text-xs text-gray-400 capitalize">
+          {product.category || product.Shop?.name}
+        </p>
+
+        {/* Price & Rating */}
+        <div className="flex justify-between items-center mt-2">
+          <div className="flex gap-1 items-baseline">
+            <span className="text-[15px] font-bold text-orange-600">
+              ${product.sale_price || product.regular_price}
+            </span>
+            {hasDiscount && (
+              <span className="text-xs line-through text-gray-400">
+                ${product.regular_price}
+              </span>
+            )}
+          </div>
+          <div className="text-xs text-yellow-500 font-semibold flex items-center gap-1">
+            {typeof product.ratings === "number" ? product.ratings : "4.5"} ★
+          </div>
+        </div>
+
+        {/* Event Timer */}
+        {isEvent && timeleft && (
+          <div className="mt-2 flex items-center gap-1 text-xs text-orange-600 font-medium">
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+            </svg>
+            <span>{timeleft}</span>
+          </div>
+        )}
+
+        {/* Color Dots */}
+        {product.colors && product.colors.length > 0 && (
+          <div className="flex gap-2 mt-2">
+            {product.colors.slice(0, 4).map((color: string, idx: number) => (
+              <span
+                key={idx}
+                className="w-4 h-4 rounded-full border"
+                style={{ backgroundColor: color }}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
+      {/* Hover Action Buttons */}
+      <div className="relative mt-4 opacity-0 group-hover:opacity-100 translate-y-3 group-hover:translate-y-0 transition-all duration-500 ease-in-out z-10">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() =>
+              addToCart({ ...product, quantity: 1 }, user, location, deviceInfo)
+            }
+            className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold py-2 px-4 rounded-full transition w-[70%] flex items-center justify-center relative overflow-hidden group/addtocart"
+          >
+            <span className="group-hover/addtocart:opacity-0 transition-opacity duration-300">
+              Add to cart
+            </span>
+            <ShoppingCart
+              size={20}
+              className="absolute opacity-0 group-hover/addtocart:opacity-100 transition-opacity duration-300"
+            />
+          </button>
+
+          <div className="flex gap-2">
+            <button
+              className="p-2 rounded-full bg-gray-100 hover:bg-blue-100 transition"
+              onClick={() => setOpen(true)}
+            >
+              <Eye size={18} className="text-gray-600" />
+            </button>
+            <button 
+              onClick={() => {
+                if (isInComparison) {
+                  removeProduct(product.id);
+                } else if (canAddMore()) {
+                  addProduct({
+                    id: product.id,
+                    title: product.title,
+                    slug: product.slug,
+                    sale_price: product.sale_price || product.regular_price,
+                    regular_price: product.regular_price,
+                    images: product.images || [],
+                    Shop: product.Shop || { id: '', name: '', avatar: null },
+                    ratings: product.ratings || 0,
+                    stock: product.stock || 0,
+                    category: product.category || '',
+                    tags: product.tags || [],
+                    specifications: product.specifications || {},
+                    customProperties: product.customProperties || {},
+                    addedAt: Date.now(),
+                    lastViewed: Date.now(),
+                    source
+                  }, source);
+                }
+              }}
+              disabled={!canAddMore() && !isInComparison}
+              className={`p-2 rounded-full transition ${
+                isInComparison 
+                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                  : canAddMore() 
+                    ? 'bg-gray-100 hover:bg-blue-100 text-gray-600' 
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              }`}
+              title={isInComparison ? 'Remove from comparison' : canAddMore() ? 'Add to comparison' : 'Comparison limit reached (4 max)'}
+            >
+              <BarChart3 size={18} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick View Modal */}
       {open && <ProductDetailsCard data={product} setOpen={setOpen} />}
     </div>
   );

@@ -3,10 +3,12 @@ import useDeviceTracking from "apps/user-ui/src/hooks/useDeviceTracking";
 import useLocationTracking from "apps/user-ui/src/hooks/useLocationTracking";
 import useUser from "apps/user-ui/src/hooks/useUser";
 import { useStore } from "apps/user-ui/src/store";
-import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect } from "react";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
+import ProductCard from "apps/user-ui/src/shared/components/cards/product-card";
+import { useState } from "react";
+import Footer from "apps/user-ui/src/shared/components/homepage/Footer";
 
 const WishlistPage = () => {
   const { user, isLoading } = useUser();
@@ -16,10 +18,11 @@ const WishlistPage = () => {
   const addToCart = useStore((state: any) => state.addToCart);
   const removeFromWishlist = useStore((state: any) => state.removeFromWishlist);
   const wishlist = useStore((state: any) => state.wishlist);
-  
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/login');
+      router.push("/login");
     }
   }, [isLoading, user, router]);
 
@@ -33,6 +36,28 @@ const WishlistPage = () => {
     }));
   };
 
+  const toggleSelect = (id: string) => {
+    setSelectedItems((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+  const isAllSelected =
+    wishlist.length > 0 && selectedItems.length === wishlist.length;
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(wishlist.map((item: any) => item.id));
+    }
+  };
+  const removeSelectedItems = () => {
+    selectedItems.forEach((id) => {
+      removeFromWishlist(id, user, location, deviceInfo);
+    });
+    setSelectedItems([]);
+  };
+
   const removeItem = (id: string) => {
     removeFromWishlist(id, user, location, deviceInfo);
   };
@@ -44,96 +69,113 @@ const WishlistPage = () => {
     }));
   };
   return (
-    <div className="w-full bg-white">
-      <div className="md:w-[80%] w-[95%] m-auto max-h-screen">
-        {/* crumb */}
+<div className="flex flex-col min-h-screen">
+  <main className="flex-grow pb-[200px]">
+
+    <div className="md:w-[80%] w-[95%] m-auto">
         <div className="pb-[50px]">
           <h1 className="md:pt-[50px] font-medium text-[44px] leading-[1] mb-[16px] font-jost">
             Wishlist
           </h1>
-          <Link href={"/"} className="text-[#55585b] hover:underline">
+          <Link href="/" className="text-[#55585b] hover:underline">
             Home
           </Link>
-          <span className="inline-block p-[1.5px] mx-1 bg-[#a8acb0] rounded-full"></span>
+          <span className="inline-block p-[1.5px] mx-1 bg-[#a8acb0] rounded-full" />
           <span className="text-[#55585b]">Wishlist</span>
         </div>
+
         {wishlist.length === 0 ? (
-          <div className="text-center text-gray-600 text-lg">
-            Your wishlist is empty! start adding products.
+          <div className="flex flex-col items-center justify-center py-20">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-24 h-24 text-gray-300 mb-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21.752 7.036a5.754 5.754 0 00-10.248-3.79 5.754 5.754 0 00-10.248 3.79c0 6.27 10.248 11.46 10.248 11.46s10.248-5.19 10.248-11.46z"
+              />
+            </svg>
+            <h2 className="text-3xl font-bold mb-4">This wishlist is empty.</h2>
+            <p className="text-gray-600 text-center max-w-md px-4">
+              You don't have any products in the wishlist yet. You will find a
+              lot of interesting products on our "Shop" page.
+            </p>
+            <Link href="/products" className="mt-6">
+              <button className="mt-6 bg-orange-400 hover:bg-orange-500 text-white px-6 py-3 rounded-full text-lg font-semibold transition duration-300">
+                Return to shop
+              </button>
+            </Link>
           </div>
         ) : (
-          <div className="flex flex-col gap-10">
-            <table className="w-full border-collapse">
-              <thead className="bg-[#f1f3f4]">
-                <tr>
-                  <th className="py-3 text-left pl-4">Product</th>
-                  <th className="py-3 text-left">Price</th>
-                  <th className="py-3 text-left">Quantity</th>
-                  <th className="py-3 text-left">Action</th>
-                  <th className="py-3 text-left"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {wishlist?.map((item: any) => (
-                  <tr className="border-b border-b-[#0000000e]" key={item.id}>
-                    <td className="flex items-center gap-3 p-4">
-                      <Image
-                        src={item.images[0]?.url}
-                        alt={item.title}
-                        width={80}
-                        height={80}
-                        className="rounded"
-                      />
-                      <div className="flex flex-col">
-                        <span className="font-medium">{item.title}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 text-lg">
-                      ${item?.sale_price.toFixed(2)}
-                    </td>
-                    <td>
-                      <div className="flex justify-center items-center border border-gray-200 rounded-[20px] w-[90px] p-[2px]">
-                        <button
-                          className="text-black cursor-pointer text-xl"
-                          onClick={() => decreaseQuantity(item.id)}
-                        >
-                          -
-                        </button>
-                        <span className="px-4">{item?.quantity}</span>
-                        <button
-                          className="text-black cursor-pointer text-xl"
-                          onClick={() => increaseQuantity(item?.id)}
-                        >
-                          +
-                        </button>
-                      </div>
-                    </td>
-                    <td>
-                      <button
-                        className="bg-[#2295FF] cursor-pointer text-white px-5 py-2 rounded-md hover:bg-[#007bff] transition-all"
-                        onClick={() =>
-                          addToCart(item, user, location, deviceInfo)
-                        }
-                      >
-                        Add To Cart
-                      </button>
-                    </td>
-                    <td>
-                      <button
-                        className="text-[#818487] cursor-pointer  px-5 py-2 rounded-md hover:text-[#ff1826] transition duration-200"
-                        onClick={() => removeItem(item.id)}
-                      >
-                        x Remove
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <h2 className="text-2xl font-semibold mb-6 font-jost">
+              Your products wishlist
+            </h2>
+            {/* Global Action Bar */}
+            {selectedItems.length > 0 && (
+              <div className="flex justify-between items-center bg-transparent px-4 py-2 rounded-md mb-6 border border-gray-300 shadow-sm">
+                <button
+                  onClick={removeSelectedItems}
+                  className="text-red-600 font-medium hover:underline"
+                >
+                  × Remove
+                </button>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    onChange={toggleSelectAll}
+                    className="w-[14px] h-[14px] accent-orange-500 border border-gray-300 rounded-sm"
+                  />
+                  <span className="text-sm text-gray-700">Select all</span>
+                </label>
+              </div>
+            )}
+
+            {/* Product Grid */}
+            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 ">
+              {wishlist.map((product: any) => (
+                <div key={product.id} className="relative min-h-[420px] flex flex-col justify-between">
+
+                  {/* Per-card Remove + Checkbox */}
+                  <div className="flex justify-between items-center px-1 h-6 mb-2">
+
+                    <button
+                      onClick={() => removeItem(product.id)}
+                      className="text-sm text-red-500 hover:text-red-700"
+                    >
+                      × Remove
+                    </button>
+                    <input
+                      type="checkbox"
+                      checked={selectedItems.includes(product.id)}
+                      onChange={() => toggleSelect(product.id)}
+                      className="w-[14px] h-[14px] accent-orange-500 border border-gray-300 rounded-sm"
+                    />
+                  </div>
+
+                  {/* Product Card */}
+                  <ProductCard
+                    product={product}
+                    isEvent={!!product.starting_date}
+                    view="grid"
+                    isWishlist={true}
+                  />
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
+      </main>
+      <Footer />
     </div>
+   
   );
 };
 

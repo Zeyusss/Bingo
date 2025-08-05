@@ -7,7 +7,7 @@ import {
   CardDescription,
 } from "./ui/Card";
 import { Skeleton } from "./ui/Skeleton";
-import { useResourceMonitor } from "../hooks/useDashboardData";
+import { useResourceMonitor } from "../../../hooks/useDashboardData";
 import {
   Cpu,
   HardDrive,

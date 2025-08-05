@@ -26,26 +26,90 @@ app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 app.use(cookieParser());
 app.set("trust proxy", 1);
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: (req: any) => (req.user ? 1000 : 100),
-  message: { error: "Too many requests, please try again later." },
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req: any) => req.ip,
-});
+// sliding window rate limiting
+const createRateLimiter = (windowMs: number, max: number, message: string) => {
+  return rateLimit({
+    windowMs,
+    max,
+    message: { 
+      error: message,
+      retryAfter: Math.ceil(windowMs / 1000),
+      type: 'rate_limit_exceeded'
+    },
+    standardHeaders: true, 
+    legacyHeaders: false, 
+    keyGenerator: (req: any) => {
+      //key generation to prevent bypass attempts
+      const userKey = req.user?.id || req.headers['x-user-id'] || 'anonymous';
+      const ipKey = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for']?.split(',')[0];
+      
+      return `${userKey}:${ipKey}`;
+    },
+    handler: (req, res) => {
+      const retryAfter = Math.ceil(windowMs / 1000);
+      res.set({
+        'Retry-After': retryAfter.toString(),
+        'X-RateLimit-Limit': max.toString(),
+        'X-RateLimit-Remaining': '0',
+        'X-RateLimit-Reset': new Date(Date.now() + windowMs).toISOString()
+      });
+      res.status(429).json({
+        error: message,
+        retryAfter,
+        type: 'rate_limit_exceeded',
+        timestamp: new Date().toISOString()
+      });
+    },
+    skip: (req) => {
+      return req.path === '/gateway-health' || req.path === '/health';
+    }
+  });
+};
 
-app.use(limiter);
+
+const generalLimiter = createRateLimiter(
+  60 * 1000, 
+  100, 
+  'Too many requests. Please wait a moment before trying again.'
+);
+
+
+
+const apiLimiter = createRateLimiter(
+  60 * 1000, 
+  200,
+  'API rate limit exceeded. Please reduce request frequency.'
+);
+
+
+const dashboardLimiter = createRateLimiter(
+  60 * 1000,
+  500, 
+  'Dashboard rate limit exceeded. Reducing polling frequency temporarily.'
+);
+
+
+const monitoringLimiter = createRateLimiter(
+  60 * 1000, 
+  1000, 
+  'Monitoring rate limit exceeded. Please contact system administrator.'
+);
 
 app.get("/gateway-health", (req, res) => {
   res.send({ message: "Welcome to api-gateway!" });
 });
-app.use("/chatting", proxy("http://localhost:6006"));
-app.use("/admin", proxy("http://localhost:6005"));
-app.use("/order", proxy("http://localhost:6004"));
-app.use("/seller", proxy("http://localhost:6003"));
-app.use("/product", proxy("http://localhost:6002"));
-app.use("/", proxy("http://localhost:6001"));
+
+// routes
+app.use('/admin/api/dashboard/resource-monitor', monitoringLimiter, proxy("http://localhost:6005")); // ultra-high for monitoring
+app.use('/admin/api/dashboard/system-stats', monitoringLimiter, proxy("http://localhost:6005")); // ultra-high for stats
+app.use('/admin/api/dashboard', dashboardLimiter, proxy("http://localhost:6005")); // high capacity for dashboards
+app.use('/order/api/get-recent-orders', dashboardLimiter, proxy("http://localhost:6004")); // high capacity for order dashboard
+app.use("/chatting", apiLimiter, proxy("http://localhost:6006")); // standard limits 
+app.use("/admin", apiLimiter, proxy("http://localhost:6005")); // standard limits
+app.use("/order", apiLimiter, proxy("http://localhost:6004")); // standard limits 
+app.use("/seller", apiLimiter, proxy("http://localhost:6003")); // standard limits 
+app.use("/product", apiLimiter, proxy("http://localhost:6002")); // standard limits
+app.use("/", generalLimiter, proxy("http://localhost:6001")); // general limits 
 
 const port = process.env.PORT || 8080;
 const server = app.listen(port, () => {

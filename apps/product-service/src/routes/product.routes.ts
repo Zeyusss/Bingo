@@ -1,6 +1,7 @@
 import express, {Router} from "express";
-import { createDiscountCodes, createProduct, deleteDiscountCode, deleteProduct, deleteProductImage, getAllEvents, getAllProducts, getCategories, getDiscountCodes, getFilteredEvents, getFilteredProducts, getFilteredShops, getProductDetails, getShopProducts, restoreProduct, searchProducts, topShops, updateProduct, uploadProductImage } from "../controllers/product.controller";
+import {getCategoriesWithCount,getBestSellersByCategory,getBrandsShowcase,getThreeProducts,getNewProducts, createDiscountCodes, createProduct, deleteDiscountCode, deleteProduct, deleteProductImage, getAllEvents, getAllProducts, getCategories, getDiscountCodes, getFilteredEvents, getFilteredProducts, getFilteredShops, getProductDetails, getShopProducts, restoreProduct, searchProducts, topShops, updateProduct, uploadProductImage, searchAdvanced, getSearchSuggestions, getPopularSearches, getSearchFilters } from "../controllers/product.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
+import { searchRateLimiter, suggestionsRateLimiter, filtersRateLimiter } from "../middleware/rateLimiter";
 
 
 
@@ -24,6 +25,17 @@ router.get("/get-filtered-products",getFilteredProducts);
 router.get("/get-filtered-offers",getFilteredEvents);
 router.get("/get-filtered-shops",getFilteredShops);
 router.get("/search-products",searchProducts);
+
+
+router.get("/search-advanced", searchRateLimiter, searchAdvanced);
+router.get("/search-suggestions", suggestionsRateLimiter, getSearchSuggestions);
+router.get("/search-popular", filtersRateLimiter, getPopularSearches);
+router.get("/search-filters", filtersRateLimiter, getSearchFilters);
 router.get("/top-shops",topShops);
 
+router.get("/categories-with-count", getCategoriesWithCount);
+router.get('/best-sellers', getBestSellersByCategory);
+router.get("/brands/showcase", getBrandsShowcase);
+router.get("/get-three-products", getThreeProducts);
+router.get("/get-new-products", getNewProducts);
 export default router;

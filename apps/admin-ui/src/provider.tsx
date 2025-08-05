@@ -1,21 +1,21 @@
-'use client';
-import {QueryClient,QueryClientProvider} from "@tanstack/react-query";
-import React,{useState} from "react";
+"use client";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import React from "react";
+import { createQueryClient } from "./utils/queryConfig";
+import { ToastProvider } from "./app/shared/components/providers/ToastProvider";
 
+const Providers = ({ children }: { children: React.ReactNode }) => {
+  const [queryClient] = React.useState(() => createQueryClient());
 
-const Providers = ({children}:{children:React.ReactNode})=>{
-    const [queryClient] = useState(()=> new QueryClient({
-        defaultOptions:{
-            queries:{
-                refetchOnWindowFocus:false,
-                staleTime : 1000 * 60 * 5,
-            }
-        }
-    }));
-
-    return (
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    )
-}
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ToastProvider>
+        {children}
+        <ReactQueryDevtools initialIsOpen={false} />
+      </ToastProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default Providers;

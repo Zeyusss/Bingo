@@ -13,6 +13,7 @@ type Product = {
 type Store = {
   cart: Product[];
   wishlist: Product[];
+  compare: Product[];
   addToCart: (
     product: Product,
     user: any,
@@ -37,6 +38,8 @@ type Store = {
     location: any,
     deviceInfo: any
   ) => void;
+  addToCompare: (product: Product) => void; 
+  removeFromCompare: (id: string) => void;
 };
 
 export const useStore = create<Store>()(
@@ -44,6 +47,7 @@ export const useStore = create<Store>()(
     (set, get) => ({
       cart: [],
       wishlist: [],
+      compare: [],
 
       // add to cart
       addToCart: (product, user, location, deviceInfo) => {
@@ -158,6 +162,17 @@ export const useStore = create<Store>()(
           });
         }
       },
+      addToCompare: (product) => {
+  set((state) => {
+    if (state.compare.find((item) => item.id === product.id)) return state;
+    return { compare: [...state.compare, product] };
+  });
+},
+removeFromCompare: (id) => {
+  set((state) => ({
+    compare: state.compare.filter((item) => item.id !== id),
+  }));
+},
     }),
     { name: "store-storage" }
   )

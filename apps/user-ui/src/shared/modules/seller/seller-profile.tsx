@@ -1,6 +1,7 @@
 "use client";
 import { shops as PrismaShop } from "@prisma/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Camera } from "lucide-react";
 
 type ShopData = Omit<PrismaShop, "avatar"> & {
   avatar?: string | { url: string } | null;
@@ -57,6 +58,40 @@ const SellerProfile = ({
     },
     staleTime: 1000 * 60 * 5,
   });
+
+  const fileInputAvatarRef = React.useRef<HTMLInputElement | null>(null);
+  const fileInputCoverRef = React.useRef<HTMLInputElement | null>(null);
+
+const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>, type: "avatar" | "cover") => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onloadend = async () => {
+    const base64 = reader.result as string;
+    try {
+      const uploadRes = await axiosInstance.post("/seller/api/upload-image", {
+        file: base64,
+        fileName: `${type}-${Date.now()}`,
+        folder: "shops",
+      });
+
+      const imageUrl = uploadRes.data.url;
+
+
+      await axiosInstance.post("/seller/api/update-image", {
+        imageUrl,
+        editType: type,
+      });
+
+      queryClient.invalidateQueries(); 
+    } catch (err) {
+      console.error("Image upload or update failed", err);
+    }
+  };
+
+  reader.readAsDataURL(file);
+};
 
   useEffect(() => {
     const fetchFollowStatus = async () => {
@@ -189,14 +224,34 @@ const SellerProfile = ({
 
   return (
     <div>
-      <div className="relative w-full flex justify-center">
+      <div className="relative w-full h-[400px]">
         <Image
-          src={shop?.coverBanner || "https://ik.imagekit.io/w7lwh7wre/cover-handmade.webp?updatedAt=175424311149"}
+          src={
+            shop?.coverBanner ||
+            "https://ik.imagekit.io/w7lwh7wre/cover-handmade.webp?updatedAt=175424311149"
+          }
           alt="Shop Cover Banner"
-          className="w-full h-[400px] object-cover"
-          width={1200}
-          height={300}
+          className="w-full h-full object-cover"
+          fill
         />
+        {user?.id === shop.sellerId && (
+          <>
+            <button
+              type="button"
+              onClick={() => fileInputCoverRef.current?.click()}
+              className="absolute top-4 right-4 bg-white p-2 rounded-full shadow hover:bg-gray-100 transition"
+            >
+              <Camera className="text-slate-700" size={20} />
+            </button>
+            <input
+              ref={fileInputCoverRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handleImageChange(e, "cover")}
+            />
+          </>
+        )}
       </div>
 
       {/* seller header info */}
@@ -208,13 +263,33 @@ const SellerProfile = ({
                 src={
                   typeof shop?.avatar === "string"
                     ? shop.avatar
-                    : shop?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"
+                    : shop?.avatar?.url ||
+                      "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"
                 }
                 alt="Seller Avatar"
-                layout="fill"
-                objectFit="cover"
+                fill
+                className="object-cover"
               />
+              {user?.id === shop.sellerId && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => fileInputAvatarRef.current?.click()}
+                    className="absolute bottom-1 right-1 bg-white p-1 rounded-full shadow hover:bg-gray-100 transition"
+                  >
+                    <Camera className="text-slate-700" size={16} />
+                  </button>
+                  <input
+                    ref={fileInputAvatarRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleImageChange(e, "avatar")}
+                  />
+                </>
+              )}
             </div>
+
             <div className="flex-1 w-full">
               <h1 className="text-2xl font-semibold text-slate-900">
                 {shop?.name}
@@ -453,7 +528,10 @@ const SellerProfile = ({
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
                       <Image
-                        src={review.user?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"}
+                        src={
+                          review.user?.avatar ||
+                          "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"
+                        }
                         alt={review.user?.name || "User"}
                         width={40}
                         height={40}

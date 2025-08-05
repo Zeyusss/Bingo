@@ -260,7 +260,6 @@ export const createOrder = async (
           }
         }
 
-        // Fetch shipping address snapshot if shippingAddressId exists
         let shippingAddressSnapshot = null;
         if (shippingAddressId) {
           try {
@@ -303,7 +302,6 @@ export const createOrder = async (
           },
         });
 
-        // Update product analytics and stock for this shop's items
         for (const item of orderItems) {
           const { id: productId, quantity } = item;
 
@@ -521,7 +519,6 @@ export const getOrderDetails = async (
         : Promise.resolve(null),
     ]);
 
-    // use shipping address snapshot if the address was deleted
     const finalShippingAddress =
       shippingAddress || order.shippingAddressSnapshot;
 

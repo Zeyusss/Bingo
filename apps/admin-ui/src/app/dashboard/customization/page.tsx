@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Search, Plus, Trash2, Edit, GripVertical } from "lucide-react";
+import { Search, Plus, Trash2, GripVertical } from "lucide-react";
 import axiosInstance from "apps/admin-ui/src/utils/axiosInstance";
 import { Button } from "../../shared/components/ui/button";
 import { Input } from "../../shared/components/ui/input";

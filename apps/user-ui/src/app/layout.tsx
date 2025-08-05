@@ -1,10 +1,9 @@
 import Header from "../shared/widgets";
 import "./global.css";
 import { Poppins, Roboto } from "next/font/google";
-import Providers from "./providers";
-import { Toaster } from "react-hot-toast";
-import ClientRestrictionWrapper from "../shared/components/ClientRestrictionWrapper";
-
+import AppProviders from "./providers";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
 export const metadata = {
   title: "Bingo",
   description: "Bingo",
@@ -29,12 +28,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${roboto.variable} ${poppins.variable}`}>
-        <Providers>
+      <body className={`${roboto.variable} ${poppins.variable}`}
+              style={{
+          backgroundImage: "url('/assets/wd-furniture-background.webp')",
+          backgroundRepeat: "repeat",
+          backgroundSize: "auto", 
+        }}>
+        <AppProviders>
           <Header />
-          <ClientRestrictionWrapper>{children}</ClientRestrictionWrapper>
-        <Toaster />
-        </Providers>
+          {children}
+        </AppProviders>
         </body>
     </html>
   );

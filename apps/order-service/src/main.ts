@@ -1,4 +1,4 @@
-// Load environment variables
+
 require('dotenv').config({ path: require('path').resolve(__dirname, '../../../.env') });
 
 import { errorMiddleware } from '@packages/error-handler/error-middleware';

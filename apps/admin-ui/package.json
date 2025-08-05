@@ -3,6 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "dependencies": {
+    "@tanstack/react-query-devtools": "^5.84.1",
+    "react-hot-toast": "^2.5.2",
     "swr": "^2.3.4"
   }
 }

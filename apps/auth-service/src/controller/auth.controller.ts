@@ -24,7 +24,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-06-30.basil",
 });
 
-// Initialize structured logger for auth service
+
 const logger = createLogger('auth-service');
 
 // Register a new user
@@ -568,7 +568,7 @@ export const createStripeConnectLink = async (
       return next(new ValidationError("Seller not found"));
     }
 
-    // Create Stripe account link
+
     const account = await stripe.accounts.create({
       type: "standard",
       email: seller?.email,

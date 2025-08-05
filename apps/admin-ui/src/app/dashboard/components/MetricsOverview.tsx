@@ -1,6 +1,6 @@
 import React from "react";
 import { MetricCard } from "./ui/MetricCard";
-import { useSystemStats } from "../hooks/useDashboardData";
+import { useSystemStats } from "../../../hooks/useDashboardData";
 import {
   Users,
   Store,
