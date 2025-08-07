@@ -317,7 +317,8 @@ model participant {
   unreadCount    Int       @default(0)
   muted          Boolean   @default(false)
   joinedAt       DateTime  @default(now())
-}
+  
+ }
 
 model message {
   id             String   @id @default(auto()) @map("_id") @db.ObjectId

@@ -31,8 +31,20 @@ const ComparisonTray: React.FC<ComparisonTrayProps> = ({ className = "" }) => {
   };
 
   return (
-    <div className={`fixed bottom-4 right-4 z-40 ${className}`}>
-      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4 w-80">
+    <div className={`fixed bottom-4 left-4 z-40 ${className}`}>
+      {/* Mobile responsive positioning */}
+      <style jsx>{`
+        @media (max-width: 640px) {
+          .comparison-tray {
+            bottom: 80px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: calc(100vw - 2rem) !important;
+            max-width: 320px !important;
+          }
+        }
+      `}</style>
+      <div className="comparison-tray bg-white border border-gray-200 rounded-lg shadow-lg p-4 w-80">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-2">
             <Eye size={16} />

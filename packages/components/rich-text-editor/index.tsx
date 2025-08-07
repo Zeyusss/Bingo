@@ -124,7 +124,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   return (
     <div className={`rich-text-editor-container ${className}`}>
-      {/* Enhanced Toolbar Status Bar */}
       <div className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 rounded-t-lg">
         <div className="flex items-center gap-6 text-sm text-gray-700">
           {showWordCount && (
@@ -191,7 +190,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         </div>
       </div>
 
-      {/* Word Limit Warning */}
       {isWordLimitWarning && !isWordLimitExceeded && (
         <div className="px-4 py-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800">
           <div className="flex items-center gap-2">

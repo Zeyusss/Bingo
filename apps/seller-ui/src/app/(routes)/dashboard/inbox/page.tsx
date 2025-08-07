@@ -75,13 +75,17 @@ const ChatPage = () => {
 
   useEffect(() => {
     if (!ws) return;
-    ws.onmessage = (event: any) => {
+    
+    const handleMessage = (event: any) => {
       const data = JSON.parse(event.data);
+      console.log('Seller-UI received WebSocket message:', data);
 
       if (data.type === "NEW_MESSAGE") {
         const newMsg = data?.payload;
+        console.log('Processing NEW_MESSAGE:', newMsg);
 
         if (newMsg.conversationId === conversationId) {
+          console.log('Adding message to current conversation:', conversationId);
           queryClient.setQueryData(
             ["messages", conversationId],
             (old: any = []) => [
@@ -100,7 +104,7 @@ const ChatPage = () => {
         setChats((prevChats) =>
           prevChats.map((chat) =>
             chat.conversationId === newMsg.conversationId
-              ? { ...chat, lastMessage: newMsg.content }
+              ? { ...chat, lastMessage: newMsg.content || newMsg.messageBody }
               : chat
           )
         );
@@ -116,7 +120,13 @@ const ChatPage = () => {
         );
       }
     };
-  }, [ws, conversationId]);
+    
+    ws.onmessage = handleMessage;
+    
+    return () => {
+      ws.onmessage = null;
+    };
+  }, [ws, conversationId, queryClient]);
 
   const handleChatSelect = (chat: any) => {
     setHasFetchedOnce(false);

@@ -27,14 +27,32 @@ const useLocationTracking = ()=> {
         }
 
         fetch("http://ip-api.com/json/").then((res)=> res.json()).then((data)=>{
-            const newLocation = {
-                country : data?.country,
-                city: data.city,
-                timestamp : Date.now(),
+            if (data?.status === 'success' && data?.country && data?.city) {
+                const newLocation = {
+                    country : data.country,
+                    city: data.city,
+                    timestamp : Date.now(),
+                }
+                localStorage.setItem(LOCATION_STORAGE_KEY,JSON.stringify(newLocation));
+                setLocation(newLocation);
+            } else {
+                // Set a default location when API fails or returns invalid data
+                const fallbackLocation = {
+                    country: "Unknown",
+                    city: "Location Not Available",
+                    timestamp: Date.now(),
+                }
+                setLocation(fallbackLocation);
             }
-            localStorage.setItem(LOCATION_STORAGE_KEY,JSON.stringify(newLocation));
-            setLocation(newLocation);
-        }).catch((error)=> console.log("Failed to get location", error));
+        }).catch((error)=> {
+            // Set a default location when network request fails
+            const fallbackLocation = {
+                country: "Unknown",
+                city: "Location Not Available",
+                timestamp: Date.now(),
+            }
+            setLocation(fallbackLocation);
+        });
     },[]);
 
     return location;

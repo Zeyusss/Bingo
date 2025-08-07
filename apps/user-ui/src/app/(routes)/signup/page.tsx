@@ -1,13 +1,15 @@
 "use client";
 
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import GoogleButton from 'apps/user-ui/src/shared/components/google';
+import Footer from 'apps/user-ui/src/shared/components/homepage/Footer';
 import { Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useRef, useState } from 'react';
 import { useForm } from "react-hook-form";
 import axios,{AxiosError} from "axios";
+import { useAuthStore } from "../../../store/authStore";
 
   type FormData = {
     name:string,
@@ -27,6 +29,8 @@ const [userData,setUserData] = useState<FormData | null>(null);
 const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { setLoggedIn } = useAuthStore();
 
   const {
     register,
@@ -82,15 +86,11 @@ const verifyOtpMutation = useMutation({
     return response.data;
   },
   onSuccess: (data) => {
-    router.push("/login");
+    setLoggedIn(true);
+    queryClient.invalidateQueries({ queryKey: ["user"] });
+    router.push("/");
   }
 });
-
-
-
-
-
-
   const onSubmit = (data: FormData) => {
 signUpMutation.mutate(data);
   }
@@ -118,47 +118,37 @@ const resendOtp = ()=>{
   }
 }
 
-  return ( 
-    <>
-     <div className="bg-cover bg-center h-[50vh] relative" style={{ backgroundImage: "url('/header.jpg')" }}>
-      <div className="absolute inset-0  flex items-center justify-start ">
-            <div className="text-white pl-10" style={{ marginLeft: '0px' }}>
-          <h1 className="text-7xl font-bold text-white mb-4">My account</h1>
-          <nav className="text-lg text-white">
-            <Link href="/" className="hover:underline">Home</Link>
-            <span className="mx-2">/</span>
-            <span className="text-white font-bold ">My account</span>
-          </nav>
+  return (
+    <div>
+      <div className="bg-gradient-to-r from-orange-500 to-amber-500 py-16">
+        <div className="container mx-auto px-4">
+          <div className="text-white">
+            <h1 className="text-5xl font-bold text-white mb-4">My Account</h1>
+            <nav className="text-lg text-white">
+              <Link href="/" className="hover:underline">Home</Link>
+              <span className="mx-2">/</span>
+              <span className="text-white font-bold">My Account</span>
+            </nav>
+          </div>
         </div>
       </div>
-    </div>
-  
-      <div className=" flex items-center justify-center  px-4 ">
-           <div className="w-full max-w-4xl flex flex-col md:flex-row  rounded-2xl overflow-hidden ">
-    
 
-      <div className="space-y-5">
-        <div className="md:w-[480px] p-8 ">
-  <h1 className="text-2xl font-bold  mb-6">
-       REGISTER
-      </h1>
-          {/* <p className="text-center mb-4">
-            Already have an Account?{" "}
-            <Link href="/login" className="text-blue-500">
-              Login
-            </Link>
-          </p> */}
+    <div className="flex items-center justify-center px-4">
+      <div className="w-full max-w-4xl flex flex-col md:flex-row rounded-2xl overflow-hidden">
+        <div className="md:w-[480px] p-8">
+          <h3 className="text-2xl font-bold mb-6">REGISTER</h3>
 
           <GoogleButton />
 
           <div className="flex items-center my-5 text-gray-400 text-sm">
             <div className="flex-1 border-t border-gray-300" />
-            <span className="px-3">or Sign in With Email</span>
+            <span className="px-3">or Sign up With Email</span>
             <div className="flex-1 border-t border-gray-300" />
           </div>
-{!showOtp ? (          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                        <div>
-              <label className="block font-medium text-gray-700 mb-1">Username</label>
+          {!showOtp ? (
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <div>
+                <label className="block text-gray-700 mb-1">Username</label>
               <input
                 type="text"
                 placeholder="Full Name"
@@ -168,15 +158,16 @@ const resendOtp = ()=>{
 
                 })}
               />
-              {errors.email && (
-                <p className="text-red-500 text-sm mt-1">{String(errors.email.message)}</p>
-              )}
-            </div>
-            <div>
-              <label className="block font-medium text-gray-700 mb-1">Email</label>
+                {errors.name && (
+                  <p className="text-red-500 text-sm mt-1">{String(errors.name.message)}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-gray-700 mb-1">Email address</label>
               <input
                 type="email"
-                placeholder="Email Address"
+                placeholder="zeyus@example.com"
                 className="w-full p-2 border border-gray-300 outline-0 rounded"
                 {...register("email", {
                   required: "Email is required",
@@ -186,107 +177,116 @@ const resendOtp = ()=>{
                   },
                 })}
               />
-              {errors.email && (
-                <p className="text-red-500 text-sm mt-1">{String(errors.email.message)}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block font-medium text-gray-700 mb-1">Password</label>
-              <div className='relative'>
-              <input
-                type={passwordVisible ? "text" : "password"}
-                placeholder="Your Password"
-                className="w-full p-2 border border-gray-300 outline-0 rounded"
-                {...register("password", {
-                  required: "Password is required",
-                  minLength: {
-                    value: 6,
-                    message: "Password must be at least 6 characters",
-                  },
-                })}
-              />
-              <button type='button' onClick={()=> setPasswordVisible(!passwordVisible)} className='absolute inset-y-0 right-3 flex items-center text-gray-400'>
-              {passwordVisible?<Eye/> : <EyeOff/>}
-              </button>
-</div>
-              {errors.password && (
-                <p className="text-red-500 text-sm mt-1">{String(errors.password.message)}</p>
-              )}
-            </div>
-            <button
-              type="submit"
-              disabled =  {signUpMutation.isPending}
-              className="w-full bg-[#F59A57] text-white font-bold py-3 rounded-full"
-            >
-              {signUpMutation.isPending ? "Signing Up..." : "Sign Up"}
-            </button>
-             {signUpMutation?.isError && signUpMutation.error instanceof AxiosError && (
-              <p className='text-red-500 text-sm mt-1'>{String(signUpMutation.error.response?.data?.message || signUpMutation.error.message)}</p>
-            )}
-
-          </form>) : ( <div>
-            <h3 className='text-xl font-semibold text-center mb-4'>
-            Enter OTP
-            </h3>
-            <div className='flex justify-center gap-6'>
-            {otp?.map((digit,index)=>(
-                <input key={index} type="text" ref={(el)=>{
-                    if(el) inputRefs.current[index] = el;
-                }}
-                maxLength={1}
-                className='w-12 h-12 text-center border border-gray-300 outline-none rounded'
-                value={digit}
-                onChange={(e)=> handleOtpChange(index,e.target.value)}
-                onKeyDown={(e)=>handleOtpKeyDown(index,e)}
-                />
-            ))}
-            </div>
-<button
-  className='w-full mt-4 text-lg cursor-pointer bg-blue-500 text-white py-2 rounded-lg'
-  disabled={verifyOtpMutation.isPending}
-  onClick={() => verifyOtpMutation.mutate()}
->
- {verifyOtpMutation.isPending ? "Verifying..." : "Verify OTP"}
-</button>
-
-            <p className='text-center text-sm mt-4'>
-                {canResend ? (
-                    <button
-                    onClick={resendOtp}
-                    className='text-blue-500 cursor-pointer'
-                    >Resend OTP</button>
-                ):(
-`Resend OTP ${timer}s`
+                {errors.email && (
+                  <p className="text-red-500 text-sm mt-1">{String(errors.email.message)}</p>
                 )}
+              </div>
 
-            </p>
-            {
-              verifyOtpMutation?.isError && verifyOtpMutation.error instanceof AxiosError &&  (
-                <p className='text-red-500 text-sm mt-1'>{String(verifyOtpMutation.error.response?.data?.message||verifyOtpMutation.error.message)}</p>
+              <div>
+                <label className="block text-gray-700 mb-1">Password</label>
+                <div className="relative">
+                  <input
+                    type={passwordVisible ? "text" : "password"}
+                    placeholder="Your Password"
+                    className="w-full p-2 border border-gray-300 outline-0 rounded"
+                    {...register("password", {
+                      required: "Password is required",
+                      minLength: {
+                        value: 6,
+                        message: "Password must be at least 6 characters",
+                      },
+                    })}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPasswordVisible(!passwordVisible)}
+                    className="absolute inset-y-0 right-3 flex items-center text-gray-400"
+                  >
+                    {passwordVisible ? <Eye /> : <EyeOff />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="text-red-500 text-sm mt-1">{String(errors.password.message)}</p>
+                )}
+              </div>
+              <button
+                type="submit"
+                disabled={signUpMutation.isPending}
+                className="w-full bg-[#F59A57] text-white p-2 rounded"
+              >
+                {signUpMutation.isPending ? "Signing Up..." : "Sign Up"}
+              </button>
+
+              {signUpMutation?.isError && signUpMutation.error instanceof AxiosError && (
+                <p className="text-red-500 text-sm mt-1">{String(signUpMutation.error.response?.data?.message || signUpMutation.error.message)}</p>
               )}
-          </div>)}
+            </form>
+          ) : (
+            <div>
+              <h3 className="text-xl font-semibold text-center mb-4">
+                Enter OTP
+              </h3>
+              <div className="flex justify-center gap-6">
+                {otp?.map((digit, index) => (
+                  <input
+                    key={index}
+                    type="text"
+                    ref={(el) => {
+                      if (el) inputRefs.current[index] = el;
+                    }}
+                    maxLength={1}
+                    className="w-12 h-12 text-center border border-gray-300 outline-none rounded"
+                    value={digit}
+                    onChange={(e) => handleOtpChange(index, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                  />
+                ))}
+              </div>
+              <button
+                className="w-full mt-4 text-lg cursor-pointer bg-blue-500 text-white py-2 rounded-lg"
+                disabled={verifyOtpMutation.isPending}
+                onClick={() => verifyOtpMutation.mutate()}
+              >
+                {verifyOtpMutation.isPending ? "Verifying..." : "Verify OTP"}
+              </button>
 
-        </div>
+              <p className="text-center text-sm mt-4">
+                {canResend ? (
+                  <button
+                    onClick={resendOtp}
+                    className="text-blue-500 cursor-pointer"
+                  >
+                    Resend OTP
+                  </button>
+                ) : (
+                  `Resend OTP ${timer}s`
+                )}
+              </p>
+              {
+                verifyOtpMutation?.isError && verifyOtpMutation.error instanceof AxiosError && (
+                  <p className="text-red-500 text-sm mt-1">{String(verifyOtpMutation.error.response?.data?.message || verifyOtpMutation.error.message)}</p>
+                )
+              }
+            </div>
+          )}
         </div>
         <div className="hidden md:block w-px bg-gray-300" />
 
-         <div className="w-full md:w-1/2  flex flex-col items-center justify-center p-10 text-center">
-          <h2 className="text-2xl  font-bold  mb-4">LOGIN</h2>
+        <div className="w-full md:w-1/2 flex flex-col items-center justify-center p-10 text-center">
+          <h2 className="text-2xl font-bold mb-4">Login</h2>
           <p className="text-gray-600 mb-6 leading-8">
-            Registering for this site allows you to access your order status and history.
-            Just fill in the fields below, and we'll get a new account set up for you in no time.
-            We will only ask you for information necessary to make the purchase process faster and easier.
+            Already have an account? Sign in to access your order status and
+            history. We'll help you track your purchases and manage your profile
+            with ease.
           </p>
-          <button className=" text-black px-6 py-2 rounded-full font-semibold shadow">
-           <Link href="/login" >
-              Login
-            </Link>
+          <button className="bg-[#f7f7f7] text-black px-6 py-2 rounded-full font-semibold shadow">
+            <Link href="/login">Login</Link>
           </button>
         </div>
+      </div>
     </div>
+    <Footer />
     </div>
-    </>
   );
 };
 

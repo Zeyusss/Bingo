@@ -436,7 +436,17 @@ export const getAllProducts = async (
             take:limit,
             include:{
                 images:true,
-                Shop:true,
+                Shop:{
+                    include:{
+                        avatar:true,
+                        sellers: {
+                            select: {
+                                id: true,
+                                name: true
+                            }
+                        }
+                    }
+                },
             },
             where : baseFilter,
             orderBy : {
@@ -447,7 +457,21 @@ export const getAllProducts = async (
         prisma.products.findMany({
             take:10,
             where:baseFilter,
-            orderBy
+            orderBy,
+            include:{
+                images:true,
+                Shop:{
+                    include:{
+                        avatar:true,
+                        sellers: {
+                            select: {
+                                id: true,
+                                name: true
+                            }
+                        }
+                    }
+                },
+            },
         }),
      ])
 res.status(200).json({
@@ -490,7 +514,11 @@ export const getAllEvents = async (
             take:limit,
             include:{
                 images:true,
-                Shop:true,
+                Shop: {
+                    include: {
+                        avatar: true,
+                    },
+                },
             },
             where : baseFilter,
             orderBy : {
@@ -534,7 +562,11 @@ export const getProductDetails = async (
       where: { slug },
       include: {
         images: true,
-        Shop: true,
+        Shop: {
+          include: {
+            avatar: true,
+          },
+        },
       },
     });
     if (!product) {
@@ -604,7 +636,11 @@ try {
             take : parsedLimit,
             include : {
                 images : true,
-                Shop : true,
+                Shop : {
+                    include: {
+                        avatar: true,
+                    },
+                },
             }
         }),
         prisma.products.count({where:filters})
@@ -688,7 +724,11 @@ export const getFilteredEvents = async (
             take : parsedLimit,
             include : {
                 images : true,
-                Shop : true,
+                Shop : {
+                    include: {
+                        avatar: true,
+                    },
+                },
             }
         }),
         prisma.products.count({where:filters})
@@ -929,21 +969,25 @@ export const getBestSellersByCategory = async (
   next: NextFunction
 ) => {
   try {
-    const category = req.query.category as string;
+    const categories = req.query.categories as string;
     const limit = parseInt(req.query.limit as string) || 8;
 
     const products = await prisma.products.findMany({
       where: {
         isDeleted: false,
         status: "Active",
-        ...(category && category !== "All" ? { category } : {}),
+        ...(categories && categories !== "All" ? { category: categories } : {}),
       },
       orderBy: {
         totalSales: "desc",
       },
       take: limit,
       include: {
-        Shop: true,
+        Shop: {
+          include: {
+            avatar: true,
+          },
+        },
         images: true,
       },
     });
@@ -1002,7 +1046,11 @@ export const getThreeProducts = async (
         createdAt: "desc", 
       },
       include: {
-        Shop: true,
+        Shop: {
+          include: {
+            avatar: true,
+          },
+        },
         images: true,
       },
     });
@@ -1021,14 +1069,14 @@ export const getNewProducts = async (
   next: NextFunction
 ) => {
   try {
-    const { category, limit = 10 } = req.query;
+    const { categories, limit = 10 } = req.query;
 
     const products = await prisma.products.findMany({
       where: {
         isDeleted: false,
         status: "Active",
-        ...(category && category !== "All"
-          ? { category: category as string }
+        ...(categories && categories !== "All"
+          ? { category: categories as string }
           : {}),
       },
       orderBy: {
@@ -1037,6 +1085,11 @@ export const getNewProducts = async (
       take: parseInt(limit as string),
         include: {
     images: true, 
+    Shop: {
+      include: {
+        avatar: true,
+      },
+    },
   },
     });
 
@@ -1114,7 +1167,7 @@ export const searchAdvanced = async (
   try {
     const {
       query = '',
-      category = '',
+      categories = '',
       brand = '',
       minPrice,
       maxPrice,
@@ -1137,8 +1190,8 @@ export const searchAdvanced = async (
     };
 
 
-    if (category) {
-      whereClause.category = category;
+    if (categories) {
+      whereClause.category = categories;
     }
 
 
@@ -1263,7 +1316,7 @@ export const searchAdvanced = async (
       },
       filters: {
         query: searchQuery,
-        category,
+        categories,
         brand,
         minPrice,
         maxPrice,

@@ -27,7 +27,6 @@ const NextArrow = ({ onClick }: any) => (
   </div>
 );
 
-const FALLBACK_IMAGE_URL = "/images/placeholder.png";
 const FALLBACK_AVATAR_URL = "/assets/HomeSlider/profile.webp";
 
 const SLIDE_BACKGROUNDS = [
@@ -60,12 +59,15 @@ const CustomSlider = ({ products }: { products: any[] }) => {
       <Slider {...settings}>
         {products.map((product, index) => {
           const bgImage = SLIDE_BACKGROUNDS[index % SLIDE_BACKGROUNDS.length];
-          const imageUrl =
-            product?.images?.[0]?.url?.trim() || FALLBACK_IMAGE_URL;
+          
+          const shopAvatar = product?.Shop?.avatar?.url || FALLBACK_AVATAR_URL;
           const ownerName = product?.Shop?.name || "Unknown Shop";
           const productName = product?.title || "Unnamed Product";
+          const rawDescription = product?.short_description || product?.description || "Discover this amazing handmade product crafted with care and attention to detail.";
+          const productDescription = rawDescription.length > 120 ? rawDescription.substring(0, 120) + "..." : rawDescription;
           const category = product?.category || "category";
           const price = product?.sale_price ? `$${product.sale_price}` : "$N/A";
+          const productSlug = product?.slug || product?._id;
 
           return (
             <div
@@ -85,7 +87,7 @@ const CustomSlider = ({ products }: { products: any[] }) => {
                 <p className="text-gray-800 text-sm drop-shadow">
                   Discover more products in the{" "}
                   <Link
-                    href={`/products?category=${encodeURIComponent(category)}`}
+                    href={`/products?categories=${encodeURIComponent(category)}&page=1`}
                     className="text-orange-600 underline font-semibold hover:text-orange-800 transition"
                   >
                     {category}
@@ -100,24 +102,33 @@ const CustomSlider = ({ products }: { products: any[] }) => {
                 <div className="flex items-center gap-3 mt-4">
                   <p className="text-lg font-medium text-gray-800">by</p>
                   <Image
-                    src={FALLBACK_AVATAR_URL}
-                    alt="owner"
+                    src={shopAvatar}
+                    alt={`${ownerName} shop avatar`}
                     width={50}
                     height={50}
-                    className="rounded-full"
+                    className="rounded-full object-cover"
                   />
                   <p className="text-lg font-medium text-gray-800">
                     {ownerName}
                   </p>
                 </div>
 
-                <div className="flex items-center gap-6 mt-6">
-                  <button className="bg-black text-white py-2 px-6 rounded-full text-sm font-semibold hover:bg-gray-800 transition">
+                <p className="text-gray-700 text-base mt-3 drop-shadow max-w-md">
+                  {productDescription}
+                </p>
+
+                <div className="mt-6">
+                  <div className="mb-3">
+                    <span className="text-2xl font-bold text-green-700">
+                      {price}
+                    </span>
+                  </div>
+                  <Link
+                    href={`/product/${productSlug}`}
+                    className="bg-black text-white py-2 px-6 rounded-full text-sm font-semibold hover:bg-gray-800 transition inline-block"
+                  >
                     Shop Now
-                  </button>
-                  <span className="text-2xl font-bold text-green-700">
-                    {price}
-                  </span>
+                  </Link>
                 </div>
               </div>
             </div>

@@ -1,3 +1,6 @@
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 import  cookieParser from 'cookie-parser';
 import express from "express";
 import { createWebSocketServer } from './websocket';
@@ -19,7 +22,7 @@ app.use("/api",router)
 const port = process.env.PORT || 6006;
 
 const server = app.listen(port, () => {
-  console.log(`Listening at http://localhost:${port}/api`);
+  console.log(`Chatting Service Listening at http://localhost:${port}/api`);
 });
 
 //websocket server

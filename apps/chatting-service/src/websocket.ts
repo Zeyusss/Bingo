@@ -40,9 +40,12 @@ export async function createWebSocketServer(server: HttpServer) {
           return;
         }
         const data: IncomingMessage = JSON.parse(messageStr);
+        console.log(`Processing message from ${registeredUserId}:`, data);
+        
         if (data.type === "MARK_AS_SEEN" && registeredUserId) {
           const seenKey = `${registeredUserId}_${data.conversationId}`;
           unseenCounts.set(seenKey, 0);
+          console.log(`Marked as seen: ${seenKey}`);
           return;
         }
 
@@ -55,6 +58,7 @@ export async function createWebSocketServer(server: HttpServer) {
         } = data;
         if (!data || !toUserId || !messageBody || !conversationId) {
           console.warn("Invalid message format :", data);
+          return;
         }
         const now = new Date().toISOString();
         const messagePayload = {
@@ -74,6 +78,9 @@ export async function createWebSocketServer(server: HttpServer) {
           senderType === "user" ? `seller_${toUserId}` : `user_${toUserId}`;
         const senderKey =
           senderType === "user" ? `user_${fromUserId}` : `seller_${fromUserId}`;
+        
+        console.log(`Message routing: ${senderKey} -> ${receiverKey}`);
+        console.log(`Connected users:`, Array.from(connectedUsers.keys()));
 
         const unseenKey = `${receiverKey}_${conversationId}`;
         const prevCount = unseenCounts.get(unseenKey) || 0;
@@ -125,7 +132,7 @@ export async function createWebSocketServer(server: HttpServer) {
         console.log(`Disconnected user ${registeredUserId}`);
         const isSeller = registeredUserId.startsWith("seller_");
         const redisKey = isSeller
-          ? `online:seller${registeredUserId.replace("seller_", "")}`
+          ? `online:seller:${registeredUserId.replace("seller_", "")}`
           : `online:user:${registeredUserId}`;
         await redis.del(redisKey);
       }

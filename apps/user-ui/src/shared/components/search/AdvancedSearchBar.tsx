@@ -50,7 +50,7 @@ const AdvancedSearchBar: React.FC<AdvancedSearchBarProps> = ({
   const [isListening, setIsListening] = useState(false);
   const [showFiltersModal, setShowFiltersModal] = useState(false);
   const [filters, setFilters] = useState({
-    category: "",
+    categories: "",
     brand: "",
     minPrice: "",
     maxPrice: "",
@@ -237,7 +237,7 @@ const AdvancedSearchBar: React.FC<AdvancedSearchBarProps> = ({
       router.push(`/product/${suggestion.slug || suggestion.id}`);
     } else if (suggestion.type === "category") {
       setQuery(suggestion.name);
-      handleSearch(suggestion.name, { ...filters, category: suggestion.name });
+      handleSearch(suggestion.name, { ...filters, categories: suggestion.name });
     } else if (suggestion.type === "brand") {
       setQuery(suggestion.name);
       handleSearch(suggestion.name, { ...filters, brand: suggestion.name });

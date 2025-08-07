@@ -82,36 +82,36 @@ const Footer = () => {
           <div className="grid grid-cols-2 gap-x-8 text-sm text-gray-300">
             <ul className="space-y-2">
               <li>
-                <Link href="/products?category=Jewelry">Jewelry</Link>
+                <Link href="/products?categories=Jewelry">Jewelry</Link>
               </li>
               <li>
-                <Link href="/products?category=Clothing">Clothing</Link>
+                <Link href="/products?categories=Clothing">Clothing</Link>
               </li>
               <li>
-                <Link href="/products?category=Home%20Decor">Home Decor</Link>
+                <Link href="/products?categories=Home%20Decor">Home Decor</Link>
               </li>
               <li>
-                <Link href="/products?category=Art">Art</Link>
+                <Link href="/products?categories=Art">Art</Link>
               </li>
               <li>
-                <Link href="/products?category=Toys">Toys</Link>
+                <Link href="/products?categories=Toys">Toys</Link>
               </li>
             </ul>
             <ul className="space-y-2">
               <li>
-                <Link href="/products?category=Accessories">Accessories</Link>
+                <Link href="/products?categories=Accessories">Accessories</Link>
               </li>
               <li>
-                <Link href="/products?category=Bags">Bags</Link>
+                <Link href="/products?categories=Bags">Bags</Link>
               </li>
               <li>
-                <Link href="/products?category=Ceramics">Ceramics</Link>
+                <Link href="/products?categories=Ceramics">Ceramics</Link>
               </li>
               <li>
-                <Link href="/products?category=Woodwork">Woodwork</Link>
+                <Link href="/products?categories=Woodwork">Woodwork</Link>
               </li>
               <li>
-                <Link href="/products?category=Knitting">Knitting</Link>
+                <Link href="/products?categories=Knitting">Knitting</Link>
               </li>
             </ul>
           </div>

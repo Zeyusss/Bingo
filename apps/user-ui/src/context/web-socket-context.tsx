@@ -27,19 +27,21 @@ export const WebSocketProvider =({
 
     ws.onmessage = (event)=>{
         const data = JSON.parse(event.data);
-if(data.type === "UNSEEN_COUNT_UPDATE"){
-    const {conversationId,count} = data.payload;
-    setUnreadCounts((prev:any)=> ({...prev,[conversationId]: count}));
-}
+        console.log('WebSocket message received:', data);
+        
+        if(data.type === "UNSEEN_COUNT_UPDATE"){
+            const {conversationId,count} = data.payload;
+            setUnreadCounts((prev:any)=> ({...prev,[conversationId]: count}));
+        }
+        // Note: NEW_MESSAGE handling is done in the inbox page component
     }
     return ()=>{
         ws.close()
     }
     },[user?.id])
 
-    if(!wsReady) return null;
     return (
-        <WebSocketContext.Provider value={{ws:wsRef.current,unreadCounts}}>
+        <WebSocketContext.Provider value={{ws:wsRef.current,unreadCounts,wsReady}}>
         {children}
     </WebSocketContext.Provider>
     )

@@ -5,7 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { createOptimizedQueryClient } from "../utils/queryConfig";
 import Providers from "../shared/providers/ToastProvider";
-import { Toaster } from "react-hot-toast";
+
 import ClientRestrictionWrapper from "../shared/components/ClientRestrictionWrapper";
 import ComparisonTray from "../shared/components/comparison/ComparisonTray";
 import ComparisonNotifications from "../shared/components/comparison/ComparisonNotifications";
@@ -21,7 +21,7 @@ const AppProviders = ({ children }: { children: React.ReactNode }) => {
         </ClientRestrictionWrapper>
         <ComparisonTray />
         <ComparisonNotifications />
-        <Toaster />
+
         <ReactQueryDevtools initialIsOpen={false} />
       </Providers>
     </QueryClientProvider>

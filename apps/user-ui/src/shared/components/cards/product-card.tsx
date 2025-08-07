@@ -45,7 +45,7 @@ const ProductCard = ({
 
   useEffect(() => {
     if (isEvent && product?.ending_date) {
-      const updateTimeLeft = () => {
+      const updateTimeLeft = (): boolean => {
         const endTime = new Date(product.ending_date).getTime();
         const now = Date.now();
         const diff = endTime - now;
@@ -99,27 +99,26 @@ const ProductCard = ({
     } else {
       setTimeLeft("");
     }
+    return () => {};
   }, [isEvent, product?.ending_date]);
 
   return (
     <div className="relative bg-white rounded-xl p-4 group shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden h-full flex flex-col justify-between">
       <div className="transition-transform duration-500 ease-in-out group-hover:-translate-y-2 relative">
-        {/* NEW Badge */}
         {isNew && (
           <span className="absolute top-2 left-2 bg-green-600 text-white text-[10px] font-semibold px-2 py-[2px] rounded-full z-10">
             NEW
           </span>
         )}
 
-        {/* Wishlist Icon */}
         {!isWishlist && (
           <button
-            className="absolute top-2 right-2 z-10"
+            className="absolute top-2 right-2 z-10 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white hover:shadow-md transition-all duration-200"
             onClick={() =>
               isWishlisted
                 ? removeFromWishlist(product.id, user, location, deviceInfo)
                 : addToWishlist(
-                    { ...product, quantity: 1 },
+                    { ...product, quantity: 1, price: product.sale_price || product.regular_price },
                     user,
                     location,
                     deviceInfo
@@ -127,17 +126,19 @@ const ProductCard = ({
             }
           >
             <Heart
-              size={20}
+              size={16}
               fill={isWishlisted ? "red" : "transparent"}
-              stroke={isWishlisted ? "red" : "#888"}
-              className="text-gray-500 hover:text-red-500 transition"
+              stroke={isWishlisted ? "red" : "#666"}
+              className={`transition-colors duration-200 ${
+                isWishlisted ? "text-red-500" : "text-gray-600 hover:text-red-500"
+              }`}
             />
           </button>
         )}
 
 
         <Link href={`/product/${product?.slug}`} className="block">
-          <div className="w-full h-[240px] bg-white flex items-center justify-center">
+          <div className="w-full h-[240px] bg-white flex items-center justify-center rounded-lg overflow-hidden">
             <img
               src={
                 product?.images?.[0]?.url ||
@@ -150,7 +151,6 @@ const ProductCard = ({
           </div>
         </Link>
 
-        {/* Title + Category */}
         <Link href={`/product/${product.slug}`}>
           <h3 className="text-sm font-semibold text-gray-900 mt-3 mb-1 hover:text-blue-600 line-clamp-1 transition-colors">
             {product.title}
@@ -160,7 +160,6 @@ const ProductCard = ({
           {product.category || product.Shop?.name}
         </p>
 
-        {/* Price & Rating */}
         <div className="flex justify-between items-center mt-2">
           <div className="flex gap-1 items-baseline">
             <span className="text-[15px] font-bold text-orange-600">
@@ -177,7 +176,6 @@ const ProductCard = ({
           </div>
         </div>
 
-        {/* Event Timer */}
         {isEvent && timeleft && (
           <div className="mt-2 flex items-center gap-1 text-xs text-orange-600 font-medium">
             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -187,7 +185,6 @@ const ProductCard = ({
           </div>
         )}
 
-        {/* Color Dots */}
         {product.colors && product.colors.length > 0 && (
           <div className="flex gap-2 mt-2">
             {product.colors.slice(0, 4).map((color: string, idx: number) => (
@@ -201,12 +198,11 @@ const ProductCard = ({
         )}
       </div>
 
-      {/* Hover Action Buttons */}
       <div className="relative mt-4 opacity-0 group-hover:opacity-100 translate-y-3 group-hover:translate-y-0 transition-all duration-500 ease-in-out z-10">
         <div className="flex items-center justify-between">
           <button
             onClick={() =>
-              addToCart({ ...product, quantity: 1 }, user, location, deviceInfo)
+              addToCart({ ...product, quantity: 1, price: product.sale_price || product.regular_price }, user, location, deviceInfo)
             }
             className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold py-2 px-4 rounded-full transition w-[70%] flex items-center justify-center relative overflow-hidden group/addtocart"
           >
@@ -267,7 +263,6 @@ const ProductCard = ({
         </div>
       </div>
 
-      {/* Quick View Modal */}
       {open && <ProductDetailsCard data={product} setOpen={setOpen} />}
     </div>
   );

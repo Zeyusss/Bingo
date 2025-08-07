@@ -4,7 +4,8 @@ import { MetricsOverview } from "./components/MetricsOverview";
 import RevenueChart from "./components/RevenueChart";
 import RecentOrdersTable from "./components/RecentOrdersTable";
 import ResourceMonitor from "./components/ResourceMonitor";
-import { Activity, BarChart3, TrendingUp } from "lucide-react";
+import AbandonedCartTracker from "../../components/dashboard/AbandonedCartTracker";
+import { Activity, BarChart3, TrendingUp, ShoppingCart } from "lucide-react";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
 import HelpModal, { HelpSection } from "../shared/components/HelpModal";
 import HelpButton from "../shared/components/HelpButton";
@@ -177,6 +178,20 @@ function DashboardContent() {
             </p>
           </div>
           <RevenueChart />
+        </div>
+
+        {/* Abandoned Cart Tracking */}
+        <div className="mb-8">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5 text-gray-700" />
+              Abandoned Cart Recovery
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Track and recover abandoned shopping carts to boost conversions
+            </p>
+          </div>
+          <AbandonedCartTracker />
         </div>
 
         {/* Orders and Resources */}

@@ -39,6 +39,16 @@ interface SearchResponse {
   filters: any;
 }
 
+interface SearchFilters {
+  categories: string;
+  brand: string;
+  minPrice: string;
+  maxPrice: string;
+  tags: string[];
+  inStock: boolean;
+  sortBy: string;
+}
+
 const SearchPage: React.FC = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -54,8 +64,8 @@ const SearchPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({
-    category: searchParams.get('category') || '',
+  const [filters, setFilters] = useState<SearchFilters>({
+    categories: searchParams.get('categories') || '',
     brand: searchParams.get('brand') || '',
     minPrice: searchParams.get('minPrice') || '',
     maxPrice: searchParams.get('maxPrice') || '',
@@ -233,11 +243,11 @@ const SearchPage: React.FC = () => {
             (Array.isArray(value) ? value.length > 0 : (key !== 'inStock' || !value))
           ) && (
             <div className="flex flex-wrap gap-2">
-              {filters.category && (
+              {filters.categories && (
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-                  Category: {filters.category}
+                  Category: {filters.categories}
                   <button
-                    onClick={() => handleFiltersChange({ ...filters, category: '' })}
+                    onClick={() => handleFiltersChange({ ...filters, categories: '' })}
                     className="ml-2 text-blue-600 hover:text-blue-800"
                   >
                     ×
@@ -365,7 +375,7 @@ const SearchPage: React.FC = () => {
             <button
               onClick={() => {
                 setFilters({
-                  category: '',
+                  categories: '',
                   brand: '',
                   minPrice: '',
                   maxPrice: '',

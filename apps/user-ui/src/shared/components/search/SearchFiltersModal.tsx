@@ -64,7 +64,7 @@ const SearchFiltersModal: React.FC<SearchFiltersModalProps> = ({
   });
   const [loading, setLoading] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
-    category: true,
+    categories: true,
     price: true,
     tags: false,
     sort: true
@@ -112,7 +112,7 @@ const SearchFiltersModal: React.FC<SearchFiltersModalProps> = ({
 
   const clearAllFilters = () => {
     onFiltersChange({
-      category: '',
+      categories: '',
       minPrice: '',
       maxPrice: '',
       tags: [],
@@ -123,7 +123,7 @@ const SearchFiltersModal: React.FC<SearchFiltersModalProps> = ({
 
   const getActiveFiltersCount = () => {
     let count = 0;
-    if (filters.category && filters.category !== 'All') count++;
+    if (filters.categories && filters.categories !== 'All') count++;
     if (filters.minPrice || filters.maxPrice) count++;
     if (filters.tags && filters.tags.length > 0) count++;
     if (!filters.inStock) count++;
@@ -199,26 +199,26 @@ const SearchFiltersModal: React.FC<SearchFiltersModalProps> = ({
                 </div>
                 <div className="space-y-3">
                   <button
-                    onClick={() => toggleSection('category')}
+                    onClick={() => toggleSection('categories')}
                     className="flex items-center justify-between w-full text-left"
                   >
                     <h3 className="text-sm font-medium text-gray-900">Category</h3>
-                    {expandedSections.category ? (
+                    {expandedSections.categories ? (
                       <ChevronUp size={16} className="text-gray-500" />
                     ) : (
                       <ChevronDown size={16} className="text-gray-500" />
                     )}
                   </button>
                   
-                  {expandedSections.category && (
+                  {expandedSections.categories && (
                     <div className="space-y-2">
                       <label className="flex items-center space-x-2">
                         <input
                           type="radio"
-                          name="category"
+                          name="categories"
                           value=""
-                          checked={!filters.category || filters.category === 'All'}
-                          onChange={() => handleFilterChange('category', '')}
+                          checked={!filters.categories || filters.categories === 'All'}
+                          onChange={() => handleFilterChange('categories', '')}
                           className="text-blue-600 focus:ring-blue-500"
                         />
                         <span className="text-sm text-gray-700">All Categories</span>
@@ -227,10 +227,10 @@ const SearchFiltersModal: React.FC<SearchFiltersModalProps> = ({
                         <label key={category.value} className="flex items-center space-x-2">
                           <input
                             type="radio"
-                            name="category"
+                            name="categories"
                             value={category.value}
-                            checked={filters.category === category.value}
-                            onChange={(e) => handleFilterChange('category', e.target.value)}
+                            checked={filters.categories === category.value}
+                            onChange={(e) => handleFilterChange('categories', e.target.value)}
                             className="text-blue-600 focus:ring-blue-500"
                           />
                           <span className="text-sm text-gray-700">
