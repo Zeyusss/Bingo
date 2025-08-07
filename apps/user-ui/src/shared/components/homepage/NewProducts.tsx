@@ -104,7 +104,7 @@ const NewProducts = () => {
               href={
                 selectedCategory === "All"
                   ? "/products"
-                  : `/products?category=${encodeURIComponent(selectedCategory)}`
+                  : `/products?categories=${encodeURIComponent(selectedCategory)}`
               }
               className="inline-block px-6 py-2 text-white bg-[#ff8a00] hover:bg-[#e17800] rounded-full text-sm font-semibold transition"
             >

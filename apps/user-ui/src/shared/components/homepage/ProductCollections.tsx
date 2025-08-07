@@ -69,9 +69,11 @@ export default function Page() {
   const [hovered, setHovered] = useState<number | null>(null);
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-3 text-center">Product collections</h1>
-      <p className="text-1xl mb-3 text-center">Explore product collections from our vendors</p>
+    <div className="py-16 px-4 md:px-8 lg:px-20">
+      <div className="text-center mb-12">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-2">Product collections</h1>
+        <p className="text-gray-600 text-base sm:text-lg">Explore product collections from our vendors</p>
+      </div>
       <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
         {products.map((product) => (
           <div

@@ -4,6 +4,7 @@ import { Phone, Lock, ShieldCheck, Loader2, X } from "lucide-react";
 import useDeviceTracking from "apps/user-ui/src/hooks/useDeviceTracking";
 import useLocationTracking from "apps/user-ui/src/hooks/useLocationTracking";
 import useUser from "apps/user-ui/src/hooks/useUser";
+import useAbandonedCart from "apps/user-ui/src/hooks/useAbandonedCart";
 import { useStore } from "apps/user-ui/src/store";
 import axiosInstance from "apps/user-ui/src/utils/axiosInstance";
 import Image from "next/image";
@@ -20,6 +21,7 @@ const CartPage = () => {
   const deviceInfo = useDeviceTracking();
   const cart = useStore((state: any) => state.cart);
   const removeFromCart = useStore((state: any) => state.removeFromCart);
+  const { removeAbandonedCart } = useAbandonedCart();
 
   const [couponCode, setCouponCode] = useState("");
   const [discountProductId, setDiscountProductId] = useState("");
@@ -44,16 +46,31 @@ const CartPage = () => {
     },
   });
 
-  useEffect(() => {
-    if (!isLoading && !user) router.push("/login");
-  }, [isLoading, user, router]);
-
+  
   useEffect(() => {
     if (addresses.length && !selectedAddressId) {
       const defaultAddr = addresses.find((a) => a.isDefault);
       if (defaultAddr) setSelectedAddressId(defaultAddr.id);
     }
   }, [addresses, selectedAddressId]);
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.replace("/login");
+    }
+  }, [isLoading, user, router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   const decreaseQuantity = (id: string) => {
     useStore.setState((state: any) => ({

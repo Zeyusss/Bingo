@@ -77,10 +77,8 @@ const Page = () => {
     console.log(`${type} updated successfully with URL:`, imageUrl);
     console.log("Current seller data before invalidation:", seller);
 
-    // Refresh seller data to show updated image
     queryClient.invalidateQueries({ queryKey: ["seller"] });
 
-    // Force refetch to ensure we get the latest data
     refetch().then((result: any) => {
       console.log("Refetched seller data:", result.data);
       if (type === "avatar") {

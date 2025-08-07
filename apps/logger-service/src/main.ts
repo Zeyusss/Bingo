@@ -32,7 +32,7 @@ server.on("upgrade",(request,socket,head)=>{
 })
 
 server.listen(process.env.PORT || 6008 , ()=>{
-  console.log(`Listening at http://localhost:6008/api`)
+  console.log(`Logger ServiceListening at http://localhost:6008/api`)
 })
 
 // start kafka consumer

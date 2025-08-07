@@ -39,7 +39,7 @@ const SidebarMobile = ({
   const router = useRouter();
 
   const handleCategoryClick = (category: string) => {
-    router.push(`/products?category=${encodeURIComponent(category)}`);
+    router.push(`/products?categories=${encodeURIComponent(category)}`);
     onClose();
   };
 

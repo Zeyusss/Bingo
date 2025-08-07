@@ -4,6 +4,8 @@ import { Poppins, Roboto } from "next/font/google";
 import AppProviders from "./providers";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import SideCartWrapper from "../shared/components/cart/SideCartWrapper";
+import LoginPromptWrapper from "../shared/components/auth/LoginPromptWrapper";
 export const metadata = {
   title: "Bingo",
   description: "Bingo",
@@ -37,6 +39,8 @@ export default function RootLayout({
         <AppProviders>
           <Header />
           {children}
+          <SideCartWrapper />
+          <LoginPromptWrapper />
         </AppProviders>
         </body>
     </html>

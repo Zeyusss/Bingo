@@ -4,22 +4,21 @@ import axiosInstance from "../utils/axiosInstance";
 import { useAuthStore } from "../store/authStore";
 import { isProtected } from "../utils/protected";
 
-// fetch user data
-const fetchUser = async (isLoggedIn: boolean) => {
+const fetchUser = async () => {
   try {
-    const config = isLoggedIn ? isProtected : {};
-    const response = await axiosInstance.get("/api/logged-in-user", config);
+    const response = await axiosInstance.get("/api/logged-in-user", isProtected);
     return response.data.user ?? null;
-  } catch (error) {
-    if (!isLoggedIn) {
-      return null;
+  } catch (error: any) {
+    if (error?.response?.status !== 401 && error?.response?.status !== 400) {
+      console.error("Failed to fetch user data:", error);
     }
-    throw error;
+    return null;
   }
 };
 
 const useUser = () => {
-  const { setLoggedIn, isLoggedIn } = useAuthStore();
+  const { isLoggedIn, setLoggedIn } = useAuthStore();
+  const [hasInitialized, setHasInitialized] = React.useState(false);
 
   const {
     data: user,
@@ -27,25 +26,35 @@ const useUser = () => {
     isError,
   } = useQuery({
     queryKey: ["user"],
-    queryFn: () => fetchUser(isLoggedIn),
-    staleTime: 1000 * 60 * 15, 
+    queryFn: fetchUser,
+    staleTime: 1000 * 60 * 5, 
     gcTime: 1000 * 60 * 30, 
     retry: false,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false, 
-    enabled: true, 
+    refetchOnWindowFocus: true, 
+    refetchOnMount: true, 
+    refetchOnReconnect: true,
+    enabled: true,
   });
 
   React.useEffect(() => {
-    if (user && !isLoggedIn) {
-      setLoggedIn(true);
-    } else if (isError && isLoggedIn) {
-      setLoggedIn(false);
+    if (!hasInitialized && (user !== undefined || isError)) {
+      setHasInitialized(true);
+      if (user) {
+        setLoggedIn(true);
+      } else {
+        setLoggedIn(false);
+      }
     }
-  }, [user, isError, isLoggedIn, setLoggedIn]);
+  }, [user, isError, hasInitialized, setLoggedIn]);
 
-  return { user: user as any, isLoading: isPending, isError };
+ 
+  const shouldShowUser = isLoggedIn || !hasInitialized;
+  
+  return { 
+    user: shouldShowUser ? (user as any) : null, 
+    isLoading: !hasInitialized || isPending, 
+    isError 
+  };
 };
 
 export default useUser;

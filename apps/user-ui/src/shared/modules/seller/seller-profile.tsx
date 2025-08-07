@@ -95,18 +95,26 @@ const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>, type: "
 
   useEffect(() => {
     const fetchFollowStatus = async () => {
-      if (!shop?.id) return;
+      if (!user) {
+        setIsFollowing(false);
+        return;
+      }
       try {
         const res = await axiosInstance.get(
           `/seller/api/is-following/${shop?.id}`
         );
         setIsFollowing(res.data.isFollowing !== null);
-      } catch (error) {
-        console.error("Failed to fetch follow status", error);
+      } catch (error: any) {
+        if (error?.response?.status !== 401) {
+          console.error("Failed to fetch follow status", error);
+        }
+        setIsFollowing(false);
       }
     };
-    fetchFollowStatus();
-  }, [shop?.id]);
+    if (shop?.id) {
+      fetchFollowStatus();
+    }
+  }, [shop?.id, user]);
 
   const { data: events, isLoading: isEventsLoading } = useQuery({
     queryKey: ["seller-events"],

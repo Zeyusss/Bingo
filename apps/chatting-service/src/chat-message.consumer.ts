@@ -43,8 +43,6 @@ await consumer.run({
 
 }
 
-// flush the buffer to the database/reset timer
-
 async function flushBufferToDb() {
     const toInsert = buffer.splice(0,buffer.length);
     if(flushTimer){

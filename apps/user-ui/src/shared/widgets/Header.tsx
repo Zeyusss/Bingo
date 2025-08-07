@@ -135,7 +135,12 @@ useEffect(() => {
             )}
           </Link>
 
-          {!isLoading && user ? (
+          {isLoading ? (
+            <div className="px-4 py-2 rounded-full bg-gray-100 flex items-center gap-2 border border-gray-200">
+              <ProfileIcon />
+              <span className="text-sm font-medium">Loading...</span>
+            </div>
+          ) : user ? (
             <Link
               href="/profile"
               className="px-4 py-2 rounded-full bg-gray-100 flex items-center gap-2 border border-gray-200 hover:bg-gray-200"

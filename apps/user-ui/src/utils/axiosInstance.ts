@@ -2,17 +2,12 @@ import axios from "axios";
 import { runRedirectToLogin } from "./redirect";
 import { toast } from "react-hot-toast";
 
-
-type RequestPriority = 'low' | 'medium' | 'high' | 'critical';
-
-
 let rateLimitState = {
   isRateLimited: false,
   backoffUntil: 0,
   consecutiveErrors: 0,
   lastErrorTime: 0
 };
-
 
 const requestQueue: Array<{
   config: any;
@@ -24,14 +19,12 @@ let activeRequests = 0;
 const MAX_CONCURRENT_REQUESTS = 6;
 let processingQueue = false;
 
-
 const calculateBackoffDelay = (consecutiveErrors: number): number => {
-  const baseDelay = 1000; 
-  const maxDelay = 30000; 
-  const jitter = Math.random() * 0.3; 
+  const baseDelay = 1000;
+  const maxDelay = 30000;
+  const jitter = Math.random() * 0.3;
   return Math.min(baseDelay * Math.pow(2, consecutiveErrors) * (1 + jitter), maxDelay);
-};
-
+}
 
 const processQueue = async (): Promise<void> => {
   if (processingQueue || requestQueue.length === 0) return;
@@ -60,20 +53,18 @@ const processQueue = async (): Promise<void> => {
     processingQueue = false;
     setTimeout(processQueue, 50);
   }
-};
-
+}
 
 const handle429Error = (error: any, config: any, resolve: any, reject: any): void => {
   const retryAfter = error.response?.headers['retry-after'];
-  const backoffDelay = retryAfter 
-    ? parseInt(retryAfter) * 1000 
+  const backoffDelay = retryAfter
+    ? parseInt(retryAfter) * 1000
     : calculateBackoffDelay(rateLimitState.consecutiveErrors);
 
   rateLimitState.isRateLimited = true;
   rateLimitState.backoffUntil = Date.now() + backoffDelay;
   rateLimitState.consecutiveErrors++;
 
- 
   if (rateLimitState.consecutiveErrors === 1) {
     toast.loading('High traffic detected. Optimizing your experience...', {
       id: 'rate-limit-toast',
@@ -87,12 +78,11 @@ const handle429Error = (error: any, config: any, resolve: any, reject: any): voi
   }, backoffDelay);
 };
 
-
 const makeSmartRequest = (config: any): Promise<any> => {
   return new Promise((resolve, reject) => {
-    const isCritical = config.url?.includes('/auth/') || 
-                      config.url?.includes('/user/') ||
-                      config.priority === 'critical';
+    const isCritical = config.url?.includes('/auth/') ||
+      config.url?.includes('/user/') ||
+      config.priority === 'critical';
 
     if (isCritical || activeRequests < MAX_CONCURRENT_REQUESTS) {
       activeRequests++;
@@ -127,7 +117,6 @@ const axiosInstance = axios.create({
 let isRefreshing = false;
 let refreshSubscribers: (() => void)[] = [];
 
-// handle logout and prevent infinite loops
 const handleLogout = () => {
   const publicPaths = ["/login", "/signup", "/forgot-password"];
   const currentPath = window.location.pathname;
@@ -136,17 +125,14 @@ const handleLogout = () => {
   }
 };
 
-// handle adding new acces token to queue
 const subscribeTokenRefresh = (callback: () => void) => {
   refreshSubscribers.push(callback);
 };
-
 
 const onRefreshSuccess = () => {
   refreshSubscribers.forEach((callback) => callback());
   refreshSubscribers = [];
 };
-
 
 const protectedRoutes = [
   "/cart",
@@ -161,7 +147,6 @@ const isProtectedRoute = () => {
   return protectedRoutes.some((route) => path.startsWith(route));
 };
 
-
 axiosInstance.interceptors.request.use(
   (config: any) => {
     config.metadata = {
@@ -174,7 +159,6 @@ axiosInstance.interceptors.request.use(
     return Promise.reject(error);
   }
 );
-
 
 axiosInstance.interceptors.response.use(
   (response) => {
@@ -192,14 +176,13 @@ axiosInstance.interceptors.response.use(
 
     if (status === 429) {
       const retryAfter = error.response?.headers['retry-after'];
-      const backoffDelay = retryAfter 
-        ? parseInt(retryAfter) * 1000 
+      const backoffDelay = retryAfter
+        ? parseInt(retryAfter) * 1000
         : calculateBackoffDelay(rateLimitState.consecutiveErrors);
 
       rateLimitState.isRateLimited = true;
       rateLimitState.backoffUntil = Date.now() + backoffDelay;
       rateLimitState.consecutiveErrors++;
-
 
       if (rateLimitState.consecutiveErrors === 1) {
         toast.loading('Optimizing your experience...', {
@@ -218,7 +201,6 @@ axiosInstance.interceptors.response.use(
         });
       }
 
-
       if (!originalRequest._rateLimitRetry && (originalRequest.metadata?.retryCount || 0) < 3) {
         originalRequest._rateLimitRetry = true;
         originalRequest.metadata = {
@@ -235,7 +217,6 @@ axiosInstance.interceptors.response.use(
         });
       }
     }
-
 
     const is401 = status === 401;
     const isRetry = originalRequest?._retry;
@@ -271,9 +252,9 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-
     if (status >= 500) {
       toast.error('Server maintenance in progress. Retrying...', {
+        id: 'server-maintenance-toast',
         duration: 4000
       });
     } else if (status >= 400 && status < 500 && status !== 401 && status !== 429) {
@@ -285,9 +266,7 @@ axiosInstance.interceptors.response.use(
 );
 
 const enhancedAxiosInstance = Object.assign(axiosInstance, {
-
   smart: makeSmartRequest,
-  
   getStatus: () => ({
     activeRequests,
     queuedRequests: requestQueue.length,
@@ -295,8 +274,7 @@ const enhancedAxiosInstance = Object.assign(axiosInstance, {
     consecutiveErrors: rateLimitState.consecutiveErrors,
     backoffUntil: rateLimitState.backoffUntil
   }),
-  
-  priority: (config: any, priority: 'low' | 'medium' | 'high' | 'critical' = 'medium') => {
+  priority: (config: any, priority = 'medium') => {
     return makeSmartRequest({ ...config, priority });
   }
 });

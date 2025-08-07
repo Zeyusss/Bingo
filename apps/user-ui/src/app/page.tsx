@@ -22,10 +22,10 @@ const Page = () => {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["products"],
+    queryKey: ["featured-products"],
     queryFn: async () => {
       const res = await axiosInstance.get(
-        "/product/api/get-all-products?page=1&limit=10"
+        "/product/api/get-all-products?page=1&limit=10&includeShop=true"
       );
       return res.data.products;
     },

@@ -9,4 +9,11 @@ export const categoryImageMap: Record<string, string> = {
   "Ceramics": "/assets/categories/Jewelry.png",
   "Woodwork": "/assets/categories/Jewelry.png",
   "Knitting": "/assets/categories/Jewelry.png",
+  "Craft Supplies & Tools": "/assets/categories/craft-supplies.png",
+  "Home & Hobby": "/assets/categories/home-hobby.png",
+  "Sewing & Fiber": "/assets/categories/sewing-fiber.png",
+  "Jewelry & Beauty": "/assets/categories/jewelry-beauty.png",
+  "Visual Arts": "/assets/categories/visual-arts.png",
+  "Paper, Party & Kids": "/assets/categories/paper-party-kids.png",
+  "Sculpting & Forming": "/assets/categories/sculpting-forming.png",
 };

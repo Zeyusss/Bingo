@@ -419,7 +419,17 @@ export const getSellerProducts = async (
         },
         include: {
           images: true,
-          Shop: true,
+          Shop: {
+            include: {
+              avatar: true,
+              sellers: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              }
+            }
+          },
         },
       }),
       prisma.products.count({
@@ -429,9 +439,21 @@ export const getSellerProducts = async (
         },
       }),
     ]);
+
+    const productsWithDefaults = products.map((product: any) => ({
+      ...product,
+      Shop: {
+        ...product.Shop,
+        avatar: {
+          url: product.Shop?.avatar?.url || DEFAULT_PROFILE_IMAGE
+        },
+        coverBanner: product.Shop?.coverBanner || DEFAULT_COVER_IMAGE,
+      },
+    }));
+
     res.status(200).json({
       success: true,
-      products,
+      products: productsWithDefaults,
       pagination: {
         total,
         page,

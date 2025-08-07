@@ -6,6 +6,7 @@ import { useStore } from "apps/user-ui/src/store";
 import Link from "next/link";
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import ProductCard from "apps/user-ui/src/shared/components/cards/product-card";
 import { useState } from "react";
 import Footer from "apps/user-ui/src/shared/components/homepage/Footer";
@@ -22,9 +23,21 @@ const WishlistPage = () => {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push("/login");
+      router.replace("/login");
     }
   }, [isLoading, user, router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   const decreaseQuantity = (id: string) => {
     useStore.setState((state: any) => ({

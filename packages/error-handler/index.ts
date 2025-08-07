@@ -16,7 +16,6 @@ constructor(
 
 }}
 
-// notFoundError
 export class NotFoundError extends AppError {
     constructor(
         message= 'Resource not found'
@@ -25,7 +24,6 @@ export class NotFoundError extends AppError {
     }
 }
 
-// validationError
 export class ValidationError extends AppError {
     constructor(
         message = 'Validation error',
@@ -35,7 +33,6 @@ export class ValidationError extends AppError {
     }
 }
 
-// AuthenticationError
 export class AuthError extends AppError {
     constructor(
         message = 'Authentication failed'
@@ -44,7 +41,6 @@ export class AuthError extends AppError {
     }
 }
 
-// ForbiddenError
 export class ForbiddenError extends AppError {  
     constructor(
         message = 'Access forbidden'
@@ -53,7 +49,6 @@ export class ForbiddenError extends AppError {
     }
 }
 
-// DatabaseError
 export class DatabaseError extends AppError {   
     constructor(
         message = 'Database error',
@@ -63,7 +58,6 @@ export class DatabaseError extends AppError {
     }
 }
 
-// InternalServerError
 export class InternalServerError extends AppError {         
     constructor(
         message = 'Internal server error',
@@ -72,7 +66,7 @@ export class InternalServerError extends AppError {
         super(message, 500, false, details);
     }
 }   
-// RateLimitError
+
 export class RateLimitError extends AppError {           
     constructor(
         message = 'Too many requests, please try again later.'
@@ -81,7 +75,6 @@ export class RateLimitError extends AppError {
     }
 }
 
-// ConflictError
 export class ConflictError extends AppError {               
     constructor(
         message = 'Conflict error',
@@ -90,7 +83,7 @@ export class ConflictError extends AppError {
         super(message, 409, true, details);
     }
 }
-// ServiceUnavailableError
+
 export class ServiceUnavailableError extends AppError {       
     constructor(
         message = 'Service unavailable',
@@ -99,7 +92,7 @@ export class ServiceUnavailableError extends AppError {
         super(message, 503, false, details);
     }
 }
-// UnauthorizedError
+
 export class UnauthorizedError extends AppError {   
     constructor(
         message = 'Unauthorized access',
@@ -108,7 +101,7 @@ export class UnauthorizedError extends AppError {
         super(message, 401, true, details);
     }
 }
-// BadRequestError
+
 export class BadRequestError extends AppError {
     constructor(
         message = 'Bad request',
@@ -117,7 +110,6 @@ export class BadRequestError extends AppError {
         super(message, 400, true, details);
     }
 }
-// MethodNotAllowedError
 export class MethodNotAllowedError extends AppError {
     constructor(
         message = 'Method not allowed',
@@ -126,7 +118,6 @@ export class MethodNotAllowedError extends AppError {
         super(message, 405, true, details);
     }
 }
-// NotAcceptableError
 export class NotAcceptableError extends AppError {
     constructor(
         message = 'Not acceptable',

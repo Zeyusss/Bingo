@@ -8,6 +8,7 @@ import express from 'express';
 import cors from "cors"
 import bodyParser from "body-parser";
 import router from './routes/order.route';
+import abandonedCartRouter from './routes/abandonedCart.routes';
 import { createOrder } from './controllers/order.controller';
 const app = express();
 app.use(
@@ -35,6 +36,7 @@ app.get('/', (req, res) => {
 
 // routes
 app.use("/api",router);
+app.use("/api/abandoned-cart", abandonedCartRouter);
 
 
 app.use(createErrorLoggingMiddleware('order-service'));
@@ -42,6 +44,6 @@ app.use(errorMiddleware)
 
 const port = process.env.PORT || 6004;
 const server = app.listen(port, () => {
-  console.log(`Listening at http://localhost:${port}/api`);
+  console.log(`Order ServiceListening at http://localhost:${port}/api`);
 });
 server.on('error', console.error);

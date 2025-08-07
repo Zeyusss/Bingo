@@ -6,7 +6,7 @@ const redis = new Redis(process.env.REDIS_DATABASE_URL!, {
   lazyConnect: true, 
 
 
-  keepAlive: 30000, // 30 seconds
+  keepAlive: 30000,
 
 
   tls: process.env.REDIS_DATABASE_URL?.startsWith("rediss://") ? {} : undefined,

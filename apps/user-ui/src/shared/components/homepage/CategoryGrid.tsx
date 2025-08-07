@@ -28,7 +28,7 @@ const CategoryGrid = () => {
   }, []);
 
   const handleClick = (category: string) => {
-    router.push(`/products?category=${encodeURIComponent(category)}`);
+    router.push(`/products?categories=${category}&page=1`);
   };
 
   return (

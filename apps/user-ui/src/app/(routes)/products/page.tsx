@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import ProductCard from "apps/user-ui/src/shared/components/cards/product-card";
 import axiosInstance from "apps/user-ui/src/utils/axiosInstance";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState, useMemo } from "react";
 import { Range } from "react-range";
 import { Search } from "lucide-react";
@@ -13,6 +13,7 @@ const MAX = 1199;
 
 const Page = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isProductLoading, setIsProductLoading] = useState(false);
   const [priceRange, setPriceRange] = useState([0, 1199]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -24,19 +25,35 @@ const Page = () => {
   const [tempPriceRange, setTempPriceRange] = useState([0, 1199]);
   const [productSearch, setProductSearch] = useState("");
   const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
-
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const colors = [
-    {name : "Black", code : "#000000"},
-    {name : "Red", code  : "#FF0000"},
-    {name : "Lime", code : "#00FF00"},
-    {name : "Blue", code : "#0000FF"},
-    {name : "Yellow", code : "#FFFF00"},
-    {name : "Orange", code : "#FFA500"},
-    {name : "Purple", code : "#800080"}
-  ]
+    { name: "Black", code: "#000000" },
+    { name: "Red", code: "#FF0000" },
+    { name: "Lime", code: "#00FF00" },
+    { name: "Blue", code: "#0000FF" },
+    { name: "Yellow", code: "#FFFF00" },
+    { name: "Orange", code: "#FFA500" },
+    { name: "Purple", code: "#800080" },
+  ];
 
-  const sizes = ["XS" , "S", "M","L","XL","XXL"];
+  const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
+
+
+  useEffect(() => {
+    const categoriesParam = searchParams.get("categories");
+    if (categoriesParam && selectedCategories.length === 0) {
+      setSelectedCategories([categoriesParam]);
+    }
+    setIsInitialized(true);
+  }, []); 
+
+
+  useEffect(() => {
+    if (isInitialized) {
+      fetchFilteredProducts();
+    }
+  }, [isInitialized]);
 
   const updateURL = () => {
     const params = new URLSearchParams();
@@ -78,9 +95,10 @@ const Page = () => {
   };
 
   useEffect(() => {
+    if (!isInitialized) return;
     updateURL();
     fetchFilteredProducts();
-  }, [priceRange, selectedCategories, selectedColors, selectedSizes, page]);
+  }, [priceRange, selectedCategories, selectedColors, selectedSizes, page, isInitialized]);
 
 
   useEffect(() => {
@@ -185,8 +203,8 @@ const toggleSize = (size: string) => {
                       <div
                         className="absolute h-full bg-blue-600 rounded"
                         style={{
-                          left: `${percentageLeft}%`, // ✅ add %
-                          width: `${percentageRight - percentageLeft}%`, // ✅ width in %
+                          left: `${percentageLeft}%`, 
+                          width: `${percentageRight - percentageLeft}%`, 
                         }}
                       />
                       {children}

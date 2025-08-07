@@ -33,6 +33,7 @@ const ProductDetailsCard = ({
   const location = useLocationTracking()
   const deviceInfo = useDeviceTracking();
   const addToCart = useStore((state: any) => state.addToCart);
+  const { showChatLoginPrompt } = useStore();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -47,19 +48,45 @@ const ProductDetailsCard = ({
     modalRef.current?.focus();
   }, []);
 
+
+
   const handleChat = async ()=>{
-  if(isLoading){
-   return;
-  }
-  setIsLoading(true);
-  try {
-    const res = await axiosInstance.post("/chatting/api/create-user-conversationGroup",{sellerId:data?.Shop?.sellerId},isProtected)
-  router.push(`/inbox?conversationId=${res.data.conversation.id}`);
-  } catch (error) {
-    console.log(error);
-  }finally{
-    setIsLoading(false)
-  }
+    if(isLoading){
+      return;
+    }
+
+    // Check if user is logged in
+    if (!user) {
+      showChatLoginPrompt();
+      return;
+    }
+
+    setIsLoading(true);
+    
+    // Since Shop data is not populated, use shopId as sellerId
+    const sellerId = data?.Shop?.sellerId || 
+                    data?.shop?.sellerId || 
+                    data?.sellerId ||
+                    data?.shopId; // Use shopId as fallback
+    
+    console.log('Using sellerId for chat:', sellerId);
+    
+    if (!sellerId) {
+      console.error('No sellerId found in product data:', data);
+      alert('Unable to start conversation: Seller information not available.');
+      setIsLoading(false);
+      return;
+    }
+    
+    try {
+      const res = await axiosInstance.post("/chatting/api/create-user-conversationGroup",{sellerId},isProtected)
+      router.push(`/inbox?conversationId=${res.data.conversation.id}`);
+    } catch (error) {
+      console.error("Failed to create conversation:", error);
+      alert("Failed to start conversation. Please try again.");
+    }finally{
+      setIsLoading(false)
+    }
   }
   return (
     <div
@@ -112,24 +139,27 @@ const ProductDetailsCard = ({
           </div>
         </div>
         <div className="flex-1 flex flex-col gap-4 min-w-[250px]">
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg border">
             <Image
               src={data?.Shop?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"}
-              alt="Shop Logo"
+              alt={data?.Shop?.name || "Shop Logo"}
               width={48}
               height={48}
-              className="rounded-full w-12 h-12 object-cover border border-gray-200"
+              className="rounded-full w-12 h-12 object-cover border-2 border-white shadow-sm"
             />
-            <div>
+            <div className="flex-1">
               <Link
                 href={`/shop/${data?.Shop?.id}`}
-                className="text-lg font-semibold text-blue-700 hover:underline"
+                className="text-lg font-semibold text-blue-700 hover:underline block"
               >
-                {data?.Shop?.name}
+                {data?.Shop?.name || "Shop Name"}
               </Link>
-              <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
-                <Ratings rating={data?.Shop?.ratings} />
-                <span className="ml-2 flex items-center"><MapPin size={16} className="mr-1" />{data?.Shop?.address || "Location Not Available"}</span>
+              <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                <Ratings rating={data?.Shop?.ratings || 0} showTextFallback={true} />
+                <span className="flex items-center text-gray-500">
+                  <MapPin size={14} className="mr-1" />
+                  {data?.Shop?.address || data?.Shop?.location || "Location Not Set"}
+                </span>
               </div>
             </div>
           </div>
@@ -218,6 +248,7 @@ const ProductDetailsCard = ({
               color:isSelected,
                 size: isSizeSelected
               },
+              price: data.sale_price || data.regular_price
              },
             user,
             location,

@@ -23,6 +23,7 @@ import useLocationTracking from "apps/user-ui/src/hooks/useLocationTracking";
 import useDeviceTracking from "apps/user-ui/src/hooks/useDeviceTracking";
 import ProductCard from "../../components/cards/product-card";
 import axiosInstance from "apps/user-ui/src/utils/axiosInstance";
+import { useComparisonStore } from "../../../store/comparisonStore";
 import { isProtected } from "apps/user-ui/src/utils/protected";
 import { useRouter } from "next/navigation";
 
@@ -31,6 +32,8 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
   const location = useLocationTracking();
   const deviceInfo = useDeviceTracking();
   const router = useRouter();
+  const { addProduct, removeProduct, isProductInComparison, canAddMore } = useComparisonStore();
+  const isInComparison = isProductInComparison(productDetails.id);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [currentImage, setCurrentImage] = useState(
     productDetails?.images[0]?.url
@@ -63,14 +66,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
   const [reviews, setReviews] = useState([]);
 
   const fetchReviews = async () => {
-    try {
-      const res = await axiosInstance.get(
-        `/product/api/get-reviews?productId=${productDetails.id}`
-      );
-      setReviews(res.data.reviews || []);
-    } catch (error) {
-      console.error("Failed to fetch reviews:", error);
-    }
+    setReviews([]);
   };
 
   useEffect(() => {
@@ -117,10 +113,19 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
     fetchFilteredProducts();
   }, [priceRange]);
 
+  const { showChatLoginPrompt } = useStore();
+
   const handleChat = async () => {
     if (isChatLoading) {
       return;
     }
+
+
+    if (!user) {
+      showChatLoginPrompt();
+      return;
+    }
+
     setIsChatLoading(true);
     try {
       const res = await axiosInstance.post(
@@ -130,7 +135,8 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
       );
       router.push(`/inbox?conversationId=${res.data.conversation.id}`);
     } catch (error) {
-      console.log(error);
+      console.error("Failed to create conversation:", error);
+      alert("Failed to start conversation. Please try again.");
     } finally {
       setIsChatLoading(false);
     }
@@ -433,9 +439,44 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
                   />
                   <span>Add to wishlist</span>
                 </button>
-                <button className="flex items-center space-x-1 text-gray-600 hover:text-gray-800 transition-colors">
+                <button 
+                  onClick={() => {
+                    if (isInComparison) {
+                      removeProduct(productDetails.id);
+                    } else if (canAddMore()) {
+                      addProduct({
+                        id: productDetails.id,
+                        title: productDetails.title,
+                        slug: productDetails.slug,
+                        sale_price: productDetails.sale_price || productDetails.regular_price,
+                        regular_price: productDetails.regular_price,
+                        images: productDetails.images || [],
+                        Shop: productDetails.Shop || { id: '', name: '', avatar: null },
+                        ratings: productDetails.ratings || 0,
+                        stock: productDetails.stock || 0,
+                        category: productDetails.category || '',
+                        tags: productDetails.tags || [],
+                        specifications: productDetails.specifications || {},
+                        customProperties: productDetails.customProperties || {},
+                        addedAt: Date.now(),
+                        lastViewed: Date.now(),
+                        source: 'product_page'
+                      }, 'product_page');
+                    }
+                  }}
+                  disabled={!canAddMore() && !isInComparison}
+                  className={`flex items-center space-x-1 transition-colors ${
+                    isInComparison 
+                      ? 'text-blue-600 hover:text-blue-800' 
+                      : canAddMore() 
+                        ? 'text-gray-600 hover:text-gray-800' 
+                        : 'text-gray-400 cursor-not-allowed'
+                  }`}
+                >
                   <Scale size={16} />
-                  <span>Add to compare</span>
+                  <span>
+                    {isInComparison ? 'Remove from compare' : canAddMore() ? 'Add to compare' : 'Compare limit reached'}
+                  </span>
                 </button>
               </div>
             </div>
@@ -482,11 +523,23 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
             <div className="border-t pt-6">
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <p className="text-sm text-gray-600">Sold by</p>
-                    <p className="font-medium text-lg">
-                      {productDetails?.Shop?.name}
-                    </p>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                      <img
+                        src={productDetails?.Shop?.avatar?.url || '/assets/HomeSlider/profile.webp'}
+                        alt={productDetails?.Shop?.name || 'Shop'}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = '/assets/HomeSlider/profile.webp';
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Sold by</p>
+                      <p className="font-medium text-lg">
+                        {productDetails?.Shop?.name}
+                      </p>
+                    </div>
                   </div>
                   <button
                     onClick={handleChat}

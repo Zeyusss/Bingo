@@ -6,7 +6,6 @@ import Link from 'next/link';
 const ProductCard = ({ product, isEvent }: { product: any; isEvent?: boolean }) => {
   const [timeleft, setTimeLeft] = useState('');
   
-  // Format price display
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -15,7 +14,6 @@ const ProductCard = ({ product, isEvent }: { product: any; isEvent?: boolean }) 
     }).format(price);
   };
 
-  // Calculate time left for events
   React.useEffect(() => {
     if (isEvent && product?.ending_date) {
       const interval = setInterval(() => {

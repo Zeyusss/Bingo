@@ -11,7 +11,7 @@ import React, { useEffect, useRef, useState } from "react";
 
 const page = () => {
   const searchParams = useSearchParams();
-  const { user, isLoading: userLoading } = useRequireAuth();
+  const { user } = useRequireAuth();
   const router = useRouter();
   const messageContainerRef = useRef<HTMLDivElement | null>(null);
   const scrollAnchorRef = useRef<HTMLDivElement | null>(null);
@@ -24,7 +24,8 @@ const page = () => {
   const [page, setPage] = useState(1);
   const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
   const conversationId = searchParams.get("conversationId");
-  const { ws } = useWebSocket();
+  const webSocketContext = useWebSocket();
+  const { ws } = webSocketContext || { ws: null };
 
   const { data: messages = [] } = useQuery({
     queryKey: ["messages", conversationId],
@@ -74,12 +75,17 @@ const page = () => {
 
   useEffect(() => {
     if (!ws) return;
-    ws.onmessage = (event: any) => {
+    
+    const handleMessage = (event: any) => {
       const data = JSON.parse(event.data);
+      console.log('User-UI received WebSocket message:', data);
+      
       if (data.type === "NEW_MESSAGE") {
         const newMsg = data?.payload;
+        console.log('Processing NEW_MESSAGE:', newMsg);
 
         if (newMsg.conversationId === conversationId) {
+          console.log('Adding message to current conversation:', conversationId);
           queryClient.setQueryData(
             ["messages", conversationId],
             (old: any = []) => [
@@ -88,7 +94,7 @@ const page = () => {
                 content: newMsg.content,
                 senderType: newMsg.senderType,
                 seen: false,
-                createdAt: new Date().toISOString(),
+                createdAt: newMsg.createdAt || new Date().toISOString(),
               },
             ]
           );
@@ -114,7 +120,13 @@ const page = () => {
         );
       }
     };
-  }, [ws, queryClient]);
+    
+    ws.onmessage = handleMessage;
+    
+    return () => {
+      ws.onmessage = null;
+    };
+  }, [ws, queryClient, conversationId]);
 
   useEffect(() => {
     if (messages?.length > 0) scrollToBottom();
