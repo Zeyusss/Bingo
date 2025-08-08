@@ -55,7 +55,7 @@ const ProductDetailsCard = ({
       return;
     }
 
-    // Check if user is logged in
+
     if (!user) {
       showChatLoginPrompt();
       return;
@@ -63,13 +63,13 @@ const ProductDetailsCard = ({
 
     setIsLoading(true);
     
-    // Since Shop data is not populated, use shopId as sellerId
+    
     const sellerId = data?.Shop?.sellerId || 
                     data?.shop?.sellerId || 
                     data?.sellerId ||
-                    data?.shopId; // Use shopId as fallback
+                    data?.shopId;
     
-    console.log('Using sellerId for chat:', sellerId);
+
     
     if (!sellerId) {
       console.error('No sellerId found in product data:', data);

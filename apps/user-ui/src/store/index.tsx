@@ -8,6 +8,7 @@ type Product = {
   image: string;
   quantity?: number;
   shopId: string;
+  stock?: number;
 };
 
 type Store = {
@@ -67,7 +68,6 @@ export const useStore = create<Store>()(
       showSideCart: false,
       showLoginPrompt: { show: false, action: null },
 
-      // add to cart
       addToCart: (product, user, location, deviceInfo) => {
         if (!user?.id) {
           set({ showLoginPrompt: { show: true, action: "cart" } });
@@ -76,22 +76,67 @@ export const useStore = create<Store>()(
 
         set((state) => {
           const existing = state.cart?.find((item) => item.id === product.id);
+          const requestedQuantity = product.quantity ?? 1;
+          const productStock = product.stock ?? 0;
+          
+          // If no stock available, don't add anything
+          if (productStock === 0) {
+            return state;
+          }
+          
           if (existing) {
+            const currentQuantity = existing.quantity ?? 1;
+            const newQuantity = currentQuantity + requestedQuantity;
+            
+            
+            if (productStock > 0 && newQuantity > productStock) {
+              
+              const availableToAdd = Math.max(0, productStock - currentQuantity);
+              if (availableToAdd > 0) {
+                return {
+                  cart: state.cart.map((item) =>
+                    item.id === product.id
+                      ? {
+                          ...item,
+                          quantity: currentQuantity + availableToAdd,
+                        }
+                      : item
+                  ),
+                };
+              }
+              
+              return state;
+            }
+            
+            
             return {
               cart: state.cart.map((item) =>
                 item.id === product.id
                   ? {
                       ...item,
-                      quantity: (item.quantity ?? 1) + (product.quantity ?? 1),
+                      quantity: newQuantity,
                     }
                   : item
               ),
             };
           }
+          
+          
+          if (productStock > 0 && requestedQuantity > productStock) {
+            
+            return {
+              cart: [
+                ...state.cart,
+                { ...product, quantity: productStock },
+              ],
+            };
+          }
+          
+         
           return {
             cart: [
               ...state.cart,
-              { ...product, quantity: product.quantity ?? 1 },
+              { ...product, quantity: requestedQuantity },
             ],
           };
         });
@@ -142,7 +187,6 @@ export const useStore = create<Store>()(
           });
         }
       },
-      // add to wishlist
       addToWishlist: (product, user, location, deviceInfo) => {
         if (!user?.id) {
           set({ showLoginPrompt: { show: true, action: "wishlist" } });
@@ -216,9 +260,20 @@ export const useStore = create<Store>()(
 
       updateCartItemQuantity: (id, quantity, user, location, deviceInfo) => {
         set((state) => ({
-          cart: state.cart.map((item) =>
-            item.id === id ? { ...item, quantity } : item
-          ),
+          cart: state.cart.map((item) => {
+            if (item.id === id) {
+              const itemStock = item.stock ?? 0;
+              
+              if (quantity <= 0) {
+                return { ...item, quantity: 1 };
+              } else if (itemStock > 0 && quantity > itemStock) {
+                return { ...item, quantity: itemStock }; 
+              } else {
+                return { ...item, quantity };
+              }
+            }
+            return item;
+          }),
         }));
 
         //send analytics event via API

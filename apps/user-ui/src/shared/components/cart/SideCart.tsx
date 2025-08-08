@@ -149,7 +149,7 @@ export default function SideCart({ isOpen, onClose }: SideCartProps) {
                     <div className="px-4 py-2">
                       <div className="space-y-3">
                         {cart?.map((item: any) => {
-                          const itemPrice = safeParsePrice(item.price);
+                          const itemPrice = safeParsePrice(item.price || item.sale_price || item.regular_price);
                           const itemQuantity = item.quantity || 1;
                           const itemTotal = itemPrice * itemQuantity;
                           
@@ -158,14 +158,14 @@ export default function SideCart({ isOpen, onClose }: SideCartProps) {
                               <div className="flex items-start space-x-3">
                                 <div className="flex-shrink-0">
                                   <img
-                                    src={item.images?.[0]?.url || "/placeholder-product.jpg"}
+                                    src={item.images?.[0]?.url || item.image || "/assets/categories/default.jpg"}
                                     alt={item.name}
                                     className="h-16 w-16 object-cover rounded-md border"
                                   />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <h4 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
-                                    {item.name}
+                                    {item.title || item.name}
                                   </h4>
                                   <p className="text-sm text-gray-500 mb-2">
                                     ${itemPrice.toFixed(2)} each
@@ -185,7 +185,12 @@ export default function SideCart({ isOpen, onClose }: SideCartProps) {
                                       </span>
                                       <button
                                         onClick={() => handleQuantityChange(item.id, itemQuantity + 1)}
-                                        className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all"
+                                        className={`p-1 rounded transition-all ${
+                                          itemQuantity >= (item.stock || 0)
+                                            ? 'text-gray-300 cursor-not-allowed'
+                                            : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                                        }`}
+                                        disabled={itemQuantity >= (item.stock || 0)}
                                       >
                                         <Plus className="h-4 w-4" />
                                       </button>

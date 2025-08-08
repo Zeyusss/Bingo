@@ -10,11 +10,11 @@ const NewProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch categories from backend
   const fetchCategories = async () => {
     try {
-      const { data } = await axiosInstance.get("/product/api/get-categories");
-      setCategories(["All", ...data.categories]); 
+      const { data } = await axiosInstance.get("/product/api/categories-with-count");
+      const categoryNames = data.categories.map((cat: any) => cat.name);
+      setCategories(["All", ...categoryNames]); 
     } catch (error) {
       console.error("Failed to fetch categories:", error);
     }

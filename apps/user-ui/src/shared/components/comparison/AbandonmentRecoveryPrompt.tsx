@@ -25,6 +25,8 @@ const AbandonmentRecoveryPrompt: React.FC<AbandonmentRecoveryPromptProps> = ({ o
   const [dismissedPermanently, setDismissedPermanently] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const dismissed = localStorage.getItem('comparison-recovery-dismissed');
     if (dismissed) {
       setDismissedPermanently(true);
@@ -170,21 +172,3 @@ const AbandonmentRecoveryPrompt: React.FC<AbandonmentRecoveryPromptProps> = ({ o
 };
 
 export default AbandonmentRecoveryPrompt;
-
-// CSS for animation (add to your global styles)
-const styles = `
-@keyframes slide-up {
-  from {
-    transform: translateY(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.animate-slide-up {
-  animation: slide-up 0.3s ease-out;
-}
-`;

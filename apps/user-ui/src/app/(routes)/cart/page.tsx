@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import InterestedInCard from "./InterestedInCard";
 import ShippingAddressSection from "apps/user-ui/src/shared/components/shippingAddress";
 import Footer from "apps/user-ui/src/shared/components/homepage/Footer";
+
 const CartPage = () => {
   const router = useRouter();
   const { user, isLoading } = useUser();
@@ -84,9 +85,19 @@ const CartPage = () => {
 
   const increaseQuantity = (id: string) => {
     useStore.setState((state: any) => ({
-      cart: state.cart.map((item: any) =>
-        item.id === id ? { ...item, quantity: (item.quantity ?? 1) + 1 } : item
-      ),
+      cart: state.cart.map((item: any) => {
+        if (item.id === id) {
+          const currentQuantity = item.quantity ?? 1;
+          const stock = item.stock ?? 0;
+          
+          if (stock > 0 && currentQuantity >= stock) {
+            return item;
+          }
+          
+          return { ...item, quantity: Math.min(currentQuantity + 1, stock) };
+        }
+        return item;
+      }),
     }));
   };
 
@@ -182,7 +193,8 @@ const CartPage = () => {
                 </thead>
 
                 <tbody>
-                  {cart.map((item: any) => (
+                  {cart.map((item: any) => {
+                  return (
                     <tr
                       key={item.id}
                       className="border-t group hover:bg-orange-50 transition"
@@ -201,7 +213,7 @@ const CartPage = () => {
                       <td className="p-4">
                         <div className="flex items-center gap-4">
                           <Image
-                            src={item.images[0]?.url}
+                            src={item.images?.[0]?.url || item.image || '/assets/categories/default.jpg'}
                             alt={item.title}
                             width={80}
                             height={80}
@@ -222,7 +234,7 @@ const CartPage = () => {
 
                       {/* Price */}
                       <td className="p-4 text-center font-medium text-gray-800">
-                        ${item.sale_price.toFixed(2)}
+                        ${(item.price || item.sale_price || item.regular_price || 0).toFixed(2)}
                       </td>
 
                       {/* Quantity */}
@@ -239,7 +251,12 @@ const CartPage = () => {
                           </span>
                           <button
                             onClick={() => increaseQuantity(item.id)}
-                            className="px-3 py-1 text-gray-700 hover:bg-orange-100 hover:text-orange-500 transition"
+                            className={`px-3 py-1 rounded-r transition ${
+                              item.stock && item.stock > 0 && item.quantity >= item.stock
+                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                : 'text-gray-700 hover:bg-orange-100 hover:text-orange-500'
+                            }`}
+                            disabled={item.stock && item.stock > 0 && item.quantity >= item.stock}
                           >
                             +
                           </button>
@@ -248,10 +265,11 @@ const CartPage = () => {
 
                       {/* Subtotal */}
                       <td className="p-4 text-right font-semibold text-orange-500">
-                        ${(item.quantity * item.sale_price).toFixed(2)}
+                        ${(item.quantity * (item.price || item.sale_price || item.regular_price || 0)).toFixed(2)}
                       </td>
                     </tr>
-                  ))}
+                  );
+                  })}
                 </tbody>
               </table>
 

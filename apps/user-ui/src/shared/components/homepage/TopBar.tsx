@@ -37,8 +37,8 @@ const TopBar = () => {
   }, []);
 
   return (
-    <div className="hidden lg:flex w-full bg-gray-100 border-b text-sm font-Poppins text-gray-800 z-[99] relative">
-      <div className="w-[80%] m-auto flex justify-between items-center py-2">
+    <div className="hidden lg:flex w-full bg-gray-100 border-b text-sm font-Poppins text-gray-800 z-[20] relative">
+      <div className="w-[95%] m-auto flex justify-between items-center py-2">
         <div className="flex items-center gap-4 relative">
           <div
             ref={dropdownRef}

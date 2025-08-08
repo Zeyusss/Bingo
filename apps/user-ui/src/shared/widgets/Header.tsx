@@ -97,14 +97,14 @@ useEffect(() => {
       <div className="h-[60px] lg:hidden" />
 
 
-      <div className="w-[80%] m-auto items-center justify-between py-4 hidden lg:flex">
+      <div className="w-[88%] m-auto items-center justify-between py-4 hidden lg:flex">
         <Link href={"/"}>
           <span className="text-2xl font-semibold text-black">Bingo</span>
         </Link>
 
         <div className="w-[50%] relative">
           <AdvancedSearchBar
-            placeholder="Search for handmade products..."
+            placeholder="Search for products..."
             onSearch={handleSearch}
             className="w-full"
           />
