@@ -11,8 +11,6 @@ import Footer from "apps/user-ui/src/shared/components/homepage/Footer";
 import FilterSidebar from "apps/user-ui/src/shared/components/filters/FilterSidebar";
 import FilterButton from "apps/user-ui/src/shared/components/filters/FilterButton";
 
-
-
 const Page = () => {
   const router = useRouter();
   const [isProductLoading, setIsProductLoading] = useState(false);
@@ -27,79 +25,83 @@ const Page = () => {
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
   const [productSearch, setProductSearch] = useState("");
   const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
-  const [colorSearch, setColorSearch] = useState('');
-  const [categorySearch, setCategorySearch] = useState('');
+  const [colorSearch, setColorSearch] = useState("");
+  const [categorySearch, setCategorySearch] = useState("");
   const [colorsWithCount, setColorsWithCount] = useState<any[]>([]);
   const searchParams = useSearchParams();
-  const [viewMode, setViewMode] = useState<"list" | "grid-3" | "grid-4">("grid-4");
+  const [viewMode, setViewMode] = useState<"list" | "grid-3" | "grid-4">(
+    "grid-4"
+  );
   const [sortOption, setSortOption] = useState("newest");
   const [itemsToShow, setItemsToShow] = useState(12);
   const [totalResults, setTotalResults] = useState(0);
   const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
 
-
   const getHexCodeFromColorFilter = (colorName: string): string => {
-    
-    const colorData = colorsWithCount.find(color => color.name === colorName);
+    const colorData = colorsWithCount.find((color) => color.name === colorName);
     if (colorData && colorData.code) {
-      return colorData.code; 
+      return colorData.code;
     }
-    
-    if (colorName.startsWith('#')) {
+
+    if (colorName.startsWith("#")) {
       return colorName;
     }
-    
+
     return colorName;
   };
 
   const fetchColorsWithCount = async () => {
     try {
-      const response = await axiosInstance.get('/product/api/colors-with-count');
+      const response = await axiosInstance.get(
+        "/product/api/colors-with-count"
+      );
       if (response.data && response.data.colors) {
         setColorsWithCount(response.data.colors);
       }
     } catch (error: any) {
-      console.error('Failed to fetch colors:', error.message);
+      console.error("Failed to fetch colors:", error.message);
     }
   };
   const filteredColors = colorsWithCount.filter((color: any) =>
     color.name.toLowerCase().includes(colorSearch.toLowerCase())
   );
 
-
   useEffect(() => {
     fetchColorsWithCount();
   }, []);
 
-  const sizes = ["XS" , "S", "M","L","XL","XXL"];
+  const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
 
   const updateURL = () => {
     const params = new URLSearchParams();
     params.set("priceRange", priceRange.join(","));
-    
-    
+
     if (selectedCategories.length > 0) {
-      const uniqueCategories = [...new Set(selectedCategories)].filter(cat => cat.trim().length > 0);
+      const uniqueCategories = [...new Set(selectedCategories)].filter(
+        (cat) => cat.trim().length > 0
+      );
       params.set("categories", uniqueCategories.join(","));
     }
-    
+
     if (selectedColors.length > 0) {
       const uniqueColors = [...new Set(selectedColors)];
-      
-      const hexColors = uniqueColors.map(color => getHexCodeFromColorFilter(color));
+
+      const hexColors = uniqueColors.map((color) =>
+        getHexCodeFromColorFilter(color)
+      );
       params.set("colors", hexColors.join(","));
     }
-    
+
     if (selectedSizes.length > 0) {
       const uniqueSizes = [...new Set(selectedSizes)];
       params.set("sizes", uniqueSizes.join(","));
     }
-    
+
     if (selectedStatus.length > 0) {
       const uniqueStatus = [...new Set(selectedStatus)];
       params.set("status", uniqueStatus.join(","));
     }
-    
+
     params.set("page", page.toString());
     router.replace(`/products?${params.toString()}`);
   };
@@ -109,15 +111,15 @@ const Page = () => {
     try {
       const query = new URLSearchParams();
       query.set("priceRange", priceRange.join(","));
-      
+
       if (selectedCategories.length > 0) {
         query.set("categories", selectedCategories.join(","));
       }
-      
-      
+
       if (selectedColors.length > 0) {
-        
-        const hexColors = selectedColors.map(color => getHexCodeFromColorFilter(color));
+        const hexColors = selectedColors.map((color) =>
+          getHexCodeFromColorFilter(color)
+        );
         query.set("colors", hexColors.join(","));
       }
       if (selectedSizes?.length > 0)
@@ -134,8 +136,9 @@ const Page = () => {
       const res = await axiosInstance.get(apiUrl);
       setProducts(res.data.products);
       setTotalPages(res.data.pagination.totalPages);
-      setTotalResults(res.data?.pagination?.total || res.data?.products?.length || 0);
-      
+      setTotalResults(
+        res.data?.pagination?.total || res.data?.products?.length || 0
+      );
     } catch (error) {
       console.error("Failed to fetch filtered products", error);
     } finally {
@@ -143,132 +146,151 @@ const Page = () => {
     }
   };
 
-
   const [isInitialized, setIsInitialized] = useState(false);
-  
 
-useEffect(() => {
-  const categoriesParam = searchParams.get("categories");
-  const priceRangeParam = searchParams.get("priceRange");
-  const colorsParam = searchParams.get("colors");
-  const sizesParam = searchParams.get("sizes");
-  const pageParam = searchParams.get("page");
-  const statusParam = searchParams.get("status");
+  useEffect(() => {
+    const categoriesParam = searchParams.get("categories");
+    const priceRangeParam = searchParams.get("priceRange");
+    const colorsParam = searchParams.get("colors");
+    const sizesParam = searchParams.get("sizes");
+    const pageParam = searchParams.get("page");
+    const statusParam = searchParams.get("status");
 
-  // Initialize categories with deduplication
-  if (categoriesParam) {
-    const categories = [...new Set(categoriesParam.split(",").map(cat => decodeURIComponent(cat.trim())).filter(cat => cat.length > 0))];
-
-    setSelectedCategories(categories);
-  }
-
-  // Initialize price range
-  if (priceRangeParam) {
-    const range = priceRangeParam.split(",").map(Number);
-    if (range.length === 2 && !isNaN(range[0]) && !isNaN(range[1])) {
-      setPriceRange(range);
-      setTempPriceRange(range);
-    }
-  }
-
-  // Initialize colors
-  if (colorsParam) {
-    const colors = [...new Set(colorsParam.split(",").filter(color => color.trim()))];
-    setSelectedColors(colors);
-  }
-
-  // Initialize sizes
-  if (sizesParam) {
-    const sizes = [...new Set(sizesParam.split(",").filter(size => size.trim()))];
-    setSelectedSizes(sizes);
-  }
-
-  // Initialize status
-  if (statusParam) {
-    const statuses = [...new Set(statusParam.split(",").filter(status => status.trim()))];
-    setSelectedStatus(statuses);
-  }
-
-  // Initialize page
-  if (pageParam) {
-    const pageNum = parseInt(pageParam);
-    if (!isNaN(pageNum) && pageNum > 0) {
-      setPage(pageNum);
-    }
-  }
-  
-  
-  const fetchWithUrlParams = () => {
-    const query = new URLSearchParams();
-    
-    
+    // Initialize categories with deduplication
     if (categoriesParam) {
-      query.set("categories", categoriesParam);
+      const categories = [
+        ...new Set(
+          categoriesParam
+            .split(",")
+            .map((cat) => decodeURIComponent(cat.trim()))
+            .filter((cat) => cat.length > 0)
+        ),
+      ];
+
+      setSelectedCategories(categories);
     }
+
+    // Initialize price range
     if (priceRangeParam) {
-      query.set("priceRange", priceRangeParam);
-    } else {
-      query.set("priceRange", "0,1199");
+      const range = priceRangeParam.split(",").map(Number);
+      if (range.length === 2 && !isNaN(range[0]) && !isNaN(range[1])) {
+        setPriceRange(range);
+        setTempPriceRange(range);
+      }
     }
+
+    // Initialize colors
     if (colorsParam) {
-      query.set("colors", colorsParam);
+      const colors = [
+        ...new Set(colorsParam.split(",").filter((color) => color.trim())),
+      ];
+      setSelectedColors(colors);
     }
+
+    // Initialize sizes
     if (sizesParam) {
-      query.set("sizes", sizesParam);
+      const sizes = [
+        ...new Set(sizesParam.split(",").filter((size) => size.trim())),
+      ];
+      setSelectedSizes(sizes);
     }
+
+    // Initialize status
     if (statusParam) {
-      query.set("status", statusParam);
+      const statuses = [
+        ...new Set(statusParam.split(",").filter((status) => status.trim())),
+      ];
+      setSelectedStatus(statuses);
     }
+
+    // Initialize page
     if (pageParam) {
-      query.set("page", pageParam);
-    } else {
-      query.set("page", "1");
+      const pageNum = parseInt(pageParam);
+      if (!isNaN(pageNum) && pageNum > 0) {
+        setPage(pageNum);
+      }
     }
-    
-    query.set("limit", "12");
-    query.set("sort", sortOption);
-    
-    const apiUrl = `/product/api/get-filtered-products?${query.toString()}`;
 
-    
-    setIsProductLoading(true);
-    axiosInstance.get(apiUrl)
-      .then(res => {
-        setProducts(res.data.products);
-        setTotalPages(res.data.pagination.totalPages);
-        setTotalResults(res.data?.pagination?.total || res.data?.products?.length || 0);
-        setIsInitialized(true);
-      })
-      .catch(error => {
-        console.error("Failed to fetch initial products", error);
-        setIsInitialized(true);
-      })
-      .finally(() => {
-        setIsProductLoading(false);
-      });
-  };
-  
-  fetchWithUrlParams();
-}, []); 
+    const fetchWithUrlParams = () => {
+      const query = new URLSearchParams();
 
-  
+      if (categoriesParam) {
+        query.set("categories", categoriesParam);
+      }
+      if (priceRangeParam) {
+        query.set("priceRange", priceRangeParam);
+      } else {
+        query.set("priceRange", "0,1199");
+      }
+      if (colorsParam) {
+        query.set("colors", colorsParam);
+      }
+      if (sizesParam) {
+        query.set("sizes", sizesParam);
+      }
+      if (statusParam) {
+        query.set("status", statusParam);
+      }
+      if (pageParam) {
+        query.set("page", pageParam);
+      } else {
+        query.set("page", "1");
+      }
+
+      query.set("limit", "12");
+      query.set("sort", sortOption);
+
+      const apiUrl = `/product/api/get-filtered-products?${query.toString()}`;
+
+      setIsProductLoading(true);
+      axiosInstance
+        .get(apiUrl)
+        .then((res) => {
+          setProducts(res.data.products);
+          setTotalPages(res.data.pagination.totalPages);
+          setTotalResults(
+            res.data?.pagination?.total || res.data?.products?.length || 0
+          );
+          setIsInitialized(true);
+        })
+        .catch((error) => {
+          console.error("Failed to fetch initial products", error);
+          setIsInitialized(true);
+        })
+        .finally(() => {
+          setIsProductLoading(false);
+        });
+    };
+
+    fetchWithUrlParams();
+  }, []);
+
   useEffect(() => {
     if (!isInitialized) {
-      return; 
+      return;
     }
-    
 
     updateURL();
     fetchFilteredProducts();
-  }, [priceRange, selectedCategories, selectedColors, selectedSizes, page, selectedStatus, sortOption, itemsToShow]);
+  }, [
+    priceRange,
+    selectedCategories,
+    selectedColors,
+    selectedSizes,
+    page,
+    selectedStatus,
+    sortOption,
+    itemsToShow,
+  ]);
 
-  
   useEffect(() => {
-    const handler = setTimeout(() => setDebouncedProductSearch(productSearch), 300);
+    const handler = setTimeout(
+      () => setDebouncedProductSearch(productSearch),
+      300
+    );
     return () => clearTimeout(handler);
   }, [productSearch]);
 
-  
   useEffect(() => {
     if (debouncedProductSearch !== productSearch) return;
     if (!isInitialized) return;
@@ -276,35 +298,40 @@ useEffect(() => {
     fetchFilteredProducts();
   }, [debouncedProductSearch]);
 
+  const displayedProducts = useMemo(() => {
+    let filtered = [...products];
 
-const displayedProducts = useMemo(() => {
-  let filtered = [...products];
+    if (debouncedProductSearch.trim().length > 0) {
+      filtered = filtered.filter((product: any) =>
+        product.title
+          .toLowerCase()
+          .includes(debouncedProductSearch.toLowerCase())
+      );
+    }
 
-  if (debouncedProductSearch.trim().length > 0) {
-    filtered = filtered.filter((product: any) =>
-      product.title.toLowerCase().includes(debouncedProductSearch.toLowerCase())
-    );
-  }
+    switch (sortOption) {
+      case "price-low":
+        filtered.sort((a, b) => a.sale_price - b.sale_price);
+        break;
+      case "price-high":
+        filtered.sort((a, b) => b.sale_price - a.sale_price);
+        break;
+      case "newest":
+        filtered.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        break;
+      case "average":
+      default:
+        filtered.sort(
+          (a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0)
+        );
+        break;
+    }
 
-  switch (sortOption) {
-    case "price-low":
-      filtered.sort((a, b) => a.sale_price - b.sale_price);
-      break;
-    case "price-high":
-      filtered.sort((a, b) => b.sale_price - a.sale_price);
-      break;
-    case "newest":
-      filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      break;
-    case "average":
-    default:
-      filtered.sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0));
-      break;
-  }
-
-  return filtered;
-}, [debouncedProductSearch, products, sortOption]);
-
+    return filtered;
+  }, [debouncedProductSearch, products, sortOption]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["categories"],
@@ -315,10 +342,11 @@ const displayedProducts = useMemo(() => {
     staleTime: 1000 * 60 * 30,
   });
 
-  // filter categories 
-  const filteredCategories = data?.categories?.filter((category: string) =>
-    category.toLowerCase().includes(categorySearch.toLowerCase())
-  ) || [];
+  // filter categories
+  const filteredCategories =
+    data?.categories?.filter((category: string) =>
+      category.toLowerCase().includes(categorySearch.toLowerCase())
+    ) || [];
 
   const toggleCategory = (label: string) => {
     setSelectedCategories((prev) => {
@@ -326,12 +354,11 @@ const displayedProducts = useMemo(() => {
       if (prev.includes(cleanLabel)) {
         return prev.filter((cat) => cat !== cleanLabel);
       } else {
-        
         const newCategories = [...prev, cleanLabel];
         return [...new Set(newCategories)];
       }
     });
-    setPage(1); 
+    setPage(1);
   };
 
   const toggleColor = (colorCode: string) => {
@@ -370,238 +397,286 @@ const displayedProducts = useMemo(() => {
     setPage(1);
   };
 
-return (
-  <div>
-    {/* Category Banner */}
-    <div className="relative h-64 bg-gradient-to-r from-gray-100 to-gray-200 overflow-hidden">
-      <div className="absolute inset-0 bg-black bg-opacity-30"></div>
-      <div className="relative z-10 h-full flex items-center justify-center">
-        <div className="text-center text-white">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            {selectedCategories.length > 0 ? selectedCategories[0] : 'All Products'}
-          </h1>
-          <p className="text-lg md:text-xl opacity-90">
-            Discover our handcrafted collection
-          </p>
-        </div>
-      </div>
-      {/* Background pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="h-full w-full" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-        }}></div>
-      </div>
-    </div>
-
-    <div className="w-full pb-10">
-      <div className="w-[95%] m-auto pt-8">
-
-        {/* Filter Sidebar */}
-        <FilterSidebar
-          isOpen={isFilterSidebarOpen}
-          onClose={() => setIsFilterSidebarOpen(false)}
-          productSearch={productSearch}
-          setProductSearch={setProductSearch}
-          tempPriceRange={tempPriceRange}
-          setTempPriceRange={setTempPriceRange}
-          priceRange={priceRange}
-          setPriceRange={setPriceRange}
-          setPage={setPage}
-          categorySearch={categorySearch}
-          setCategorySearch={setCategorySearch}
-          filteredCategories={filteredCategories}
-          selectedCategories={selectedCategories}
-          toggleCategory={toggleCategory}
-          isLoading={isLoading}
-          colorSearch={colorSearch}
-          setColorSearch={setColorSearch}
-          filteredColors={filteredColors}
-          selectedColors={selectedColors}
-          toggleColor={toggleColor}
-          sizes={sizes}
-          selectedSizes={selectedSizes}
-          toggleSize={toggleSize}
-          selectedStatus={selectedStatus}
-          toggleStatus={toggleStatus}
+  return (
+    <div>
+      {/* Category Banner */}
+      <div className="relative h-[320px] md:h-[420px] overflow-hidden bg-gradient-to-r from-gray-100 to-gray-200">
+        <div
+          className="absolute inset-0 bg-center bg-cover"
+          style={{
+            backgroundImage: "url('/assets/all-product/all-products-bg.webp')",
+          }}
         />
 
-        <div className="w-full flex flex-col lg:flex-row gap-8">
-          {/* Main Content Area */}
-          <div className="flex-1 px-2 lg:px-3">
-            {/* Top Bar with Filter Button and Controls */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-              {/* Left side - Filter button and results count */}
-              <div className="flex items-center gap-4">
-                <FilterButton 
-                  onClick={() => setIsFilterSidebarOpen(true)}
-                  activeFiltersCount={
-                    selectedCategories.length + 
-                    selectedColors.length + 
-                    selectedSizes.length + 
-                    selectedStatus.length +
-                    (priceRange[0] !== 0 || priceRange[1] !== 1199 ? 1 : 0) +
-                    (productSearch ? 1 : 0)
-                  }
-                />
-                <div className="text-sm text-gray-700">
-                  {isProductLoading ? (
-                    <p>Loading products...</p>
-                  ) : products.length > 0 ? (
-                    <p>
-                      Showing {(page - 1) * itemsToShow + 1}–
-                      {Math.min(page * itemsToShow, totalResults || products.length)} of{" "}
-                      {totalResults || products.length} results
-                    </p>
-                  ) : (
-                    <p>No products found</p>
-                  )}
-                </div>
-              </div>
+        <div className="absolute inset-0 bg-black/30" />
 
-              {/* Right side - View controls and sorting */}
-              <div className="flex items-center gap-4 flex-wrap justify-end">
-                <div className="flex items-center gap-1">
-                  <span className="font-semibold">Show :</span>
-                  {[9, 12, 18, 24].map((count) => (
-                    <button
-                      key={count}
-                      onClick={() => {
-                        setItemsToShow(count);
-                        setPage(1); 
-                      }}
-                      className={`text-sm ${
-                        count === itemsToShow ? "text-black font-semibold" : "text-gray-500"
-                      } hover:underline`}
-                    >
-                      {count}
-                    </button>
-                  ))}
-                </div>
+        {/* Background pattern (above image, below text) */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none z-[5]">
+          <div
+            className="h-full w-full bg-repeat"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            }}
+          />
+        </div>
 
-                {/* View icons */}
-                <div className="flex items-center gap-2 text-gray-400">
-                  <button
-                    onClick={() => setViewMode("list")}
-                    className={viewMode === "list" ? "text-black" : ""}
-                    title="List View"
-                  >
-                    <svg width="20" height="20" fill="currentColor">
-                      <rect x="3" y="4" width="14" height="2" rx="1" />
-                      <rect x="3" y="9" width="14" height="2" rx="1" />
-                      <rect x="3" y="14" width="14" height="2" rx="1" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => setViewMode("grid-3")}
-                    className={viewMode === "grid-3" ? "text-black" : ""}
-                    title="3x3 Grid"
-                  >
-                    <svg width="20" height="20" fill="currentColor">
-                      {[5, 10, 15].map((y) =>
-                        [5, 10, 15].map((x) => (
-                          <circle key={`${x}-${y}`} cx={x} cy={y} r="1.8" />
-                        ))
-                      )}
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => setViewMode("grid-4")}
-                    className={viewMode === "grid-4" ? "text-black" : ""}
-                    title="4x4 Grid"
-                  >
-                    <svg width="20" height="20" fill="currentColor">
-                      {[4, 8, 12, 16].map((y) =>
-                        [4, 8, 12, 16].map((x) => (
-                          <circle key={`${x}-${y}`} cx={x} cy={y} r="1.5" />
-                        ))
-                      )}
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Sort dropdown */}
-                <div className="relative">
-                  <select
-                    className="pl-4 pr-8 py-1 rounded-full border text-sm appearance-none cursor-pointer bg-white shadow-sm"
-                    defaultValue="average"
-                    onChange={(e) => {
-                      const selectedSort = e.target.value;
-                      setSortOption(selectedSort); 
-                      setPage(1); 
-                    }}
-                  >
-                    <option value="average">Sort by average rating</option>
-                    <option value="newest">Sort by newest</option>
-                    <option value="price-low">Sort by price: low to high</option>
-                    <option value="price-high">Sort by price: high to low</option>
-                  </select>
-                  <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
-                    ▼
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Product Grid */}
-            {isProductLoading ? (
-              <div
-                className={`grid gap-4 ${
-                  viewMode === "grid-3"
-                    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                    : viewMode === "grid-4"
-                    ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
-                    : "grid-cols-1"
-                }`}
-              >
-                {Array.from({ length: viewMode === "grid-3" ? 9 : viewMode === "grid-4" ? 16 : 10 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="h-[250px] bg-gray-300 animate-pulse rounded-xl"
-                  ></div>
-                ))}
-              </div>
-            ) : displayedProducts.length === 0 ? (
-              <p>No Products Found!</p>
-            ) : viewMode === "list" ? (
-              <div className="space-y-4">
-                {displayedProducts.map((product: any) => (
-                  <ProductCard key={product.id} product={product} isEvent={!!product.starting_date} view="list" />
-                ))}
-              </div>
-            ) : (
-              <div
-                className={`grid gap-4 ${
-                  viewMode === "grid-3"
-                    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                    : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
-                }`}
-              >
-                {displayedProducts.map((product: any) => (
-                  <ProductCard key={product.id} product={product} isEvent={!!product.starting_date} />
-                ))}
-              </div>
-            )}
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex justify-center mt-8 gap-2">
-                {Array.from({length : totalPages}).map((_,i)=>(
-                  <button
-                    key={i + 1}
-                    onClick={()=>setPage(i + 1)}
-                    className={`px-3 py-1 !rounded border border-gray-200 text-sm ${page === i + 1 ? "bg-blue-600 text-white" : "bg-white text-black" }`}
-                  >
-                    {i+1}
-                  </button>
-                ))}
-              </div>
-            )}
+        {/* Text */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-center px-4">
+          <div className="text-center text-white px-4">
+            <h1 className="text-5xl font-bold mb-4">
+              {selectedCategories.length > 0
+                ? selectedCategories[0]
+                : "All Products"}
+            </h1>
+            <p className="text-lg mb-6">Discover our handcrafted collection</p>
+            <nav className="text-sm">
+              <Link href="/" className="hover:underline opacity-80">
+                Home
+              </Link>
+              <span className="mx-2 opacity-60">/</span>
+              <span className="font-medium">Products</span>
+            </nav>
           </div>
         </div>
       </div>
+
+      <div className="w-full pb-10">
+        <div className="w-[95%] m-auto pt-8">
+          {/* Filter Sidebar */}
+          <FilterSidebar
+            isOpen={isFilterSidebarOpen}
+            onClose={() => setIsFilterSidebarOpen(false)}
+            productSearch={productSearch}
+            setProductSearch={setProductSearch}
+            tempPriceRange={tempPriceRange}
+            setTempPriceRange={setTempPriceRange}
+            priceRange={priceRange}
+            setPriceRange={setPriceRange}
+            setPage={setPage}
+            categorySearch={categorySearch}
+            setCategorySearch={setCategorySearch}
+            filteredCategories={filteredCategories}
+            selectedCategories={selectedCategories}
+            toggleCategory={toggleCategory}
+            isLoading={isLoading}
+            colorSearch={colorSearch}
+            setColorSearch={setColorSearch}
+            filteredColors={filteredColors}
+            selectedColors={selectedColors}
+            toggleColor={toggleColor}
+            sizes={sizes}
+            selectedSizes={selectedSizes}
+            toggleSize={toggleSize}
+            selectedStatus={selectedStatus}
+            toggleStatus={toggleStatus}
+          />
+
+          <div className="w-full flex flex-col lg:flex-row gap-8">
+            {/* Main Content Area */}
+            <div className="flex-1 px-2 lg:px-3">
+              {/* Top Bar with Filter Button and Controls */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                {/* Left side - Filter button and results count */}
+                <div className="flex items-center gap-4">
+                  <FilterButton
+                    onClick={() => setIsFilterSidebarOpen(true)}
+                    activeFiltersCount={
+                      selectedCategories.length +
+                      selectedColors.length +
+                      selectedSizes.length +
+                      selectedStatus.length +
+                      (priceRange[0] !== 0 || priceRange[1] !== 1199 ? 1 : 0) +
+                      (productSearch ? 1 : 0)
+                    }
+                  />
+                  <div className="text-sm text-gray-700">
+                    {isProductLoading ? (
+                      <p>Loading products...</p>
+                    ) : products.length > 0 ? (
+                      <p>
+                        Showing {(page - 1) * itemsToShow + 1}–
+                        {Math.min(
+                          page * itemsToShow,
+                          totalResults || products.length
+                        )}{" "}
+                        of {totalResults || products.length} results
+                      </p>
+                    ) : (
+                      <p>No products found</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right side - View controls and sorting */}
+                <div className="flex items-center gap-4 flex-wrap justify-end">
+                  <div className="flex items-center gap-1">
+                    <span className="font-semibold">Show :</span>
+                    {[9, 12, 18, 24].map((count) => (
+                      <button
+                        key={count}
+                        onClick={() => {
+                          setItemsToShow(count);
+                          setPage(1);
+                        }}
+                        className={`text-sm ${
+                          count === itemsToShow
+                            ? "text-black font-semibold"
+                            : "text-gray-500"
+                        } hover:underline`}
+                      >
+                        {count}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* View icons */}
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <button
+                      onClick={() => setViewMode("list")}
+                      className={viewMode === "list" ? "text-black" : ""}
+                      title="List View"
+                    >
+                      <svg width="20" height="20" fill="currentColor">
+                        <rect x="3" y="4" width="14" height="2" rx="1" />
+                        <rect x="3" y="9" width="14" height="2" rx="1" />
+                        <rect x="3" y="14" width="14" height="2" rx="1" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setViewMode("grid-3")}
+                      className={viewMode === "grid-3" ? "text-black" : ""}
+                      title="3x3 Grid"
+                    >
+                      <svg width="20" height="20" fill="currentColor">
+                        {[5, 10, 15].map((y) =>
+                          [5, 10, 15].map((x) => (
+                            <circle key={`${x}-${y}`} cx={x} cy={y} r="1.8" />
+                          ))
+                        )}
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setViewMode("grid-4")}
+                      className={viewMode === "grid-4" ? "text-black" : ""}
+                      title="4x4 Grid"
+                    >
+                      <svg width="20" height="20" fill="currentColor">
+                        {[4, 8, 12, 16].map((y) =>
+                          [4, 8, 12, 16].map((x) => (
+                            <circle key={`${x}-${y}`} cx={x} cy={y} r="1.5" />
+                          ))
+                        )}
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Sort dropdown */}
+                  <div className="relative">
+                    <select
+                      className="pl-4 pr-8 py-1 rounded-full border text-sm appearance-none cursor-pointer bg-white shadow-sm"
+                      defaultValue="average"
+                      onChange={(e) => {
+                        const selectedSort = e.target.value;
+                        setSortOption(selectedSort);
+                        setPage(1);
+                      }}
+                    >
+                      <option value="average">Sort by average rating</option>
+                      <option value="newest">Sort by newest</option>
+                      <option value="price-low">
+                        Sort by price: low to high
+                      </option>
+                      <option value="price-high">
+                        Sort by price: high to low
+                      </option>
+                    </select>
+                    <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
+                      ▼
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Product Grid */}
+              {isProductLoading ? (
+                <div
+                  className={`grid gap-4 ${
+                    viewMode === "grid-3"
+                      ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                      : viewMode === "grid-4"
+                      ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
+                      : "grid-cols-1"
+                  }`}
+                >
+                  {Array.from({
+                    length:
+                      viewMode === "grid-3"
+                        ? 9
+                        : viewMode === "grid-4"
+                        ? 16
+                        : 10,
+                  }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="h-[250px] bg-gray-300 animate-pulse rounded-xl"
+                    ></div>
+                  ))}
+                </div>
+              ) : displayedProducts.length === 0 ? (
+                <p>No Products Found!</p>
+              ) : viewMode === "list" ? (
+                <div className="space-y-4">
+                  {displayedProducts.map((product: any) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      isEvent={!!product.starting_date}
+                      view="list"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div
+                  className={`grid gap-4 ${
+                    viewMode === "grid-3"
+                      ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                      : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
+                  }`}
+                >
+                  {displayedProducts.map((product: any) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      isEvent={!!product.starting_date}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center mt-8 gap-2">
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <button
+                      key={i + 1}
+                      onClick={() => setPage(i + 1)}
+                      className={`px-3 py-1 !rounded border border-gray-200 text-sm ${
+                        page === i + 1
+                          ? "bg-blue-600 text-white"
+                          : "bg-white text-black"
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      <Footer />
     </div>
-    <Footer />
-  </div>
   );
 };
 
