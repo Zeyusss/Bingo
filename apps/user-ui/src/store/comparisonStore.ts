@@ -149,7 +149,7 @@ export const useComparisonStore = create<ComparisonStore>()(
         const now = Date.now();
         const mostRecentView = Math.max(...products.map((p: ComparisonProduct) => p.lastViewed));
         
-        return Math.floor((now - mostRecentView) / (60 * 60 * 1000)); // Hours
+        return Math.floor((now - mostRecentView) / (60 * 60 * 1000)); 
       },
 
       shouldShowRecoveryPrompt: () => {
@@ -189,7 +189,7 @@ export const useComparisonStore = create<ComparisonStore>()(
       recoverFromAbandonment: () => {
         get().markAsViewed();
         
-        // Analytics event can be triggered here in production
+        // analytics event can be triggered here in production
         // analytics.track('comparison_recovered', { items: products.length });
       }
     }),

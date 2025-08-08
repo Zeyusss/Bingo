@@ -78,14 +78,10 @@ const page = () => {
     
     const handleMessage = (event: any) => {
       const data = JSON.parse(event.data);
-      console.log('User-UI received WebSocket message:', data);
-      
-      if (data.type === "NEW_MESSAGE") {
-        const newMsg = data?.payload;
-        console.log('Processing NEW_MESSAGE:', newMsg);
-
+      if (data.type === 'NEW_MESSAGE') {
+        const newMsg = data.payload;
+        
         if (newMsg.conversationId === conversationId) {
-          console.log('Adding message to current conversation:', conversationId);
           queryClient.setQueryData(
             ["messages", conversationId],
             (old: any = []) => [

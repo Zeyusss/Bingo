@@ -29,9 +29,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={`${roboto.variable} ${poppins.variable}`}
-              style={{
+    <html lang="en" suppressHydrationWarning>
+      <body 
+        className={`${roboto.variable} ${poppins.variable}`}
+        suppressHydrationWarning
+        style={{
           backgroundImage: "url('/assets/wd-furniture-background.webp')",
           backgroundRepeat: "repeat",
           backgroundSize: "auto", 

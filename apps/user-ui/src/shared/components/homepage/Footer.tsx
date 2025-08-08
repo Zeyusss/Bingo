@@ -2,8 +2,25 @@
 import { Facebook, Instagram, Youtube, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import axiosInstance from "../../../utils/axiosInstance";
 
 const Footer = () => {
+  const [categories, setCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const { data } = await axiosInstance.get("/product/api/categories-with-count");
+        const categoryNames = data.categories.map((cat: any) => cat.name);
+        setCategories(categoryNames.slice(0, 10)); 
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
   return (
     <footer className="bg-black text-white pt-12 pb-4 px-4">
       <div className="max-w-screen-xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -81,38 +98,22 @@ const Footer = () => {
           <h4 className="text-lg font-semibold mb-4">Categories</h4>
           <div className="grid grid-cols-2 gap-x-8 text-sm text-gray-300">
             <ul className="space-y-2">
-              <li>
-                <Link href="/products?categories=Jewelry">Jewelry</Link>
-              </li>
-              <li>
-                <Link href="/products?categories=Clothing">Clothing</Link>
-              </li>
-              <li>
-                <Link href="/products?categories=Home%20Decor">Home Decor</Link>
-              </li>
-              <li>
-                <Link href="/products?categories=Art">Art</Link>
-              </li>
-              <li>
-                <Link href="/products?categories=Toys">Toys</Link>
-              </li>
+              {categories.slice(0, Math.ceil(categories.length / 2)).map((category) => (
+                <li key={category}>
+                  <Link href={`/products?categories=${encodeURIComponent(category)}`}>
+                    {category}
+                  </Link>
+                </li>
+              ))}
             </ul>
             <ul className="space-y-2">
-              <li>
-                <Link href="/products?categories=Accessories">Accessories</Link>
-              </li>
-              <li>
-                <Link href="/products?categories=Bags">Bags</Link>
-              </li>
-              <li>
-                <Link href="/products?categories=Ceramics">Ceramics</Link>
-              </li>
-              <li>
-                <Link href="/products?categories=Woodwork">Woodwork</Link>
-              </li>
-              <li>
-                <Link href="/products?categories=Knitting">Knitting</Link>
-              </li>
+              {categories.slice(Math.ceil(categories.length / 2)).map((category) => (
+                <li key={category}>
+                  <Link href={`/products?categories=${encodeURIComponent(category)}`}>
+                    {category}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         </div>

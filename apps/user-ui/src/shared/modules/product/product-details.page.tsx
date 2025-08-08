@@ -6,10 +6,7 @@ import {
   MapPin,
   MessageSquareText,
   Package,
-  Wallet as WalletMinimal,
-  Share2,
   Scale,
-  Eye,
   Star,
 } from "lucide-react";
 import Image from "next/image";
@@ -106,7 +103,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
       );
       setRecommendedProducts(res.data.products);
     } catch (error) {
-      console.log("Failed to fetch Filtered products", error);
+
     }
   };
   useEffect(() => {
@@ -370,8 +367,13 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
                   {quantity}
                 </span>
                 <button
-                  onClick={() => setQuantity((prev) => prev + 1)}
-                  className="px-3 py-2 hover:bg-gray-50 transition-colors"
+                  onClick={() => setQuantity((prev) => Math.min(prev + 1, productDetails?.stock || 0))}
+                  className={`px-3 py-2 transition-colors ${
+                    quantity >= (productDetails?.stock || 0)
+                      ? 'text-gray-300 cursor-not-allowed'
+                      : 'hover:bg-gray-50'
+                  }`}
+                  disabled={quantity >= (productDetails?.stock || 0)}
                 >
                   +
                 </button>
@@ -678,31 +680,28 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
                       "No detailed description available.",
                   }}
                 />
-                {/* <div className="bg-gray-50 rounded-lg p-6">
-                  <h4 className="font-semibold mb-4">Key Features</h4>
-                  <ul className="space-y-2 text-sm text-gray-600">
-                    <li>• Choose items in a single color scheme and style</li>
-                    <li>• Consider the area of the room</li>
-                    <li>• Do not buy unnecessary pieces of furniture</li>
-                  </ul>
-                </div> */}
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* About Brand */}
+      {/* about brand */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div className="p-8">
             <h3 className="text-2xl font-bold mb-6">About Shop</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="relative">
-                <img
-                  src="https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg"
-                  alt="Brand"
+                <Image
+                  src={productDetails?.Shop?.coverBanner || "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg"}
+                  alt={productDetails?.Shop?.name || "Shop"}
+                  width={800}
+                  height={256}
                   className="w-full h-64 object-cover rounded-lg"
+                  onError={(e) => {
+                    e.currentTarget.src = "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg";
+                  }}
                 />
               </div>
               <div>
@@ -715,18 +714,18 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
                 </p>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 bg-orange-50 rounded-lg">
+                  <Link href={`/seller/${productDetails?.Shop?.sellers?.[0]?.id || productDetails?.Shop?.id}`} className="text-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors">
                     <div className="w-8 h-8 bg-orange-100 rounded-full mx-auto mb-2 flex items-center justify-center">
                       <Package className="w-4 h-4 text-orange-600" />
                     </div>
                     <p className="font-medium text-sm">Products</p>
-                  </div>
-                  <div className="text-center p-4 bg-orange-50 rounded-lg">
+                  </Link>
+                  <Link href={`/seller/${productDetails?.Shop?.sellers?.[0]?.id || productDetails?.Shop?.id}#reviews`} className="text-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors">
                     <div className="w-8 h-8 bg-orange-100 rounded-full mx-auto mb-2 flex items-center justify-center">
                       <Star className="w-4 h-4 text-orange-600" />
                     </div>
                     <p className="font-medium text-sm">Quality</p>
-                  </div>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -735,7 +734,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
       </div>
 
       {/* Ratings & Reviews */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div id="shop-reviews" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-2xl shadow-sm p-8">
           <h3 className="text-xl font-semibold mb-6">
             Ratings & Reviews of {productDetails?.title}

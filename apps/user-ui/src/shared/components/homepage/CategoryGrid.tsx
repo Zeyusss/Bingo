@@ -28,7 +28,12 @@ const CategoryGrid = () => {
   }, []);
 
   const handleClick = (category: string) => {
-    router.push(`/products?categories=${category}&page=1`);
+    const params = new URLSearchParams();
+    params.set("categories", category);
+    params.set("page", "1");
+    params.set("priceRange", "0,1199"); 
+    
+    router.push(`/products?${params.toString()}`);
   };
 
   return (

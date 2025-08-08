@@ -5,6 +5,9 @@ import { X, Eye, ShoppingCart, Heart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useComparisonStore } from '../../../store/comparisonStore';
 import { useStore } from '../../../store';
+import useUser from '../../../hooks/useUser';
+import useLocationTracking from '../../../hooks/useLocationTracking';
+import useDeviceTracking from '../../../hooks/useDeviceTracking';
 
 interface ComparisonTrayProps {
   className?: string;
@@ -15,6 +18,9 @@ const ComparisonTray: React.FC<ComparisonTrayProps> = ({ className = "" }) => {
   const addToCart = useStore((state: any) => state.addToCart);
   const addToWishlist = useStore((state: any) => state.addToWishlist);
   const router = useRouter();
+  const { user } = useUser();
+  const location = useLocationTracking();
+  const deviceInfo = useDeviceTracking();
 
   if (products.length === 0) return null;
 
@@ -23,11 +29,40 @@ const ComparisonTray: React.FC<ComparisonTrayProps> = ({ className = "" }) => {
   };
 
   const handleAddAllToCart = () => {
-    products.forEach((product) => addToCart(product));
+    products.forEach((product) => {
+      const cartProduct = {
+        id: product.id,
+        title: product.title,
+        price: product.sale_price || product.regular_price,
+        image: product.images?.[0]?.url || '/assets/categories/default.jpg',
+        quantity: 1,
+        shopId: product.Shop?.id || '',
+        stock: product.stock || 0
+      };
+      
+      if (!cartProduct.id || !cartProduct.title || !cartProduct.price) {
+        return;
+      }
+      addToCart(cartProduct, user, location, deviceInfo);
+    });
   };
 
   const handleAddAllToWishlist = () => {
-    products.forEach((product) => addToWishlist(product));
+    products.forEach((product) => {
+      const wishlistProduct = {
+        ...product, 
+        quantity: 1, 
+        price: product.sale_price || product.regular_price, 
+        image: product.images?.[0]?.url || '/assets/categories/default.jpg', 
+        shopId: product.Shop?.id || '' 
+      };
+      
+
+      if (!wishlistProduct.id || !wishlistProduct.title || !wishlistProduct.price) {
+        return;
+      }
+      addToWishlist(wishlistProduct, user, location, deviceInfo);
+    });
   };
 
   return (
@@ -56,7 +91,7 @@ const ComparisonTray: React.FC<ComparisonTrayProps> = ({ className = "" }) => {
             <div key={product.id} className="relative group flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
               <div className="relative flex-shrink-0">
                 <img
-                  src={product.images?.[0]?.url || '/placeholder-product.jpg'}
+                  src={product.images?.[0]?.url || '/assets/categories/default.jpg'}
                   alt={product.title}
                   className="w-12 h-12 object-cover rounded border"
                 />

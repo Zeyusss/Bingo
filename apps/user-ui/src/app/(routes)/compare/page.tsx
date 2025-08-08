@@ -115,32 +115,27 @@ const ComparePage: React.FC = () => {
   };
 
   const handleAddToCart = (product: ComparisonProduct) => {
-    addToCart({
+    const cartProduct = {
       id: product.id,
       title: product.title,
-      price: product.sale_price,
-      image: product.images?.[0]?.url || '',
+      price: product.sale_price || product.regular_price,
+      image: product.images?.[0]?.url || '/assets/categories/default.jpg',
       quantity: 1,
-      shopId: product.Shop?.id || ''
-    }, user, location, deviceInfo);
+      shopId: product.Shop?.id || '',
+      stock: product.stock || 0
+    };
+    
+    addToCart(cartProduct, user, location, deviceInfo);
   };
 
   const handleAddToWishlist = (product: ComparisonProduct) => {
+    
     const wishlistProduct = {
-      id: product.id,
-      title: product.title,
-      price: product.sale_price,
-      image: product.images?.[0]?.url || '',
-      shopId: product.Shop?.id || '',
-      slug: product.slug,
-      sale_price: product.sale_price,
-      regular_price: product.regular_price,
-      images: product.images,
-      Shop: product.Shop,
-      ratings: product.ratings,
-      stock: product.stock,
-      category: product.category,
-      tags: product.tags
+      ...product, 
+      quantity: 1, 
+      price: product.sale_price || product.regular_price, 
+      image: product.images?.[0]?.url || '/assets/categories/default.jpg', 
+      shopId: product.Shop?.id || ''
     };
     addToWishlist(wishlistProduct, user, location, deviceInfo);
   };
@@ -235,7 +230,7 @@ const ComparePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
+        {/* header */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-4">
@@ -274,7 +269,7 @@ const ComparePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Attribute Selection */}
+          {/* attribute */}
           <div className="border-t pt-4">
             <h3 className="text-sm font-medium text-gray-900 mb-3">Compare Attributes:</h3>
             <div className="flex flex-wrap gap-2">
@@ -309,7 +304,7 @@ const ComparePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Comparison Table */}
+        {/* comparison */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -323,7 +318,7 @@ const ComparePage: React.FC = () => {
                       <div className="text-center">
                         <div className="relative inline-block mb-3">
                           <img
-                            src={product.images?.[0]?.url || '/placeholder-product.jpg'}
+                            src={product.images?.[0]?.url || '/assets/categories/default.jpg'}
                             alt={product.title}
                             className="w-20 h-20 object-cover rounded-lg mx-auto"
                           />
@@ -376,7 +371,7 @@ const ComparePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Bottom Actions */}
+        {/* actions */}
         <div className="mt-6 flex justify-center">
           <Link
             href="/"

@@ -8,6 +8,86 @@ import useUser from "apps/user-ui/src/hooks/useUser";
 import useLocationTracking from "apps/user-ui/src/hooks/useLocationTracking";
 import useDeviceTracking from "apps/user-ui/src/hooks/useDeviceTracking";
 
+const getColorCode = (color: string): string => {
+  const colorMap: { [key: string]: string } = {
+    'Red': '#FF0000',
+    'Blue': '#0000FF',
+    'Green': '#008000',
+    'Yellow': '#FFFF00',
+    'Black': '#000000',
+    'White': '#FFFFFF',
+    'Pink': '#FFC0CB',
+    'Purple': '#800080',
+    'Orange': '#FFA500',
+    'Brown': '#A52A2A',
+    'Gray': '#808080',
+    'Grey': '#808080',
+    'Navy': '#000080',
+    'Maroon': '#800000',
+    'Teal': '#008080',
+    'Olive': '#808000',
+    'Silver': '#C0C0C0',
+    'Gold': '#FFD700',
+    'Beige': '#F5F5DC',
+    'Cream': '#FFFDD0',
+  };
+  
+  if (color.startsWith('#')) {
+    return color;
+  }
+  
+  return colorMap[color] || '#CCCCCC';
+};
+
+const getColorDisplayName = (color: string): string => {
+  if (!color.startsWith('#')) {
+    return color.charAt(0).toUpperCase() + color.slice(1).toLowerCase();
+  }
+  
+  const hex = color.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  
+  const brightness = (r + g + b) / 3;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  
+  if (max - min < 30) {
+    if (brightness < 50) return 'Black';
+    if (brightness < 100) return 'Dark Gray';
+    if (brightness < 150) return 'Gray';
+    if (brightness < 200) return 'Light Gray';
+    return 'White';
+  }
+  
+  if (r >= g && r >= b) {
+    if (g > b + 30) {
+      return brightness > 200 ? 'Light Orange' : brightness > 80 ? 'Orange' : 'Dark Orange';
+    } else if (b > g + 30) {
+      return brightness > 200 ? 'Light Pink' : brightness > 80 ? 'Pink' : 'Dark Pink';
+    } else {
+      return brightness > 200 ? 'Light Red' : brightness > 80 ? 'Red' : 'Dark Red';
+    }
+  } else if (g >= r && g >= b) {
+    if (r > b + 30) {
+      return brightness > 200 ? 'Light Yellow' : brightness > 80 ? 'Yellow' : 'Dark Yellow';
+    } else if (b > r + 30) {
+      return brightness > 200 ? 'Light Teal' : brightness > 80 ? 'Teal' : 'Dark Teal';
+    } else {
+      return brightness > 200 ? 'Light Green' : brightness > 80 ? 'Green' : 'Dark Green';
+    }
+  } else {
+    if (r > g + 30) {
+      return brightness > 200 ? 'Light Purple' : brightness > 80 ? 'Purple' : 'Dark Purple';
+    } else if (g > r + 30) {
+      return brightness > 200 ? 'Light Cyan' : brightness > 80 ? 'Cyan' : 'Dark Cyan';
+    } else {
+      return brightness > 200 ? 'Light Blue' : brightness > 80 ? 'Blue' : 'Dark Blue';
+    }
+  }
+};
+
 const ProductCard = ({
   product,
   isEvent,
@@ -38,10 +118,15 @@ const ProductCard = ({
   const isInComparison = isProductInComparison(product.id);
   const hasDiscount =
     product.sale_price && product.sale_price < product.regular_price;
-  const isNew =
-    product?.createdAt &&
-    Date.now() - new Date(product.createdAt).getTime() <
-      7 * 24 * 60 * 60 * 1000;
+  
+  const [isNew, setIsNew] = useState(false);
+  
+  useEffect(() => {
+    if (product?.createdAt) {
+      const isProductNew = Date.now() - new Date(product.createdAt).getTime() < 7 * 24 * 60 * 60 * 1000;
+      setIsNew(isProductNew);
+    }
+  }, [product?.createdAt]);
 
   useEffect(() => {
     if (isEvent && product?.ending_date) {
@@ -186,14 +271,43 @@ const ProductCard = ({
         )}
 
         {product.colors && product.colors.length > 0 && (
-          <div className="flex gap-2 mt-2">
-            {product.colors.slice(0, 4).map((color: string, idx: number) => (
-              <span
-                key={idx}
-                className="w-4 h-4 rounded-full border"
-                style={{ backgroundColor: color }}
-              />
-            ))}
+          <div className="flex gap-1.5 mt-2 flex-wrap items-center">
+            {product.colors.slice(0, 5).map((color: string, idx: number) => {
+              const colorCode = getColorCode(color);
+              const colorName = getColorDisplayName(color);
+              return (
+                <div key={`color-${idx}-${color}`} className="relative">
+                  <div
+                    className="w-4 h-4 rounded-full border border-gray-300 hover:border-gray-500 transition-all duration-200 cursor-pointer hover:scale-110 shadow-sm group"
+                    style={{ backgroundColor: colorCode }}
+                    onMouseEnter={(e) => {
+                     
+                      const tooltip = document.createElement('div');
+                      tooltip.className = 'fixed bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg z-[9999] pointer-events-none';
+                      tooltip.textContent = colorName;
+                      tooltip.id = `tooltip-${idx}`;
+                      document.body.appendChild(tooltip);
+                      
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      tooltip.style.left = `${rect.left + rect.width / 2 - tooltip.offsetWidth / 2}px`;
+                      tooltip.style.top = `${rect.top - tooltip.offsetHeight - 8}px`;
+                    }}
+                    onMouseLeave={() => {
+                     
+                      const tooltip = document.getElementById(`tooltip-${idx}`);
+                      if (tooltip) {
+                        tooltip.remove();
+                      }
+                    }}
+                  />
+                </div>
+              );
+            })}
+            {product.colors.length > 5 && (
+              <span className="text-xs text-gray-500 font-medium ml-1">
+                +{product.colors.length - 5}
+              </span>
+            )}
           </div>
         )}
       </div>
@@ -201,9 +315,10 @@ const ProductCard = ({
       <div className="relative mt-4 opacity-0 group-hover:opacity-100 translate-y-3 group-hover:translate-y-0 transition-all duration-500 ease-in-out z-10">
         <div className="flex items-center justify-between">
           <button
-            onClick={() =>
-              addToCart({ ...product, quantity: 1, price: product.sale_price || product.regular_price }, user, location, deviceInfo)
-            }
+            onClick={() => {
+              const cartProduct = { ...product, quantity: 1, price: product.sale_price || product.regular_price };
+              addToCart(cartProduct, user, location, deviceInfo);
+            }}
             className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold py-2 px-4 rounded-full transition w-[70%] flex items-center justify-center relative overflow-hidden group/addtocart"
           >
             <span className="group-hover/addtocart:opacity-0 transition-opacity duration-300">

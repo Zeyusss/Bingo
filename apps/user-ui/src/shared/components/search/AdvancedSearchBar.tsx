@@ -65,6 +65,8 @@ const AdvancedSearchBar: React.FC<AdvancedSearchBarProps> = ({
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const saved = localStorage.getItem("recentSearches");
     if (saved) {
       setRecentSearches(JSON.parse(saved));
@@ -129,7 +131,7 @@ const AdvancedSearchBar: React.FC<AdvancedSearchBarProps> = ({
       }
     } catch (error: any) {
       if (error.name === "AbortError") {
-        console.log("Search request was cancelled");
+
       } else {
         console.error("Failed to fetch suggestions:", error.message || error);
       }

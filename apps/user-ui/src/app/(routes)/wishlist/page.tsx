@@ -77,7 +77,9 @@ const WishlistPage = () => {
   const increaseQuantity = (id: string) => {
     useStore.setState((state: any) => ({
       wishlist: state.wishlist.map((item: any) =>
-        item.id === id ? { ...item, quantity: (item.quantity ?? 1) + 1 } : item
+        item.id === id 
+          ? { ...item, quantity: Math.min((item.quantity ?? 1) + 1, item.stock || 0) } 
+          : item
       ),
     }));
   };
