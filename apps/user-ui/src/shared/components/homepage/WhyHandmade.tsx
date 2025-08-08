@@ -2,17 +2,48 @@
 
 import { Play } from "lucide-react";
 import Image from "next/image";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 const WhyHandmade = () => {
   const [showVideo, setShowVideo] = useState(false);
+  const scrollYRef = useRef(0);
+
+  useEffect(() => {
+    if (!showVideo) return;
+
+    // 1) Remember current scroll
+    scrollYRef.current = window.scrollY;
+
+    // 2) Lock the page (works well on iOS/Android too)
+    const { style } = document.body;
+    const prev = {
+      overflow: style.overflow,
+      position: style.position,
+      top: style.top,
+      width: style.width,
+    };
+
+    style.overflow = "hidden";
+    style.position = "fixed";
+    style.top = `-${scrollYRef.current}px`;
+    style.width = "100%";
+
+    return () => {
+      // 3) Restore
+      style.overflow = prev.overflow;
+      style.position = prev.position;
+      style.top = prev.top;
+      style.width = prev.width;
+      window.scrollTo(0, scrollYRef.current);
+    };
+  }, [showVideo]);
 
   return (
-<section className="py-16 px-4 md:px-20 lg:px-28 relative z-0 font-worksans">
-  <div className="max-w-6xl mx-auto">
-    <h2 className="text-3xl md:text-4xl font-bold text-[#1c1c1c] mb-5">
-      Why Buy Handmade?
-    </h2>
+    <section className="py-16 px-4 md:px-20 lg:px-28 relative z-0 font-worksans">
+      <div className="max-w-6xl mx-auto">
+        <h2 className="text-3xl md:text-4xl font-bold text-[#1c1c1c] mb-5">
+          Why Buy Handmade?
+        </h2>
 
         <div className="flex flex-col md:flex-row items-center gap-6">
           {/* Left Image */}
@@ -67,7 +98,9 @@ const WhyHandmade = () => {
               />
               <div className="absolute inset-0 bg-black/30 flex flex-col justify-center items-center text-white text-center px-4">
                 <p className="text-sm">How choose HandMade</p>
-                <h3 className="text-2xl font-bold">Bingo HandMade collection</h3>
+                <h3 className="text-2xl font-bold">
+                  Bingo HandMade collection
+                </h3>
                 <button
                   onClick={() => setShowVideo(true)}
                   className="mt-4 p-3 bg-white rounded-full shadow text-black hover:scale-105 transition"
@@ -82,14 +115,14 @@ const WhyHandmade = () => {
 
       {/* Video Modal */}
       {showVideo && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center transition-all duration-300"
-          style={{ zIndex: 9999 }} 
+        <div
+          className="fixed inset-0 bg-black/90 flex items-center justify-center overscroll-contain touch-none"
+          style={{ zIndex: 9999 }}
           onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowVideo(false);
-            }
+            if (e.target === e.currentTarget) setShowVideo(false);
           }}
+          onWheel={(e) => e.preventDefault()}
+          onTouchMove={(e) => e.preventDefault()}
         >
           <div className="relative w-full max-w-5xl mx-auto p-6">
             <button
@@ -99,7 +132,7 @@ const WhyHandmade = () => {
             >
               ×
             </button>
-            
+
             <div className="relative pb-[56.25%] h-0 overflow-hidden rounded-xl shadow-2xl bg-black">
               <iframe
                 src="https://www.youtube.com/embed/cJ61qnMgX4c?autoplay=1&rel=0&modestbranding=1"
@@ -111,7 +144,7 @@ const WhyHandmade = () => {
                 style={{ zIndex: 9998 }}
               />
             </div>
-            
+
             <div className="absolute inset-0 flex items-center justify-center bg-black rounded-xl">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
             </div>
