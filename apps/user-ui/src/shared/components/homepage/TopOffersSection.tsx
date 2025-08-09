@@ -2,6 +2,7 @@ import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "../../../utils/axiosInstance";
 import ProductCard from "../cards/product-card";
+import ProductListAnimator from "../animations/ProductListAnimator";
 
 const TopOffersSection = () => {
   const { data, isLoading, isError } = useQuery({
@@ -29,11 +30,17 @@ const TopOffersSection = () => {
         ) : isError ? (
           <p className="text-center text-red-500">No Offers available!</p>
         ) : data?.length ? (
-          <div className="m-auto grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 2xl:grid-cols-5 gap-5">
+          <ProductListAnimator
+            className="m-auto grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 2xl:grid-cols-5 gap-5"
+            listKey="top-offers"
+            staggerDelay={0.08}
+            animationDuration={0.4}
+            layout="grid"
+          >
             {data.map((product: any) => (
               <ProductCard key={product.id} product={product} isEvent={!!product.starting_date} />
             ))}
-          </div>
+          </ProductListAnimator>
         ) : (
           <p className="text-center">No products to display.</p>
         )}

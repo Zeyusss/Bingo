@@ -22,7 +22,7 @@ export async function sendKafkaEvent(eventData:{
          });
 
     } catch (error) {
-        console.log(error);
+
 
     }finally{
         await producer.disconnect();

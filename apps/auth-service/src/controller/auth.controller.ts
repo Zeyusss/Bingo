@@ -40,10 +40,10 @@ export const userRegistration = async (
   });
 
   try {
-    const { email, name } = req.body;
+    const { email, name, phone } = req.body;
     
     await requestLogger.info('User registration attempt started', {
-      metadata: { email, name, registrationType: 'user' }
+      metadata: { email, name, phone, registrationType: 'user' }
     });
 
     validateRegistrationData(req.body, "user");
@@ -103,10 +103,10 @@ export const verifyUserRegistrationOtp = async (
   next: NextFunction
 ) => {
   try {
-    const { email, otp, password, name } = req.body;
-    if (!email || !otp || !password || !name) {
+    const { email, otp, password, name, phone } = req.body;
+    if (!email || !otp || !password || !name || !phone) {
       return next(
-        new ValidationError("Email, OTP, password, and name are required")
+        new ValidationError("Email, OTP, password, name, and phone are required")
       );
     }
     const user = await prisma.users.findUnique({
@@ -123,6 +123,7 @@ export const verifyUserRegistrationOtp = async (
       data: {
         name,
         email,
+        phone,
         password: hashedPassword,
       },
     });
@@ -377,7 +378,26 @@ export const refreshToken = async (
 //get logged in user info
 export const getUser = async (req: any, res: Response, next: NextFunction) => {
   try {
-    const user = req.user;
+    // Fetch fresh user data with avatar relation
+    const user = await prisma.users.findUnique({
+      where: { id: req.user.id },
+      include: {
+        avatar: {
+          select: {
+            id: true,
+            url: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
     return res.status(201).json({
       success: true,
       user,
@@ -727,7 +747,7 @@ export const addUserAddress = async (
 ) => {
   try {
     const userId = req.user?.id;
-    const { label, name, street, city, state, zip, country, isDefault } =
+    const { label, name, phone, street, city, state, zip, country, isDefault } =
       req.body;
     if (!label || !name || !street || !city || !state || !zip || !country) {
       return next(new ValidationError("All fields are required"));
@@ -752,6 +772,7 @@ export const addUserAddress = async (
         userId,
         label,
         name,
+        phone,
         street,
         city,
         zip,
@@ -777,7 +798,7 @@ export const editUserAddress = async (
   try {
     const userId = req.user?.id;
     const { addressId } = req.params;
-    const { label, name, street, city, zip, country, isDefault } = req.body;
+    const { label, name, phone, street, city, zip, country, isDefault } = req.body;
 
     if (!userId) return next(new ValidationError("User not authenticated"));
     if (!addressId) return next(new ValidationError("Address ID is required"));
@@ -799,6 +820,7 @@ export const editUserAddress = async (
       data: {
         label,
         name,
+        phone,
         street,
         city,
         zip,
@@ -1173,6 +1195,380 @@ export const logoutUser = async (
       .status(200)
       .json({ success: true, message: "Logged out successfully" });
   } catch (error) {
+    return next(error);
+  }
+};
+
+// Upload image to ImageKit
+export const uploadUserImage = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  const requestId = req.headers['x-request-id'] as string || `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const requestLogger = logger.forRequest(requestId, req.user?.id, {
+    ip: req.ip || req.connection?.remoteAddress,
+    userAgent: req.headers['user-agent']
+  });
+
+  try {
+    const { file, fileName, folder = "user_profiles" } = req.body;
+
+    if (!file || !fileName) {
+      throw new ValidationError("File and fileName are required");
+    }
+
+    await requestLogger.info('User image upload attempt started', {
+      metadata: { fileName, folder, userId: req.user?.id }
+    });
+
+    const ImageKit = require("imagekit");
+    const imagekit = new ImageKit({
+      publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
+      privateKey: process.env.IMAGEKIT_SECRET_KEY,
+      urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT,
+    });
+
+    const uploadResponse = await imagekit.upload({
+      file: file,
+      fileName: fileName,
+      folder: folder,
+    });
+
+    await requestLogger.info('User image upload completed successfully', {
+      metadata: { 
+        fileName, 
+        folder, 
+        userId: req.user?.id,
+        imageUrl: uploadResponse.url,
+        fileId: uploadResponse.fileId
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Image uploaded successfully",
+      url: uploadResponse.url,
+      file_id: uploadResponse.fileId,
+    });
+  } catch (error) {
+    await requestLogger.error('User image upload failed', {
+      metadata: { 
+        fileName: req.body?.fileName,
+        userId: req.user?.id,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    });
+    return next(error);
+  }
+};
+
+// Check if user can change profile picture (90-day restriction)
+export const getProfilePictureEligibility = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  const requestId = req.headers['x-request-id'] as string || `eligibility_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const requestLogger = logger.forRequest(requestId, req.user?.id, {
+    ip: req.ip || req.connection?.remoteAddress,
+    userAgent: req.headers['user-agent']
+  });
+
+  try {
+    const userId = req.user?.id;
+
+    await requestLogger.info('Profile picture eligibility check started', {
+      metadata: { userId }
+    });
+
+    const user = await prisma.users.findUnique({
+      where: { id: userId },
+      include: {
+        avatar: true
+      }
+    });
+
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+
+    
+    let canChange = true;
+    let daysRemaining = 0;
+    let lastChanged = user.avatarLastChanged;
+
+    if (user.avatarLastChanged) {
+      const now = new Date();
+      const lastChangedDate = new Date(user.avatarLastChanged);
+      const ninetyDaysInMs = 90 * 24 * 60 * 60 * 1000;
+      const timeSinceLastChange = now.getTime() - lastChangedDate.getTime();
+      
+      if (timeSinceLastChange < ninetyDaysInMs) {
+        canChange = false;
+        const remainingMs = ninetyDaysInMs - timeSinceLastChange;
+        daysRemaining = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+      }
+    }
+
+    await requestLogger.info('Profile picture eligibility check completed', {
+      metadata: { 
+        userId, 
+        canChange, 
+        daysRemaining,
+        hasAvatar: !!user.avatar,
+        lastChanged: lastChanged?.toISOString()
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      canChange,
+      daysRemaining,
+      lastChanged: lastChanged?.toISOString(),
+      hasAvatar: !!user.avatar,
+      message: canChange ? "You can change your profile picture" : `You can change your profile picture in ${daysRemaining} days`
+    });
+  } catch (error) {
+    await requestLogger.error('Profile picture eligibility check failed', {
+      metadata: { 
+        userId: req.user?.id,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    });
+    return next(error);
+  }
+};
+
+// Update user profile picture with 90-day restriction
+export const updateUserProfilePicture = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  const requestId = req.headers['x-request-id'] as string || `update_avatar_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const requestLogger = logger.forRequest(requestId, req.user?.id, {
+    ip: req.ip || req.connection?.remoteAddress,
+    userAgent: req.headers['user-agent']
+  });
+
+  try {
+    const { imageUrl, fileId } = req.body;
+    const userId = req.user?.id;
+
+    if (!imageUrl || !fileId) {
+      throw new ValidationError("Image URL and file ID are required");
+    }
+
+    await requestLogger.info('User profile picture update started', {
+      metadata: { userId, imageUrl, fileId }
+    });
+
+    
+    const user = await prisma.users.findUnique({
+      where: { id: userId },
+      include: { avatar: true }
+    });
+
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+
+    
+    if (user.avatarLastChanged) {
+      const now = new Date();
+      const lastChangedDate = new Date(user.avatarLastChanged);
+      const ninetyDaysInMs = 90 * 24 * 60 * 60 * 1000;
+      const timeSinceLastChange = now.getTime() - lastChangedDate.getTime();
+      
+      if (timeSinceLastChange < ninetyDaysInMs) {
+        const remainingMs = ninetyDaysInMs - timeSinceLastChange;
+        const daysRemaining = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+        
+        await requestLogger.warning('Profile picture update blocked by 90-day restriction', {
+          metadata: { 
+            userId, 
+            daysRemaining,
+            lastChanged: lastChangedDate.toISOString()
+          }
+        });
+        
+        throw new ValidationError(`You can change your profile picture in ${daysRemaining} days`);
+      }
+    }
+
+    let imageRecord;
+
+    if (user.avatarId && user.avatar) {
+      
+      imageRecord = await prisma.images.update({
+        where: { id: user.avatarId },
+        data: {
+          url: imageUrl,
+          file_id: fileId,
+        }
+      });
+    } else {
+  
+      imageRecord = await prisma.images.create({
+        data: {
+          url: imageUrl,
+          file_id: fileId,
+          userId: userId
+        }
+      });
+
+      await prisma.users.update({
+        where: { id: userId },
+        data: { avatarId: imageRecord.id }
+      });
+    }
+
+
+    await prisma.users.update({
+      where: { id: userId },
+      data: { avatarLastChanged: new Date() }
+    });
+
+    const updatedUser = await prisma.users.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+        avatarLastChanged: true,
+        avatar: {
+          select: {
+            id: true,
+            url: true
+          }
+        }
+      }
+    });
+
+    await requestLogger.info('User profile picture update completed successfully', {
+      metadata: { 
+        userId, 
+        imageUrl, 
+        fileId,
+        avatarId: imageRecord.id,
+        avatarLastChanged: new Date().toISOString()
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile picture updated successfully",
+      user: updatedUser
+    });
+  } catch (error) {
+    await requestLogger.error('User profile picture update failed', {
+      metadata: { 
+        userId: req.user?.id,
+        imageUrl: req.body?.imageUrl,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    });
+    return next(error);
+  }
+};
+
+// Update user profile phone number
+export const updateUserProfilePhone = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user?.id;
+    const { phone } = req.body;
+
+    if (!userId) {
+      return next(new ValidationError("User not authenticated"));
+    }
+
+    if (!phone) {
+      return next(new ValidationError("Phone number is required"));
+    }
+
+
+    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    if (!phoneRegex.test(phone)) {
+      return next(new ValidationError("Invalid phone number format"));
+    }
+
+    const updatedUser = await prisma.users.update({
+      where: { id: userId },
+      data: { phone },
+      include: {
+        avatar: {
+          select: { id: true, url: true }
+        }
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Phone number updated successfully",
+      user: updatedUser
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Update user profile (name and phone)
+export const updateUserProfile = async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const { name, phone } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+
+    if (!name || !phone) {
+      return res.status(400).json({ message: "Name and phone are required" });
+    }
+
+
+    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({ message: "Invalid phone number format" });
+    }
+
+
+    const updatedUser = await prisma.users.update({
+      where: { id: userId },
+      data: {
+        name: name.trim(),
+        phone: phone.trim(),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        createdAt: true,
+        avatar: {
+          select: {
+            id: true,
+            url: true,
+          },
+        },
+      },
+    });
+
+    res.status(200).json({
+      message: "Profile updated successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("Error updating user profile:", error);
     return next(error);
   }
 };

@@ -90,12 +90,10 @@ const ShopFilterSidebar: React.FC<ShopFilterSidebarProps> = ({
 
   return (
     <>
-      {/* Overlay */}
       {isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300" />
       )}
 
-      {/* Sidebar */}
       <div
         ref={sidebarRef}
         className={`fixed top-0 left-0 h-full w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
@@ -103,7 +101,6 @@ const ShopFilterSidebar: React.FC<ShopFilterSidebarProps> = ({
         }`}
       >
         <div className="flex flex-col h-full">
-          {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold text-gray-900">Shop Filters</h2>
@@ -120,10 +117,7 @@ const ShopFilterSidebar: React.FC<ShopFilterSidebarProps> = ({
               <X className="w-5 h-5 text-gray-500" />
             </button>
           </div>
-
-          {/* Content */}
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
-            {/* Search */}
             <div className="space-y-3">
               <h3 className="text-sm font-medium text-gray-900 flex items-center gap-2">
                 <Search className="w-4 h-4" />
@@ -143,8 +137,6 @@ const ShopFilterSidebar: React.FC<ShopFilterSidebarProps> = ({
                 />
               </div>
             </div>
-
-            {/* Sort By */}
             <div className="space-y-3">
               <h3 className="text-sm font-medium text-gray-900">Sort By</h3>
               <select
@@ -165,8 +157,6 @@ const ShopFilterSidebar: React.FC<ShopFilterSidebarProps> = ({
                 <option value="followers_low">Least Followers</option>
               </select>
             </div>
-
-            {/* Categories */}
             <div className="space-y-3">
               <h3 className="text-sm font-medium text-gray-900">Categories</h3>
               <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -189,8 +179,6 @@ const ShopFilterSidebar: React.FC<ShopFilterSidebarProps> = ({
                 ))}
               </div>
             </div>
-
-            {/* Countries/Locations */}
             {countries.length > 0 && (
               <div className="space-y-3">
                 <h3 className="text-sm font-medium text-gray-900 flex items-center gap-2">
@@ -218,8 +206,6 @@ const ShopFilterSidebar: React.FC<ShopFilterSidebarProps> = ({
                 </div>
               </div>
             )}
-
-            {/* Minimum Rating */}
             <div className="space-y-3">
               <h3 className="text-sm font-medium text-gray-900 flex items-center gap-2">
                 <Star className="w-4 h-4" />
@@ -266,8 +252,6 @@ const ShopFilterSidebar: React.FC<ShopFilterSidebarProps> = ({
               </div>
             </div>
           </div>
-
-          {/* Footer */}
           <div className="border-t border-gray-200 p-4 space-y-3">
             <button
               onClick={clearAllFilters}

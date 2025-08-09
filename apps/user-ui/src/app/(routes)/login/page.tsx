@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useAuthStore } from "../../../store/authStore";
+import useRedirectIfAuthenticated from "../../../hooks/useRedirectIfAuthenticated";
 
 type FormData = {
   email: string;
@@ -17,6 +18,9 @@ type FormData = {
 };
 
 const Login = () => {
+  
+  useRedirectIfAuthenticated();
+  
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);

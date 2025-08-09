@@ -43,7 +43,7 @@ const Page = () => {
         const res = await axiosInstance.get("/product/api/get-categories");
         return res.data;
       } catch (error) {
-        console.log(error);
+
         return { categories: [], subCategories: {} };
       }
     },

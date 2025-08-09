@@ -74,15 +74,14 @@ const Page = () => {
     imageUrl: string,
     type: "cover" | "avatar"
   ) => {
-    console.log(`${type} updated successfully with URL:`, imageUrl);
-    console.log("Current seller data before invalidation:", seller);
+
 
     queryClient.invalidateQueries({ queryKey: ["seller"] });
 
     refetch().then((result: any) => {
-      console.log("Refetched seller data:", result.data);
+
       if (type === "avatar") {
-        console.log("Avatar URL after refetch:", result.data?.shop?.avatar);
+
       }
     });
   };

@@ -60,7 +60,7 @@ const articles = [
 
 const Blog = () => {
   return (
-    <section className="py-16 px-4 md:px-20 lg:px-28 font-worksans">
+    <section className="py-16 px-4 md:px-15 lg:px-20 font-worksans">
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-3xl md:text-4xl font-bold text-[#1c1c1c]">
           Latest articles
@@ -79,7 +79,6 @@ const Blog = () => {
             key={index}
             className="bg-white rounded-xl overflow-hidden shadow-sm flex flex-col group"
           >
-            {/* Image with overlays */}
             <div className="relative overflow-hidden">
               <Image
                 src={article.image}
@@ -88,8 +87,6 @@ const Blog = () => {
                 height={300}
                 className="w-full h-52 object-cover transition-transform duration-500 group-hover:scale-110"
               />
-
-              {/* Author (bottom-left) */}
               <div className="absolute bottom-3 left-3 flex items-center gap-2 text-white text-sm font-medium z-10">
                 <Image
                   src={article.authorImage}
@@ -101,9 +98,7 @@ const Blog = () => {
                 {article.authorName}
               </div>
 
-              {/* Share and Comment Icons */}
               <div className="absolute bottom-3 right-3 flex items-center gap-3 text-white z-10">
-                {/* Share */}
                 <div className="relative group/share">
                   <Share2 className="w-4 h-4 cursor-pointer hover:text-orange-400 transition" />
                   <div className="absolute bottom-8 right-0 bg-black text-white text-xs rounded-full px-3 py-2 flex gap-3 items-center opacity-0 group-hover/share:opacity-100 transition duration-200 z-20 shadow-lg">
@@ -114,7 +109,6 @@ const Blog = () => {
                   </div>
                 </div>
 
-                {/* Comment */}
                 <div className="relative group/comment cursor-pointer">
                   <MessageCircle className="w-4 h-4 hover:text-orange-400 transition" />
                   <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
@@ -127,7 +121,6 @@ const Blog = () => {
               </div>
             </div>
 
-            {/* Content */}
             <div className="p-5 flex flex-col justify-between flex-grow">
               <p className="text-sm text-gray-500 mb-1">
                 {article.category} / {article.date}

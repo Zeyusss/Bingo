@@ -2,51 +2,30 @@
 
 import { Play } from "lucide-react";
 import Image from "next/image";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const WhyHandmade = () => {
   const [showVideo, setShowVideo] = useState(false);
-  const scrollYRef = useRef(0);
 
   useEffect(() => {
-    if (!showVideo) return;
-
-    // 1) Remember current scroll
-    scrollYRef.current = window.scrollY;
-
-    // 2) Lock the page (works well on iOS/Android too)
-    const { style } = document.body;
-    const prev = {
-      overflow: style.overflow,
-      position: style.position,
-      top: style.top,
-      width: style.width,
-    };
-
-    style.overflow = "hidden";
-    style.position = "fixed";
-    style.top = `-${scrollYRef.current}px`;
-    style.width = "100%";
-
+    if (showVideo) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
     return () => {
-      // 3) Restore
-      style.overflow = prev.overflow;
-      style.position = prev.position;
-      style.top = prev.top;
-      style.width = prev.width;
-      window.scrollTo(0, scrollYRef.current);
+      document.body.style.overflow = "auto";
     };
   }, [showVideo]);
 
   return (
-    <section className="py-16 px-4 md:px-20 lg:px-28 relative z-0 font-worksans">
-      <div className="max-w-6xl mx-auto">
+    <section className="py-16 px-4 md:px-20 lg:px-28 relative font-worksans">
+      <div className="mx-auto">
         <h2 className="text-3xl md:text-4xl font-bold text-[#1c1c1c] mb-5">
           Why Buy Handmade?
         </h2>
 
         <div className="flex flex-col md:flex-row items-center gap-6">
-          {/* Left Image */}
           <div className="md:w-1/2 relative">
             <Image
               src="/assets/whychoosehandmade/whychooseus.webp"
@@ -57,7 +36,6 @@ const WhyHandmade = () => {
             />
           </div>
 
-          {/* Right Text & Video */}
           <div className="md:w-1/2">
             <p className="text-gray-700 mb-3 font-bold">
               Bingo — Where soulful finds meet everyday needs.
@@ -87,7 +65,6 @@ const WhyHandmade = () => {
               </li>
             </ul>
 
-            {/* Video Preview */}
             <div className="relative overflow-hidden rounded-[100px] w-full max-w-xl">
               <Image
                 src="/assets/whychoosehandmade/choosing-video.webp"
@@ -113,41 +90,25 @@ const WhyHandmade = () => {
         </div>
       </div>
 
-      {/* Video Modal */}
       {showVideo && (
-        <div
-          className="fixed inset-0 bg-black/90 flex items-center justify-center overscroll-contain touch-none"
-          style={{ zIndex: 9999 }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowVideo(false);
-          }}
-          onWheel={(e) => e.preventDefault()}
-          onTouchMove={(e) => e.preventDefault()}
-        >
-          <div className="relative w-full max-w-5xl mx-auto p-6">
-            <button
-              onClick={() => setShowVideo(false)}
-              className="absolute -top-12 right-0 text-white bg-red-600 hover:bg-red-700 rounded-full w-10 h-10 flex items-center justify-center text-xl font-bold transition-all duration-200 hover:scale-110 shadow-lg"
-              style={{ zIndex: 10000 }}
-            >
-              ×
-            </button>
-
-            <div className="relative pb-[56.25%] h-0 overflow-hidden rounded-xl shadow-2xl bg-black">
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[1000]">
+          <div className="relative w-full max-w-4xl mx-4">
+            <div className="relative pb-[56.25%] h-0 overflow-hidden rounded-lg">
               <iframe
-                src="https://www.youtube.com/embed/cJ61qnMgX4c?autoplay=1&rel=0&modestbranding=1"
-                title="Bingo HandMade Collection Video"
+                src="https://www.youtube.com/embed/cJ61qnMgX4c?autoplay=1"
+                title="YouTube video"
                 frameBorder="0"
-                allow="autoplay; encrypted-media; fullscreen"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
-                className="absolute top-0 left-0 w-full h-full rounded-xl"
-                style={{ zIndex: 9998 }}
+                className="absolute top-0 left-0 w-full h-full"
               />
             </div>
-
-            <div className="absolute inset-0 flex items-center justify-center bg-black rounded-xl">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
-            </div>
+            <button
+              onClick={() => setShowVideo(false)}
+              className="absolute -top-12 right-0 text-white hover:bg-black/70 rounded-full p-2 text-2xl leading-none"
+            >
+              &times;
+            </button>
           </div>
         </div>
       )}

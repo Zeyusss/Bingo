@@ -3,15 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import axiosInstance from "../../../utils/axiosInstance";
+import Image from "next/image";
 
 type Shop = {
   id: string;
   name: string;
   city: string;
   country: string;
-  avatar: {
-    url: string;
-  };
+  avatarUrl: string;
   coverBanner?: string;
 };
 
@@ -40,7 +39,7 @@ export default function BrandShowcase() {
   }, []);
 
   return (
-    <section className="py-16 px-4 md:px-8 font-[Work Sans]">
+    <section className="py-3 px-4 md:px-8 lg:px-10 font-[Work Sans]">
       <div className="max-w-7xl mx-auto">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">
           Shopping by brands
@@ -55,17 +54,19 @@ export default function BrandShowcase() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
             {shops.slice(0, 5).map((shop) => {
               const firstName = shop.name.split(" ")[0];
-              console.log("Banner for shop", shop.name, "=>", shop.coverBanner);
+
               return (
                 <Link key={shop.id} href={`/shop/${shop.id}`}>
                   <div className="relative h-[370px] rounded-2xl overflow-hidden shadow-md group cursor-pointer">
-                    <img
+                    <Image
                       src={
-                        shop.coverBanner?.trim()
-                          ? shop.coverBanner
-                          : "https://dummyimage.com/600x600/eeeeee/000000&text=Brand"
+                        shop.avatarUrl?.trim()
+                          ? shop.avatarUrl
+                          : "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"
                       }
                       alt={shop.name}
+                      width={600}
+                      height={370}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-black/30 p-4 flex flex-col justify-between">
@@ -75,7 +76,7 @@ export default function BrandShowcase() {
                         </span>
                       </div>
 
-                      <div>
+                      <div >
                         <h3 className="text-white text-lg font-semibold leading-tight mb-1">
                           {shop.name}
                         </h3>

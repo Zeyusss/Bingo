@@ -7,16 +7,26 @@ import prisma from '@packages/libs/prisma';
 
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
 
 export const validateRegistrationData = (data: any , userType:"user" | "seller") => {
-const { email, password, phone_number, name , country } = data;
-if (!name || !email || !password || (userType === "seller" && (!phone_number || !country))) {
+const { email, password, phone_number, phone, name , country } = data;
+if (!name || !email || !password || (userType === "user" && !phone) || (userType === "seller" && (!phone_number || !country))) {
     throw new ValidationError('All fields are required'); 
 } 
 
 if (!emailRegex.test(email)) {
     throw new ValidationError('Invalid email format');  
+}
 
+
+if (userType === "user" && phone && !phoneRegex.test(phone)) {
+    throw new ValidationError('Invalid phone number format');
+}
+
+
+if (userType === "seller" && phone_number && !phoneRegex.test(phone_number)) {
+    throw new ValidationError('Invalid phone number format');
 }
 
 }

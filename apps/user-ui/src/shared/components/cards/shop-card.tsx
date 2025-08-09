@@ -32,7 +32,6 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
 
   return (
     <div className="w-full rounded-xl overflow-hidden border border-gray-200 bg-white shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-      {/* Cover Image */}
       <div className="relative h-[140px] w-full overflow-hidden">
         {shop.coverBanner?.trim() ? (
           <Image
@@ -50,7 +49,6 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
         )}
       </div>
 
-      {/* Avatar */}
       <div className="relative flex justify-center -mt-10 z-10">
         <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white transition-transform hover:scale-105 duration-300">
           {shop.avatar?.url ? (
@@ -73,7 +71,6 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
         </div>
       </div>
 
-      {/* Info Section */}
       <div className="px-5 pb-5 pt-3 text-center">
         <h3 className="text-lg font-semibold text-gray-800 line-clamp-1">
           {shop.name}
@@ -82,7 +79,6 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
           {shop.followers?.length ?? 0} Followers
         </p>
 
-        {/* Address + Rating */}
         <div className="flex items-center justify-center text-sm text-gray-500 mt-3 gap-4 flex-wrap">
           {shop.address && (
             <span className="flex items-center gap-1 max-w-[140px] truncate">
@@ -96,7 +92,6 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
           </span>
         </div>
 
-        {/* Categories */}
         {displayedCategories.length > 0 && (
           <div className="mt-4 flex flex-wrap justify-center gap-2 text-xs">
             {displayedCategories.map((cat: string) => (
@@ -115,7 +110,6 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
           </div>
         )}
 
-        {/* Button */}
         <div className="mt-5">
           <Link
             href={`/shop/${shop.id}`}

@@ -69,7 +69,7 @@ export default function Page() {
   const [hovered, setHovered] = useState<number | null>(null);
 
   return (
-    <div className="py-16 px-4 md:px-8 lg:px-20">
+    <div className="py-16 px-4 md:px-8 lg:px-10">
       <div className="text-center mb-12">
         <h1 className="text-3xl sm:text-4xl font-bold mb-2">Product collections</h1>
         <p className="text-gray-600 text-base sm:text-lg">Explore product collections from our vendors</p>
@@ -86,14 +86,11 @@ export default function Page() {
               className="w-full object-cover rounded-lg"
             />
 
-            {/* Hotspot circle */}
             <div
               className="absolute top-1/2 left-1/2 w-5 h-5 bg-white rounded-full transform -translate-x-1/2 -translate-y-1/2 z-10 cursor-pointer group-hover:scale-110 transition-all"
               onMouseEnter={() => setHovered(product.id)}
               onMouseLeave={() => setHovered(null)}
             ></div>
-
-            {/* Hover Card */}
             {hovered === product.id && (
               <div className="absolute top-2 left-2 bg-white p-3 rounded-xl shadow-xl z-20 w-40 animate-fade-in">
                 <img

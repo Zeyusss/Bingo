@@ -17,7 +17,6 @@ const FilterButton: React.FC<FilterButtonProps> = ({ onClick, activeFiltersCount
       <SlidersHorizontal className="w-4 h-4" />
       <span>Filters</span>
       
-      {/* Active filters badge */}
       {activeFiltersCount > 0 && (
         <div className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs font-semibold rounded-full h-5 w-5 flex items-center justify-center">
           {activeFiltersCount > 99 ? '99+' : activeFiltersCount}

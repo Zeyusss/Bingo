@@ -235,9 +235,6 @@ const SearchFiltersModal: React.FC<SearchFiltersModalProps> = ({
                           />
                           <span className="text-sm text-gray-700">
                             {category.name}
-                            {category.count && (
-                              <span className="text-gray-500 ml-1">({category.count})</span>
-                            )}
                           </span>
                         </label>
                       ))}

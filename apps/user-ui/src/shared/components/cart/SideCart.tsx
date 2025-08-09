@@ -226,6 +226,32 @@ export default function SideCart({ isOpen, onClose }: SideCartProps) {
                         <span className="text-lg font-bold text-gray-900">${totalPrice.toFixed(2)}</span>
                       </div>
                       
+                      <div className="bg-white rounded-lg p-3 border">
+                        {totalPrice >= 5000 ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                            <span className="text-sm font-medium text-green-700">
+                              🎉 Your order qualifies for free shipping!
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-gray-600">Free shipping at $5,000</span>
+                              <span className="text-sm font-medium text-gray-900">
+                                ${(5000 - totalPrice).toFixed(2)} to go
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-orange-500 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${Math.min((totalPrice / 5000) * 100, 100)}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
                       <div className="space-y-2">
                         <Link
                           href="/cart"
@@ -241,10 +267,6 @@ export default function SideCart({ isOpen, onClose }: SideCartProps) {
                           Continue Shopping
                         </button>
                       </div>
-                      
-                      <p className="text-xs text-gray-500 text-center">
-                        Free shipping on orders over $50
-                      </p>
                     </div>
                   </div>
                 )}

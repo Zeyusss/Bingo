@@ -1,6 +1,7 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import ProductCard from "apps/user-ui/src/shared/components/cards/product-card";
+import ProductListAnimator from "apps/user-ui/src/shared/components/animations/ProductListAnimator";
 import axiosInstance from "apps/user-ui/src/utils/axiosInstance";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState, useMemo } from "react";
@@ -397,9 +398,7 @@ const Page = () => {
 
   return (
     <div>
-      {/* Category Banner */}
       <div className="relative h-[320px] md:h-[420px] overflow-hidden">
-        {/* Background image */}
         <div
           className="absolute inset-0 bg-center bg-cover"
           style={{ backgroundImage: "url('/assets/shops/bg-shop.jpg')" }}
@@ -407,7 +406,6 @@ const Page = () => {
 
         <div className="absolute inset-0 bg-black/30" />
 
-        {/* Background pattern (above image, below text) */}
         <div className="absolute inset-0 opacity-10 pointer-events-none z-[5]">
           <div
             className="h-full w-full bg-repeat"
@@ -417,7 +415,6 @@ const Page = () => {
           />
         </div>
 
-        {/* Text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-center px-4">
           <div className="text-center text-white px-4">
             <h1 className="text-5xl font-bold mb-4">
@@ -431,7 +428,7 @@ const Page = () => {
                 Home
               </Link>
               <span className="mx-2 opacity-60">/</span>
-              <span className="font-medium">Offers</span>
+              <span className="font-medium">All Offers</span>
             </nav>
           </div>
         </div>
@@ -439,7 +436,6 @@ const Page = () => {
 
       <div className="w-full pb-10">
         <div className="w-[95%] m-auto pt-8">
-          {/* Filter Sidebar */}
           <FilterSidebar
             isOpen={isFilterSidebarOpen}
             onClose={() => setIsFilterSidebarOpen(false)}
@@ -469,11 +465,8 @@ const Page = () => {
           />
 
           <div className="w-full flex flex-col lg:flex-row gap-8">
-            {/* Main Content Area */}
             <div className="flex-1 px-2 lg:px-3">
-              {/* Top Bar with Filter Button and Controls */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                {/* Left side - Filter button and results count */}
                 <div className="flex items-center gap-4">
                   <FilterButton
                     onClick={() => setIsFilterSidebarOpen(true)}
@@ -503,8 +496,6 @@ const Page = () => {
                     )}
                   </div>
                 </div>
-
-                {/* Right side - View controls and sorting */}
                 <div className="flex items-center gap-4 flex-wrap justify-end">
                   <div className="flex items-center gap-1">
                     <span className="font-semibold">Show :</span>
@@ -526,7 +517,6 @@ const Page = () => {
                     ))}
                   </div>
 
-                  {/* View icons */}
                   <div className="flex items-center gap-2 text-gray-400">
                     <button
                       onClick={() => setViewMode("list")}
@@ -567,7 +557,6 @@ const Page = () => {
                     </button>
                   </div>
 
-                  {/* Sort dropdown */}
                   <div className="relative">
                     <select
                       className="pl-4 pr-8 py-1 rounded-full border text-sm appearance-none cursor-pointer bg-white shadow-sm"
@@ -594,7 +583,7 @@ const Page = () => {
                 </div>
               </div>
 
-              {/* Product Grid */}
+
               {isProductLoading ? (
                 <div
                   className={`grid gap-4 ${
@@ -622,7 +611,13 @@ const Page = () => {
               ) : displayedProducts.length === 0 ? (
                 <p>No Products Found!</p>
               ) : viewMode === "list" ? (
-                <div className="space-y-4">
+                <ProductListAnimator
+                  className="space-y-4"
+                  listKey={`offers-list-${page}-${sortOption}-${selectedCategories.join(',')}-${selectedColors.join(',')}-${selectedSizes.join(',')}-${selectedStatus.join(',')}-${priceRange.join('-')}-${debouncedProductSearch}`}
+                  staggerDelay={0.08}
+                  animationDuration={0.4}
+                  layout="flex"
+                >
                   {displayedProducts.map((product: any) => (
                     <ProductCard
                       key={product.id}
@@ -631,14 +626,18 @@ const Page = () => {
                       view="list"
                     />
                   ))}
-                </div>
+                </ProductListAnimator>
               ) : (
-                <div
+                <ProductListAnimator
                   className={`grid gap-4 ${
                     viewMode === "grid-3"
                       ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
                       : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
                   }`}
+                  listKey={`offers-grid-${viewMode}-${page}-${sortOption}-${selectedCategories.join(',')}-${selectedColors.join(',')}-${selectedSizes.join(',')}-${selectedStatus.join(',')}-${priceRange.join('-')}-${debouncedProductSearch}`}
+                  staggerDelay={0.08}
+                  animationDuration={0.4}
+                  layout="grid"
                 >
                   {displayedProducts.map((product: any) => (
                     <ProductCard
@@ -647,10 +646,9 @@ const Page = () => {
                       isEvent={!!product.starting_date}
                     />
                   ))}
-                </div>
+                </ProductListAnimator>
               )}
 
-              {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex justify-center mt-8 gap-2">
                   {Array.from({ length: totalPages }).map((_, i) => (

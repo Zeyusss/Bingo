@@ -119,7 +119,6 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
 
   return (
     <>
-      {/* Overlay */}
       <div 
         className={`fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -127,14 +126,12 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
         onClick={onClose}
       />
 
-      {/* Sidebar */}
       <div
         ref={sidebarRef}
         className={`fixed top-0 left-0 h-full w-[500px] bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } overflow-y-auto`}
       >
-        {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-900">Filters</h2>
           <button
@@ -145,10 +142,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
-
-        {/* Filter Content */}
         <div className="p-4 space-y-6">
-          {/* Product Search */}
           <div>
             <h3 className="text-lg font-medium text-gray-800 border-b border-gray-200 pb-3 mb-4">
               Search
@@ -166,8 +160,6 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
               />
             </div>
           </div>
-
-          {/* Price Filter */}
           <div>
             <h3 className="text-lg font-medium text-gray-800 border-b border-gray-200 pb-3 mb-4">
               Price Range
@@ -228,14 +220,11 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
               </button>
             </div>
           </div>
-
-          {/* Categories Filter */}
           <div>
             <h3 className="text-lg font-medium text-gray-800 border-b border-gray-200 pb-3 mb-4">
               Categories
             </h3>
             
-            {/* Category Search Input */}
             <div className="relative mb-4">
               <input
                 type="text"
@@ -246,8 +235,6 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
               />
               <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             </div>
-
-            {/* Categories List */}
             <div className="border border-gray-200 rounded-lg bg-white shadow-sm">
               <div className="px-3 py-2 bg-gray-50 border-b border-gray-200 rounded-t-lg">
                 <span className="text-xs text-gray-600 font-medium">
@@ -330,14 +317,11 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
               </div>
             </div>
           </div>
-
-          {/* Colors Filter */}
           <div>
             <h3 className="text-lg font-medium text-gray-800 border-b border-gray-200 pb-3 mb-4">
               Color
             </h3>
             
-            {/* Color Search Input */}
             <div className="relative mb-4">
               <input
                 type="text"
@@ -349,7 +333,6 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
               <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             </div>
 
-            {/* Colors List */}
             <div className="border border-gray-200 rounded-lg bg-white shadow-sm">
               <div className="px-3 py-2 bg-gray-50 border-b border-gray-200 rounded-t-lg">
                 <span className="text-xs text-gray-600 font-medium">
@@ -423,7 +406,6 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
             </div>
           </div>
 
-          {/* Sizes Filter */}
           <div>
             <h3 className="text-lg font-medium text-gray-800 border-b border-gray-200 pb-3 mb-4">
               Size
@@ -444,8 +426,6 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
               ))}
             </div>
           </div>
-
-          {/* Status Filter */}
           <div>
             <h3 className="text-lg font-medium text-gray-800 border-b border-gray-200 pb-3 mb-4">
               Availability
@@ -465,8 +445,6 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
             </div>
           </div>
         </div>
-
-        {/* Footer */}
         <div className="border-t border-gray-200 p-4 space-y-3 bg-white">
           <button
             onClick={() => {

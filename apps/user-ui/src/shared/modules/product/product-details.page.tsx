@@ -19,6 +19,7 @@ import useUser from "apps/user-ui/src/hooks/useUser";
 import useLocationTracking from "apps/user-ui/src/hooks/useLocationTracking";
 import useDeviceTracking from "apps/user-ui/src/hooks/useDeviceTracking";
 import ProductCard from "../../components/cards/product-card";
+import ProductListAnimator from "../../components/animations/ProductListAnimator";
 import axiosInstance from "apps/user-ui/src/utils/axiosInstance";
 import { useComparisonStore } from "../../../store/comparisonStore";
 import { isProtected } from "apps/user-ui/src/utils/protected";
@@ -140,7 +141,6 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
   };
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Breadcrumb */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <nav className="flex items-center space-x-2 text-sm text-gray-500">
@@ -159,20 +159,16 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
         </div>
       </div>
 
-      {/* Main Product Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Left - Product Images */}
           <div className="space-y-4">
             <div className="relative">
-              {/* Main Image */}
               <div className="aspect-square bg-white rounded-2xl overflow-hidden shadow-lg">
                 <img
                   src={currentImage}
                   alt={productDetails?.title}
                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                 />
-                {/* Image Navigation */}
                 {productDetails?.images?.length > 1 && (
                   <>
                     <button
@@ -733,7 +729,6 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
         </div>
       </div>
 
-      {/* Ratings & Reviews */}
       <div id="shop-reviews" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-2xl shadow-sm p-8">
           <h3 className="text-xl font-semibold mb-6">
@@ -746,15 +741,20 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
         </div>
       </div>
 
-      {/* You May Also Like */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-2xl shadow-sm p-8">
           <h3 className="text-xl font-semibold mb-6">You may also like</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+          <ProductListAnimator
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6"
+            listKey={`related-products-${productDetails?.id}`}
+            staggerDelay={0.08}
+            animationDuration={0.4}
+            layout="grid"
+          >
             {recommendedProducts?.map((product: any) => (
               <ProductCard key={product.id} product={product} />
             ))}
-          </div>
+          </ProductListAnimator>
         </div>
       </div>
     </div>

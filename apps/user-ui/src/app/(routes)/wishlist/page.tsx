@@ -8,6 +8,7 @@ import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import ProductCard from "apps/user-ui/src/shared/components/cards/product-card";
+import ProductListAnimator from "apps/user-ui/src/shared/components/animations/ProductListAnimator";
 import { useState } from "react";
 import Footer from "apps/user-ui/src/shared/components/homepage/Footer";
 
@@ -131,7 +132,6 @@ const WishlistPage = () => {
             <h2 className="text-2xl font-semibold mb-6 font-jost">
               Your products wishlist
             </h2>
-            {/* Global Action Bar */}
             {selectedItems.length > 0 && (
               <div className="flex justify-between items-center bg-transparent px-4 py-2 rounded-md mb-6 border border-gray-300 shadow-sm">
                 <button
@@ -152,12 +152,16 @@ const WishlistPage = () => {
               </div>
             )}
 
-            {/* Product Grid */}
-            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 ">
+            <ProductListAnimator
+              className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
+              listKey={`wishlist-${wishlist.length}`}
+              staggerDelay={0.08}
+              animationDuration={0.4}
+              layout="grid"
+            >
               {wishlist.map((product: any) => (
                 <div key={product.id} className="relative min-h-[420px] flex flex-col justify-between">
 
-                  {/* Per-card Remove + Checkbox */}
                   <div className="flex justify-between items-center px-1 h-6 mb-2">
 
                     <button
@@ -173,8 +177,6 @@ const WishlistPage = () => {
                       className="w-[14px] h-[14px] accent-orange-500 border border-gray-300 rounded-sm"
                     />
                   </div>
-
-                  {/* Product Card */}
                   <ProductCard
                     product={product}
                     isEvent={!!product.starting_date}
@@ -183,7 +185,7 @@ const WishlistPage = () => {
                   />
                 </div>
               ))}
-            </div>
+            </ProductListAnimator>
           </>
         )}
       </div>
