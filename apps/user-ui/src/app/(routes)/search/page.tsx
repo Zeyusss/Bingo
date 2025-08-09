@@ -6,6 +6,7 @@ import { Grid, List, Filter } from 'lucide-react';
 import AdvancedSearchBar from '../../../shared/components/search/AdvancedSearchBar';
 import SearchFiltersModal from '../../../shared/components/search/SearchFiltersModal';
 import ProductCard from '../../../shared/components/cards/product-card';
+import ProductListAnimator from '../../../shared/components/animations/ProductListAnimator';
 import axiosInstance from '../../../utils/axiosInstance';
 
 interface SearchResult {
@@ -169,7 +170,6 @@ const SearchPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Search Bar */}
         <div className="mb-8">
           <AdvancedSearchBar
             placeholder="Search for handmade products..."
@@ -178,7 +178,6 @@ const SearchPage: React.FC = () => {
           />
         </div>
 
-        {/* Search Results Header */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -191,7 +190,6 @@ const SearchPage: React.FC = () => {
             </div>
 
             <div className="flex items-center space-x-4">
-              {/* View Mode Toggle */}
               <div className="flex items-center border border-gray-300 rounded-md">
                 <button
                   onClick={() => setViewMode('grid')}
@@ -207,7 +205,6 @@ const SearchPage: React.FC = () => {
                 </button>
               </div>
 
-              {/* Sort Dropdown */}
               <select
                 value={filters.sortBy}
                 onChange={(e) => handleSortChange(e.target.value)}
@@ -221,7 +218,6 @@ const SearchPage: React.FC = () => {
                 <option value="rating">Highest Rated</option>
               </select>
 
-              {/* Filters Button */}
               <button
                 onClick={() => setShowFilters(true)}
                 className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
@@ -237,7 +233,6 @@ const SearchPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Active Filters */}
           {Object.entries(filters).some(([key, value]) => 
             value && value !== '' && value !== 'relevance' && 
             (Array.isArray(value) ? value.length > 0 : (key !== 'inStock' || !value))
@@ -290,8 +285,6 @@ const SearchPage: React.FC = () => {
             </div>
           )}
         </div>
-
-        {/* Search Results */}
         {loading ? (
           <div className="bg-white rounded-lg shadow-sm p-12">
             <div className="flex items-center justify-center">
@@ -301,11 +294,17 @@ const SearchPage: React.FC = () => {
           </div>
         ) : results.length > 0 ? (
           <>
-            <div className={`grid gap-6 ${
-              viewMode === 'grid' 
-                ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
-                : 'grid-cols-1'
-            }`}>
+            <ProductListAnimator
+              className={`grid gap-6 ${
+                viewMode === 'grid' 
+                  ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
+                  : 'grid-cols-1'
+              }`}
+              listKey={`search-${query}-${viewMode}-${currentPage}`}
+              staggerDelay={0.08}
+              animationDuration={0.4}
+              layout={viewMode === 'grid' ? 'grid' : 'flex'}
+            >
               {results.map((product) => (
                 <ProductCard
                   key={product.id}
@@ -313,9 +312,8 @@ const SearchPage: React.FC = () => {
                   view={viewMode}
                 />
               ))}
-            </div>
+            </ProductListAnimator>
 
-            {/* Pagination */}
             {pagination.totalPages > 1 && (
               <div className="bg-white rounded-lg shadow-sm p-6 mt-8">
                 <div className="flex items-center justify-between">
@@ -392,8 +390,6 @@ const SearchPage: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Filters Modal */}
       <SearchFiltersModal
         isOpen={showFilters}
         onClose={() => setShowFilters(false)}

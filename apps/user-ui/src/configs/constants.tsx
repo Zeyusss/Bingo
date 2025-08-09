@@ -8,12 +8,16 @@ export const navItems:NavItemsTypes[]= [
         href:"/products",
     },
     {
-        title:"Artists",
-        href:"/shops",
+        title:"Limited-Offers",
+        href:"/offers",
     },
     {
-        title:"Offers",
-        href:"/offers",
+        title:"Today's Deals",
+        href:"/todays-deals",
+    },
+    {
+        title:"Artists",
+        href:"/shops",
     },
     {
         title:"Become A Seller",

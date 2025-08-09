@@ -3,6 +3,7 @@ import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "apps/user-ui/src/utils/axiosInstance";
 import ProductCard from "apps/user-ui/src/shared/components/cards/product-card";
+import ProductListAnimator from "apps/user-ui/src/shared/components/animations/ProductListAnimator";
 
 const InterestedInCard = ({
   category = "All",
@@ -27,18 +28,28 @@ const InterestedInCard = ({
         You May Be Interested In...
       </h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-6">
-        {isLoading
-          ? Array.from({ length: limit }).map((_, idx) => (
-              <div
-                key={idx}
-                className="h-[300px] bg-gray-100 animate-pulse rounded"
-              />
-            ))
-          : data?.map((product: any) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-      </div>
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-6">
+          {Array.from({ length: limit }).map((_, idx) => (
+            <div
+              key={idx}
+              className="h-[300px] bg-gray-100 animate-pulse rounded"
+            />
+          ))}
+        </div>
+      ) : (
+        <ProductListAnimator
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-6"
+          listKey="cart-interested-products"
+          staggerDelay={0.08}
+          animationDuration={0.4}
+          layout="grid"
+        >
+          {data?.map((product: any) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </ProductListAnimator>
+      )}
     </div>
   );
 };

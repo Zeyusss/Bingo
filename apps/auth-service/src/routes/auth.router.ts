@@ -1,10 +1,42 @@
 import express, { Router } from 'express';
-import { addUserAddress, createShop, createStripeConnectLink, deleteUserAddress, editUserAddress, getSeller, getUser, getUserAddresses, loginSeller, refreshToken, registerSeller, sellerForgetPassword, sellerResetPassword, setDefaultUserAddress, updateUserPassword, userForgetPassword, userLogin, userRegistration,userResetPassword,verifySeller,verifySellerForgetPasswordOtp,verifyUserForgetPasswordOtp,verifyUserRegistrationOtp, loginAdmin, getLoggedInAdmin, logoutUser } from '../controller/auth.controller';
+import {
+  addUserAddress,
+  createShop,
+  createStripeConnectLink,
+  deleteUserAddress,
+  editUserAddress,
+  getSeller,
+  getUser,
+  getUserAddresses,
+  loginSeller,
+  refreshToken,
+  registerSeller,
+  sellerForgetPassword,
+  sellerResetPassword,
+  setDefaultUserAddress,
+  updateUserPassword,
+  userForgetPassword,
+  userLogin,
+  userRegistration,
+  userResetPassword,
+  verifySeller,
+  verifySellerForgetPasswordOtp,
+  verifyUserForgetPasswordOtp,
+  verifyUserRegistrationOtp,
+  loginAdmin,
+  getLoggedInAdmin,
+  logoutUser,
+  uploadUserImage,
+  getProfilePictureEligibility,
+  updateUserProfilePicture,
+  updateUserProfilePhone,
+  updateUserProfile,
+} from '../controller/auth.controller';
 import isAuthenticated from '@packages/middleware/isAuthenticated';
 import { isSeller } from '@packages/middleware/authorizeRoles';
 
 
-const router:Router = express.Router();
+const router: Router = express.Router();
 
 router.post("/user-registration", userRegistration);
 router.post("/verify-user", verifyUserRegistrationOtp);
@@ -32,4 +64,9 @@ router.post("/change-password",isAuthenticated,updateUserPassword)
 router.post("/login-admin", loginAdmin);
 router.get("/logged-in-admin", isAuthenticated, getLoggedInAdmin);
 router.get("/logout-user", logoutUser);
+router.post("/upload-user-image", isAuthenticated, uploadUserImage);
+router.get("/profile-picture-eligibility", isAuthenticated, getProfilePictureEligibility);
+router.put("/update-profile-picture", isAuthenticated, updateUserProfilePicture);
+router.put("/update-profile-phone", isAuthenticated, updateUserProfilePhone);
+router.put("/update-user-profile", isAuthenticated, updateUserProfile);
 export default router;

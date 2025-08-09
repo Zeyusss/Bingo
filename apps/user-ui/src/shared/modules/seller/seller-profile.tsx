@@ -18,6 +18,7 @@ import {
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import ProductCard from "../../components/cards/product-card";
+import ProductListAnimator from "../../components/animations/ProductListAnimator";
 import useLocationTracking from "apps/user-ui/src/hooks/useLocationTracking";
 import useDeviceTracking from "apps/user-ui/src/hooks/useDeviceTracking";
 import useUser from "apps/user-ui/src/hooks/useUser";
@@ -372,42 +373,64 @@ const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>, type: "
         <div className="bg-gray-200 rounded-lg my-4 text-slate-700">
           {/* Products */}
           {activeTab === "Products" && (
-            <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {isLoading &&
-                Array.from({ length: 10 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="h-[250px] bg-gray-300 animate-pulse rounded-xl"
-                  />
-                ))}
-              {products?.map((product: any) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-              {products?.length === 0 && (
+            <div className="p-4">
+              {isLoading ? (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  {Array.from({ length: 10 }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="h-[250px] bg-gray-300 animate-pulse rounded-xl"
+                    />
+                  ))}
+                </div>
+              ) : products?.length === 0 ? (
                 <p className="py-2">No products available yet !</p>
+              ) : (
+                <ProductListAnimator
+                  className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+                  listKey={`seller-products-${shop?.id}-${activeTab}`}
+                  staggerDelay={0.08}
+                  animationDuration={0.4}
+                  layout="grid"
+                >
+                  {products?.map((product: any) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </ProductListAnimator>
               )}
             </div>
           )}
 
           {/* Offers */}
           {activeTab === "Offers" && (
-            <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {isEventsLoading &&
-                Array.from({ length: 10 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="h-[250px] bg-gray-300 animate-pulse rounded-xl"
-                  />
-                ))}
-              {events?.map((product: any) => (
-                <ProductCard
-                  isEvent={true}
-                  key={product.id}
-                  product={product}
-                />
-              ))}
-              {events?.length === 0 && (
+            <div className="p-4">
+              {isEventsLoading ? (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  {Array.from({ length: 10 }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="h-[250px] bg-gray-300 animate-pulse rounded-xl"
+                    />
+                  ))}
+                </div>
+              ) : events?.length === 0 ? (
                 <p className="py-2">No offer available yet!</p>
+              ) : (
+                <ProductListAnimator
+                  className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+                  listKey={`seller-offers-${shop?.id}-${activeTab}`}
+                  staggerDelay={0.08}
+                  animationDuration={0.4}
+                  layout="grid"
+                >
+                  {events?.map((product: any) => (
+                    <ProductCard
+                      isEvent={true}
+                      key={product.id}
+                      product={product}
+                    />
+                  ))}
+                </ProductListAnimator>
               )}
             </div>
           )}
@@ -537,7 +560,7 @@ const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>, type: "
                     <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
                       <Image
                         src={
-                          review.user?.avatar ||
+                          review.user?.avatar?.url ||
                           "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"
                         }
                         alt={review.user?.name || "User"}

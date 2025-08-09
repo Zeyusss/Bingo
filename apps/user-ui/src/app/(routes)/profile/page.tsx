@@ -1,213 +1,549 @@
-'use client'
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import useRequireAuth from 'apps/user-ui/src/hooks/useRequiredAuth';
-import QuickActionCard from 'apps/user-ui/src/shared/components/cards/quick-action.card';
-import StatCard from 'apps/user-ui/src/shared/components/cards/stat.card';
-import ChangePassword from 'apps/user-ui/src/shared/components/change-password';
-import ShippingAddressSection from 'apps/user-ui/src/shared/components/shippingAddress';
-import OrdersTable from 'apps/user-ui/src/shared/components/tables/orders-table';
+'use client';
 
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import  useRequireAuth from 'apps/user-ui/src/hooks/useRequiredAuth';
+import  QuickActionCard  from 'apps/user-ui/src/shared/components/cards/quick-action.card';
+import  ChangePassword  from 'apps/user-ui/src/shared/components/change-password';
+import  ShippingAddressSection  from 'apps/user-ui/src/shared/components/shippingAddress';
+import  OrdersTable  from  'apps/user-ui/src/shared/components/tables/orders-table';
+
+import  ProfilePictureUpload  from 'apps/user-ui/src/shared/components/profile/ProfilePictureUpload';
+import { 
+  Award, 
+  BadgeCheck, 
+  Bell, 
+  Camera, 
+  CheckCircle, 
+  Clock, 
+  Edit3, 
+  Gift, 
+  Heart, 
+  Inbox, 
+  Lock, 
+  LogOut, 
+  MapPin, 
+  PhoneCall, 
+  Settings, 
+  ShoppingBag, 
+  User, 
+  Star,
+  X
+} from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useForm } from 'react-hook-form';
+import { useMutation } from '@tanstack/react-query';
 import axiosInstance from 'apps/user-ui/src/utils/axiosInstance';
-import { BadgeCheck, Bell, CheckCircle, Clock, Gift, Inbox, Loader2, Lock, LogOut, MapPin, Pencil, PhoneCall, Receipt, Settings, ShoppingBag, Truck, User } from 'lucide-react';
-import Image from 'next/image';
-import { useSearchParams } from 'next/navigation';
-import { useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react'
 
 const Page = () => {
-    const {user,isLoading} = useRequireAuth();
-    const router = useRouter();
-    const queryClient = useQueryClient();
-    const searchParams = useSearchParams();
-    const queryTab = searchParams.get("active") || "Profile";
-    const [activeTab,setActiveTab] = useState(queryTab);
-    const {data:orders = []} = useQuery({
-        queryKey:["user-orders"],
-        queryFn: async()=>{
-            const res = await axiosInstance.get(`/order/api/get-user-orders`);
-            return res.data.orders;
-        },
-    });
-    const totalOrders = orders.length;
-    const processingOrders = orders.filter((o:any)=> o?.deliveryStatus !== "Delivered" && o?.deliveryStatus !== "Cancelled").length;
-    const completedOrders = orders.filter((o:any)=> o?.deliveryStatus === "Delivered").length;
+  const { user, isLoading } = useRequireAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState('Profile');
+  const [isProfilePictureModalOpen, setIsProfilePictureModalOpen] = useState(false);
+  const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
 
 
-    
-    useEffect(()=>{
-        if(activeTab !== queryTab){
-            const newParams = new URLSearchParams(searchParams);
-            newParams.set("active",activeTab);
-            router.replace(`/profile?${newParams.toString()}`)
-        }
-    },[activeTab]);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      name: '',
+      phone: '',
+    },
+  });
 
-    const logOutHandler = async ()=> {
-        await axiosInstance.get("/api/logout-user").then((res)=>{
-            queryClient.invalidateQueries({queryKey:["user"]});
 
-            router.push("/login");
-        });
-    };
-  return (
-    <div className='bg-gray-50 p-6 pb-14'>
-    <div className='max-w-7xl mx-auto'>
-        {/* Gretting */}
-        <div className='text-center mb-10'>
-        <h1 className='text-3xl font-bold text-gray-800'> Welcome back,{" "}
-        <span className='text-blue-600'>
-        {isLoading ? (
-            <Loader2 className='inline animate-spin w-5 h-5'/>
-        ) : (
-           ` ${user?.name ||" User"}`
-        )}
-        </span>{" "}
-        👋
-</h1>
+  const { mutate: updateProfile, isPending: isUpdating } = useMutation({
+    mutationFn: async (data: { name: string; phone: string }) => {
+      const response = await axiosInstance.put('/api/update-user-profile', data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+      setIsEditProfileModalOpen(false);
+      reset();
+    },
+    onError: (error) => {
+      console.error('Failed to update profile:', error);
+    },
+  });
+
+
+  const handleOpenEditModal = () => {
+    if (user) {
+      setValue('name', user.name || '');
+      setValue('phone', user.phone || '');
+    }
+    setIsEditProfileModalOpen(true);
+  };
+
+
+  const onSubmitProfileEdit = (data: { name: string; phone: string }) => {
+    updateProfile(data);
+  };
+
+
+  const { data: ordersData } = useQuery({
+    queryKey: ['userOrders'],
+    queryFn: async () => {
+      const response = await axios.get('/order/api/get-user-orders');
+      return response.data;
+    },
+    enabled: !!user,
+  });
+
+  const orders = ordersData?.orders || [];
+  const totalOrders = orders.length || 0;
+  const processingOrders = orders.filter((order: any) => order.deliveryStatus === 'Processing').length || 0;
+  const completedOrders = orders.filter((order: any) => order.deliveryStatus === 'Delivered').length || 0;
+  const recentOrders = orders.slice(0, 3) || [];
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'delivered':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'processing':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'shipped':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800 border-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await axios.post('/auth/api/logout');
+      queryClient.clear();
+      router.push('/auth');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+
+  const NavItem = ({ icon: Icon, label, isActive, onClick, danger = false }: any) => (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
+        isActive
+          ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-700'
+          : danger
+          ? 'text-red-600 hover:bg-red-50'
+          : 'text-gray-700 hover:bg-gray-50'
+      }`}
+    >
+      <Icon className={`w-5 h-5 ${isActive ? 'text-blue-700' : danger ? 'text-red-600' : 'text-gray-500'}`} />
+      <span className="font-medium">{label}</span>
+    </button>
+  );
+
+  const StatCard = ({ icon: Icon, title, value, color, trend }: any) => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+      <div className="flex items-center gap-4 mb-4">
+        <div className={`p-3 rounded-lg ${
+          color === 'blue' ? 'bg-blue-100' : 
+          color === 'green' ? 'bg-green-100' : 
+          color === 'orange' ? 'bg-orange-100' : 'bg-gray-100'
+        }`}>
+          <Icon className={`w-6 h-6 ${
+            color === 'blue' ? 'text-blue-600' : 
+            color === 'green' ? 'text-green-600' : 
+            color === 'orange' ? 'text-orange-600' : 'text-gray-600'
+          }`} />
         </div>
-{/* Profile overview */}
- <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6'>
-    <StatCard
-    count={totalOrders}
-    Icon={Clock}
-    title="Total Orders"
-    />
-        <StatCard
-    count={processingOrders}
-    Icon={Truck}
-    title="Processing Orders"
-    />
-        <StatCard
-    count={completedOrders}
-    Icon={CheckCircle}
-    title="Completed Orders"
-    />
- </div>
- {/* sidebar and content */}
- <div className='mt-10 flex flex-col md:flex-row gap-6'>
-{/* left nav */}
-<div className='bg-white p-4 rounded-md shadow-sm border border-gray-100 w-full md:w-1/5'>
-<nav className='space-y-2'>
-<NavItem label ="Profile"
-Icon = {User}
-active = {activeTab === "Profile"}
-onClick = {()=> setActiveTab("Profile")}
-/>
-<NavItem label ="My Orders"
-Icon = {ShoppingBag}
-active = {activeTab === "My Orders"}
-onClick = {()=> setActiveTab("My Orders")}
-/>
-<NavItem label ="Inbox"
-Icon = {Inbox}
-active = {activeTab === "Inbox"}
-onClick = {()=> router.push("/inbox")}
-/>
-<NavItem label ="Notifications"
-Icon = {Bell}
-active = {activeTab === "Notifications"}
-onClick = {()=> setActiveTab("Notifications")}
-/>
-<NavItem label ="Shipping Address"
-Icon = {MapPin}
-active = {activeTab === "Shipping Address"}
-onClick = {()=> setActiveTab("Shipping Address")}
-/>
-<NavItem label ="Change Password"
-Icon = {Lock}
-active = {activeTab === "Change Password"}
-onClick = {()=> setActiveTab("Change Password")}
-/>
-<NavItem label ="Logout"
-Icon = {LogOut}
-danger
-onClick = {()=> logOutHandler()}
-/>
-</nav>
-</div>
-{/* Main content */}
-<div className='bg-white p-6 rounded-md shadow-sm border border-gray-100 w-full md:w-[55%] '>
-<h2 className='text-xl font-semibold text-gray-800 mb-4'>
-{activeTab}
-</h2>
-{activeTab === "Profile" && !isLoading && user ? (
-    <div className='space-y-4 text-sm text-gray-700'>
-    <div className='flex items-center gap-3'>
-<Image src={user?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"} alt=""
-width={60}
-height={60}
-className='w-16 h-16 rounded-full border border-gray-200'
-/>
-<button className='flex items-center gap-1 text-blue-500 text-xs font-medium'>
-<Pencil className='w-4 h-4'/> Change Photo
-</button>
+        <div className="flex-1">
+          <h3 className="text-2xl font-bold text-gray-900 mb-1">{value}</h3>
+          <p className="text-gray-600 text-sm">{title}</p>
+        </div>
+        {trend && (
+          <span className={`text-sm font-medium ${trend.isPositive ? 'text-green-600' : 'text-red-600'}`}>
+            {trend.value}
+          </span>
+        )}
+      </div>
     </div>
-    <p>
-        <span className='font-semibold'>Name :</span> {user.name}
-    </p>
-    <p>
-        <span className='font-semibold'>Email :</span> {user.email}
-    </p>
-    <p>
-        <span className='font-semibold'>Joined :</span>{" "}
-        {new Date(user.createdAt).toLocaleDateString()}
-    </p>
-    <p>
-        <span className='font-semibold'>Earned Points :</span>{" "}
-        {user.points || 0}
-    </p>
-    </div>
-):activeTab === "Shipping Address" ? (
-    <ShippingAddressSection/>
-):activeTab === "My Orders" ? (
-    <OrdersTable/>
-): activeTab === "Change Password" ? (
-    <ChangePassword/>
-) : <></>}
-</div>
-{/* Right Quick Panel */}
-<div className='w-full md:w-1/4 space-y-4'>
- <QuickActionCard
- Icon={Gift}
- title="Referral Program"
- description="Invite Friends and earn rewards."
- />
- <QuickActionCard
- Icon={BadgeCheck}
- title="Your Badges"
- description="View your earned achievements."
- />
- <QuickActionCard
- Icon={Settings}
- title="Account Settings"
- description="Manage preferences and security."
- />
- <QuickActionCard
- Icon={Receipt}
- title="Billing History"
- description="Check your recent payments."
- />
- <QuickActionCard
- Icon={PhoneCall}
- title="Support Center"
- description="Need help? Contact support."
- />
+  );
 
-</div>
- </div>
+  const Section = ({ title, children, action }: any) => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+      <div className="flex items-center justify-between p-6 border-b border-gray-100">
+        <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+        {action}
+      </div>
+      <div className="p-6">{children}</div>
     </div>
+  );
+
+  const Info = ({ label, value, icon: Icon }: any) => (
+    <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+      <div className="flex items-center gap-3">
+        <Icon className="w-4 h-4 text-gray-500" />
+        <span className="text-gray-600">{label}</span>
+      </div>
+      <span className="font-medium text-gray-900">{value || 'Not provided'}</span>
     </div>
-  )
-}
+  );
 
-export default Page
+  const OrderCard = ({ order }: any) => (
+    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+          <ShoppingBag className="w-6 h-6 text-blue-600" />
+        </div>
+        <div>
+          <p className="font-semibold text-gray-900">Order #{order.id?.slice(-8)}</p>
+          <p className="text-gray-600 text-sm">{new Date(order.createdAt).toLocaleDateString()}</p>
+        </div>
+      </div>
+      <div className="text-right">
+        <p className="font-semibold text-gray-900 mb-1">${order.total?.toFixed(2) || '0.00'}</p>
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(order.deliveryStatus || 'Processing')}`}>
+          {order.deliveryStatus || 'Processing'}
+        </span>
+      </div>
+    </div>
+  );
 
-const NavItem = ({label,Icon,active,danger,onClick}:any) =>(
-<button
-onClick={onClick}
-className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition ${active ? "bg-blue-100 text-blue-600" : danger ? "text-red-500 hover:bg-red-50" : "text-gray-700 hover:bg-gray-100"}`}
->
-<Icon className="w-4 h-4"/>
-{label}
-</button>
-)
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-white">
+      <div className="mx-auto px-4 py-8">
+        <div className="flex flex-col lg:flex-row gap-8">
+          <div className="lg:w-1/4">
+            <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-8">
+              <div className="text-center mb-6">
+                <div className="relative inline-block group">
+                  <img
+                    src={user?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"}
+                    alt="Profile"
+                    className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg group-hover:shadow-xl transition-shadow"
+                  />
+                  <button 
+                    onClick={() => setIsProfilePictureModalOpen(true)}
+                    className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-200 hover:scale-110"
+                  >
+                    <Camera className="w-4 h-4" />
+                  </button>
+                </div>
+                <h2 className="text-xl font-bold text-gray-900 mt-4">{user?.name}</h2>
+                <p className="text-gray-600">{user?.email}</p>
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  <BadgeCheck className="w-4 h-4 text-blue-600" />
+                  <span className="text-sm text-blue-600 font-medium">Verified Account</span>
+                </div>
+              </div>
+              <nav className="space-y-2">
+                <NavItem
+                  icon={User}
+                  label="Profile"
+                  isActive={activeTab === "Profile"}
+                  onClick={() => setActiveTab("Profile")}
+                />
+                <NavItem
+                  icon={ShoppingBag}
+                  label="My Orders"
+                  isActive={activeTab === "My Orders"}
+                  onClick={() => setActiveTab("My Orders")}
+                />
+                <NavItem
+                  icon={Heart}
+                  label="Wishlist"
+                  isActive={activeTab === "Wishlist"}
+                  onClick={() => router.push('/wishlist')}
+                />
+                <NavItem
+                  icon={Inbox}
+                  label="Inbox"
+                  isActive={activeTab === "Inbox"}
+                  onClick={() => router.push('/inbox')}
+                />
+                <NavItem
+                  icon={Bell}
+                  label="Notifications"
+                  isActive={activeTab === "Notifications"}
+                  onClick={() => setActiveTab("Notifications")}
+                />
+                <NavItem
+                  icon={MapPin}
+                  label="Shipping Address"
+                  isActive={activeTab === "Shipping Address"}
+                  onClick={() => setActiveTab("Shipping Address")}
+                />
+                <NavItem
+                  icon={Lock}
+                  label="Change Password"
+                  isActive={activeTab === "Change Password"}
+                  onClick={() => setActiveTab("Change Password")}
+                />
+                <div className="border-t pt-4 mt-4">
+                  <NavItem
+                    icon={LogOut}
+                    label="Logout"
+                    isActive={false}
+                    onClick={handleLogout}
+                    danger={true}
+                  />
+                </div>
+              </nav>
+            </div>
+          </div>
+          <div className="lg:w-1/2">
+            {activeTab === "Profile" && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <StatCard
+                    icon={ShoppingBag}
+                    title="Total Orders"
+                    value={totalOrders}
+                    color="blue"
+                  />
+                  <StatCard
+                    icon={Clock}
+                    title="Processing"
+                    value={processingOrders}
+                    color="orange"
+                  />
+                  <StatCard
+                    icon={CheckCircle}
+                    title="Completed"
+                    value={completedOrders}
+                    color="green"
+                  
+                  />
+                </div>
+                <Section 
+                  title="Account Information"
+                  action={
+                    <button 
+                      onClick={handleOpenEditModal}
+                      className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                      <span className="text-sm font-medium">Edit</span>
+                    </button>
+                  }
+                >
+                  <div className="space-y-1">
+                    <Info label="Full Name" value={user?.name} icon={User} />
+                    <Info label="Email Address" value={user?.email} icon={Inbox} />
+                    <Info label="Phone Number" value={user?.phone} icon={PhoneCall} />
+                    <Info label="Member Since" value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'} icon={BadgeCheck} />
+                  </div>
+                </Section>
+                <Section title="Recent Orders">
+                  {recentOrders.length > 0 ? (
+                    <div className="space-y-4">
+                      {recentOrders.map((order: any) => (
+                        <OrderCard key={order.id} order={order} />
+                      ))}
+                      <div className="text-center pt-4">
+                        <button 
+                          onClick={() => setActiveTab("My Orders")}
+                          className="text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors"
+                        >
+                          View All Orders →
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <ShoppingBag className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500">No orders yet</p>
+                      <button 
+                        onClick={() => router.push('/')}
+                        className="mt-2 text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors"
+                      >
+                        Start Shopping
+                      </button>
+                    </div>
+                  )}
+                </Section>
+              </div>
+            )}
+
+            {activeTab === "My Orders" && (
+              <Section title="My Orders">
+                <OrdersTable />
+              </Section>
+            )}
+
+            {activeTab === "Notifications" && (
+              <Section title="Notifications">
+                <div className="text-center py-8">
+                  <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No notifications yet</p>
+                </div>
+              </Section>
+            )}
+
+            {activeTab === "Shipping Address" && (
+              <Section title="Shipping Address">
+                <ShippingAddressSection />
+              </Section>
+            )}
+
+            {activeTab === "Change Password" && (
+              <Section title="Change Password">
+                <ChangePassword />
+              </Section>
+            )}
+          </div>
+          <div className="lg:w-1/4">
+            <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <Star className="w-5 h-5 text-yellow-500" />
+                Quick Actions
+              </h3>
+              <div className="space-y-4">
+                <QuickActionCard
+                  Icon={Heart}
+                  title="Wishlist"
+                  description="View your saved items and favorites"
+                  color="red"
+                />
+                <QuickActionCard
+                  Icon={Gift}
+                  title="Rewards"
+                  description="Check your loyalty points and rewards"
+                  color="purple"
+                />
+                <QuickActionCard
+                  Icon={Settings}
+                  title="Account Settings"
+                  description="Manage your preferences and privacy"
+                  color="gray"
+                />
+                <QuickActionCard
+                  Icon={Award}
+                  title="Achievements"
+                  description="View your shopping milestones"
+                  color="yellow"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <ProfilePictureUpload
+        isOpen={isProfilePictureModalOpen}
+        onClose={() => setIsProfilePictureModalOpen(false)}
+        currentAvatar={user?.avatar?.url}
+        onUploadSuccess={(imageUrl: string) => {
+          queryClient.invalidateQueries({ queryKey: ['user'] });
+          setIsProfilePictureModalOpen(false);
+        }}
+      />
+      {isEditProfileModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+          <div className="bg-white w-full max-w-md rounded-xl shadow-2xl relative">
+            <button
+              onClick={() => setIsEditProfileModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <div className="p-6 border-b border-gray-200">
+              <h3 className="text-xl font-semibold text-gray-800">
+                Edit Profile
+              </h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Update your name and phone number
+              </p>
+            </div>
+            <form onSubmit={handleSubmit(onSubmitProfileEdit)} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter your full name"
+                  {...register("name", { 
+                    required: "Name is required",
+                    minLength: {
+                      value: 2,
+                      message: "Name must be at least 2 characters"
+                    }
+                  })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                />
+                {errors.name && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.name.message}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Phone Number *
+                </label>
+                <input
+                  type="tel"
+                  placeholder="+1 (555) 123-4567"
+                  {...register("phone", {
+                    required: "Phone number is required",
+                    pattern: {
+                      value: /^[\+]?[1-9][\d]{0,15}$/,
+                      message: "Invalid phone number format",
+                    },
+                  })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                />
+                {errors.phone && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.phone.message}
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsEditProfileModalOpen(false)}
+                  className="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdating}
+                  className="flex-1 text-white bg-blue-600 py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isUpdating ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Page;

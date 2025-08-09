@@ -10,15 +10,17 @@ import React, { useRef, useState } from 'react';
 import { useForm } from "react-hook-form";
 import axios,{AxiosError} from "axios";
 import { useAuthStore } from "../../../store/authStore";
+import useRedirectIfAuthenticated from "../../../hooks/useRedirectIfAuthenticated";
 
   type FormData = {
     name:string,
     email: string;
+    phone: string;
     password: string;
   };
 
 const Signup = () => {
-
+  useRedirectIfAuthenticated();
 
  const [passwordVisible, setPasswordVisible] = useState(false);
     const [showOtp,setShowOtp] = useState(false);
@@ -179,6 +181,25 @@ const resendOtp = ()=>{
               />
                 {errors.email && (
                   <p className="text-red-500 text-sm mt-1">{String(errors.email.message)}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-gray-700 mb-1">Phone number</label>
+              <input
+                type="tel"
+                placeholder="+1 (555) 123-4567"
+                className="w-full p-2 border border-gray-300 outline-0 rounded"
+                {...register("phone", {
+                  required: "Phone number is required",
+                  pattern: {
+                    value: /^[\+]?[1-9][\d]{0,15}$/,
+                    message: "Invalid phone number format",
+                  },
+                })}
+              />
+                {errors.phone && (
+                  <p className="text-red-500 text-sm mt-1">{String(errors.phone.message)}</p>
                 )}
               </div>
 

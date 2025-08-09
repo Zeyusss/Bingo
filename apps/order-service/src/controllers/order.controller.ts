@@ -269,6 +269,7 @@ export const createOrder = async (
             if (addressRecord) {
               shippingAddressSnapshot = {
                 name: addressRecord.name,
+                phone: addressRecord.phone,
                 street: addressRecord.street,
                 city: addressRecord.city,
                 zip: addressRecord.zip,
@@ -444,7 +445,7 @@ export const createOrder = async (
       await redis.del(sessionKey);
     }
   } catch (error) {
-    console.log(error);
+
     return next(error);
   }
 };

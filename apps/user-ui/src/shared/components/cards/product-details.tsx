@@ -90,7 +90,7 @@ const ProductDetailsCard = ({
   }
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-all animate-fadeIn"
+      className="fixed inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-all animate-fadeIn"
       onClick={() => setOpen(false)}
       aria-modal="true"
       role="dialog"
@@ -98,7 +98,7 @@ const ProductDetailsCard = ({
     >
       <div
         ref={modalRef}
-        className="relative w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-6 md:p-10 flex flex-col md:flex-row gap-8 animate-scaleIn"
+        className="relative w-full max-w-6xl mx-4 bg-white rounded-2xl shadow-2xl p-4 md:p-6 lg:p-8 flex flex-col lg:flex-row gap-6 animate-scaleIn max-h-[95vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
         tabIndex={0}
       >
@@ -109,14 +109,18 @@ const ProductDetailsCard = ({
         >
           <X size={24} />
         </button>
-        <div className="flex-1 flex flex-col items-center">
-          <div className="w-full flex justify-center">
+        <div className="flex-1 lg:max-w-lg">
+          <div className="w-full aspect-square bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-center overflow-hidden">
             <Image
-              src={data?.images?.[activeImage]?.url}
-              alt={data?.title}
+              src={data?.images?.[activeImage]?.url || "https://via.placeholder.com/400x400?text=No+Image"}
+              alt={data?.title || "Product image"}
               width={400}
               height={400}
-              className="rounded-xl object-contain border border-gray-200 shadow-md max-h-[350px] bg-gray-50"
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = "https://via.placeholder.com/400x400?text=No+Image";
+              }}
             />
           </div>
           <div className="flex gap-2 mt-4 flex-wrap justify-center">
@@ -128,88 +132,104 @@ const ProductDetailsCard = ({
                 aria-label={`Show image ${index + 1}`}
               >
                 <Image
-                  src={img?.url}
-                  alt={`Thumbnail ${index}`}
+                  src={img?.url || "https://via.placeholder.com/60x60?text=No+Image"}
+                  alt={`Thumbnail ${index + 1}`}
                   width={60}
                   height={60}
                   className="rounded-md object-cover w-12 h-12"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = "https://via.placeholder.com/60x60?text=No+Image";
+                  }}
                 />
               </button>
             ))}
           </div>
         </div>
-        <div className="flex-1 flex flex-col gap-4 min-w-[250px]">
-          <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg border">
+        <div className="flex-1 lg:max-w-md space-y-4">
+          <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border">
             <Image
               src={data?.Shop?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"}
               alt={data?.Shop?.name || "Shop Logo"}
               width={48}
               height={48}
-              className="rounded-full w-12 h-12 object-cover border-2 border-white shadow-sm"
+              className="rounded-full w-12 h-12 object-cover border-2 border-white shadow-sm flex-shrink-0"
             />
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <Link
                 href={`/shop/${data?.Shop?.id}`}
-                className="text-lg font-semibold text-blue-700 hover:underline block"
+                className="text-lg font-semibold text-blue-700 hover:underline block truncate"
               >
                 {data?.Shop?.name || "Shop Name"}
               </Link>
-              <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm text-gray-600 mt-1">
                 <Ratings rating={data?.Shop?.ratings || 0} showTextFallback={true} />
                 <span className="flex items-center text-gray-500">
-                  <MapPin size={14} className="mr-1" />
-                  {data?.Shop?.address || data?.Shop?.location || "Location Not Set"}
+                  <MapPin size={14} className="mr-1 flex-shrink-0" />
+                  <span className="truncate">{data?.Shop?.address || data?.Shop?.location || "Location Not Set"}</span>
                 </span>
               </div>
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 leading-tight">{data?.title}</h2>
-          {data?.brand && (
-            <p className="text-sm text-gray-500"><strong>Brand:</strong> {data.brand}</p>
-          )}
-          <div className="flex items-center gap-4 mt-2">
-            <span className="text-2xl font-bold text-green-600">${data?.sale_price}</span>
-            {data?.regular_price && data.regular_price > data.sale_price && (
+          <div className="space-y-2">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">{data?.title}</h2>
+            {data?.brand && (
+              <p className="text-sm text-gray-500"><strong>Brand:</strong> {data.brand}</p>
+            )}
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-2xl font-bold text-green-600">
+              ${data?.sale_price || data?.regular_price || 0}
+            </span>
+            {data?.regular_price && data?.sale_price && data.regular_price > data.sale_price && (
               <span className="text-lg text-gray-400 line-through">${data.regular_price}</span>
             )}
-            <span className="ml-2"><Ratings rating={typeof data?.ratings === 'number' ? data.ratings : 0} showTextFallback={true} /></span>
+            <div className="flex items-center">
+              <Ratings rating={typeof data?.ratings === 'number' ? data.ratings : 0} showTextFallback={true} />
+            </div>
           </div>
 
-          <div className="flex items-center  mt-4">
-            <span className="font-medium mr-2">Quantity :</span>
-            <button
-              type="button"
-              className="px-3 py-1 cursor-pointer rounded-md border border-gray-300 bg-gray-300 hover:bg-gray-200"
-              onClick={() => setQuantity(q => Math.max(1, q - 1))}
-              aria-label="Decrease quantity"
-            >
-              -
-            </button>
-            <span className="px-4 bg-gray-100 py-1">{quantity}</span>
-            <button
-              type="button"
-              className="px-2 py-1 rounded-md  border border-gray-300 cursor-pointer bg-gray-300 hover:bg-gray-200"
-              onClick={() => setQuantity(q => q + 1)}
-              aria-label="Increase quantity"
-            >
-              +
-            </button>
+          <div className="flex items-center gap-3">
+            <span className="font-medium text-gray-700">Quantity:</span>
+            <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                className="px-3 py-2 bg-gray-100 hover:bg-gray-200 transition-colors"
+                onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                aria-label="Decrease quantity"
+              >
+                -
+              </button>
+              <span className="px-4 py-2 bg-white min-w-[3rem] text-center">{quantity}</span>
+              <button
+                type="button"
+                className="px-3 py-2 bg-gray-100 hover:bg-gray-200 transition-colors"
+                onClick={() => setQuantity(q => q + 1)}
+                aria-label="Increase quantity"
+              >
+                +
+              </button>
+            </div>
           </div>
-          <p className="mt-2 text-gray-700 whitespace-pre-wrap w-full text-base">
-            {data?.short_description}
-          </p>
-          <div className="flex flex-col md:flex-row items-start gap-5 mt-4">
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <p className="text-gray-700 text-sm leading-relaxed">
+              {data?.short_description || "No description available."}
+            </p>
+          </div>
+          <div className="space-y-4">
             {data?.colors?.length > 0 && (
               <div>
-                <strong>Color:</strong>
-                <div className="flex gap-2 mt-1">
+                <h4 className="font-medium text-gray-700 mb-2">Color:</h4>
+                <div className="flex flex-wrap gap-2">
                   {data.colors.map((color: string) => (
                     <button
                       key={color}
-                      className={`w-8 h-8 cursor-pointer rounded-full border-2 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 ${isSelected === color ? "border-blue-500 scale-110 shadow-md" : "border-gray-200"}`}
+                      className={`w-10 h-10 rounded-full border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 ${isSelected === color ? "border-blue-500 scale-110 shadow-lg" : "border-gray-300 hover:border-gray-400"}`}
                       onClick={() => setIsSelected(color)}
                       style={{ backgroundColor: color }}
                       aria-label={`Select color ${color}`}
+                      title={color}
                     />
                   ))}
                 </div>
@@ -217,12 +237,12 @@ const ProductDetailsCard = ({
             )}
             {data?.sizes?.length > 0 && (
               <div>
-                <strong>Size:</strong>
-                <div className="flex gap-2 mt-1">
+                <h4 className="font-medium text-gray-700 mb-2">Size:</h4>
+                <div className="flex flex-wrap gap-2">
                   {data.sizes.map((size: string) => (
                     <button
                       key={size}
-                      className={`px-3 py-1 rounded border-2 text-sm font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 ${isSizeSelected === size ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-700"}`}
+                      className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 ${isSizeSelected === size ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"}`}
                       onClick={() => setIsSizeSelected(size)}
                       aria-label={`Select size ${size}`}
                     >
@@ -233,12 +253,14 @@ const ProductDetailsCard = ({
               </div>
             )}
           </div>
-          <div className="flex gap-3 mt-6">
+          <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
             <button
-              className="flex items-center gap-2 px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow transition"
+              className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-1"
               onClick={() => handleChat()}
+              disabled={isLoading}
             >
-              <MessageCircle size={18} /> Chat With Seller
+              <MessageCircle size={18} /> 
+              {isLoading ? "Loading..." : "Chat With Seller"}
             </button>
             <button
              onClick={ ()=> addToCart({
@@ -255,7 +277,7 @@ const ProductDetailsCard = ({
             deviceInfo
             )
              }
-            className="flex items-center gap-2 px-5 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold shadow transition">
+            className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[#FF8A00] hover:bg-[#E17800] text-white font-semibold shadow-md transition-colors flex-1">
               <ShoppingBag size={18} /> Add to Cart
             </button>
           </div>

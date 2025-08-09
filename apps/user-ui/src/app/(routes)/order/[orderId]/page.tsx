@@ -18,8 +18,8 @@ const page = () => {
           `/order/api/get-order-details/${orderId}`
         );
         setOrder(res.data.order);
-        console.log("Order data:", res.data.order);
-        console.log("Shipping address:", res.data.order.shippingAddress);
+
+
       } catch (error) {
         console.error("Failed to fetch order details", error);
       } finally {
@@ -166,6 +166,7 @@ const page = () => {
         <div className="mb-6 text-sm text-gray-700">
           <h2 className="text-md font-semibold mb-2">Shipping Address</h2>
           {order.shippingAddress.name && <p>{order.shippingAddress.name}</p>}
+          {order.shippingAddress.phone && <p>{order.shippingAddress.phone}</p>}
           <p>
             {order.shippingAddress.street}, {order.shippingAddress.city},{" "}
             {order.shippingAddress.country}

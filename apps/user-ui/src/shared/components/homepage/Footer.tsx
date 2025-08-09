@@ -156,7 +156,7 @@ const Footer = () => {
       </div>
 
       {/* Bottom Bar */}
-      <div className="border-t border-gray-700 mt-10 pt-6 flex flex-col md:flex-row justify-between items-center max-w-screen-xl mx-auto">
+      <div className="border-t border-gray-700 mt-10 pt-6 flex flex-col md:flex-row justify-between items-center  mx-auto">
         <p className="text-sm text-gray-400">
           Bingo © 2025 CREATED BY{" "}
           <span className="font-semibold text-white">BINGO TEAM</span>. PREMIUM

@@ -31,9 +31,11 @@ model users {
   name        String
   email       String       @unique
   password    String
+  phone       String?
   role        UserRole     @default(user)
   avatarId    String?      @db.ObjectId
   avatar      images?      @relation("UserAvatar", fields: [avatarId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  avatarLastChanged DateTime?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   shopReviews shopReviws[]
@@ -144,7 +146,7 @@ model products {
   starting_date         DateTime?
   ending_date           DateTime?
   stock                 Int
-  sale_price            Float
+  sale_price            Float?
   regular_price         Float
   ratings               Float         @default(5)
   warranty              String?
@@ -250,6 +252,7 @@ model address {
   userId    String      @db.ObjectId
   label     addressType
   name      String
+  phone     String?
   street    String
   city      String
   zip       String

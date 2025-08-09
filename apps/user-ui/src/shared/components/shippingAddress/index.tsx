@@ -14,6 +14,8 @@ const ShippingAddressSection: React.FC<ShippingAddressSectionProps> = ({ onSelec
   const [showModal, setShowModal] = useState(false);
   const [editAddress, setEditAddress] = useState<any>(null);
   const queryClient = useQueryClient();
+  
+  const user = queryClient.getQueryData(["user"]) as any;
 
   const { data: addresses = [], isLoading } = useQuery({
     queryKey: ["shipping-addresses"],
@@ -33,6 +35,7 @@ const ShippingAddressSection: React.FC<ShippingAddressSectionProps> = ({ onSelec
     defaultValues: {
       label: "Home",
       name: "",
+      phone: "",
       street: "",
       city: "",
       state: "",
@@ -82,7 +85,7 @@ const ShippingAddressSection: React.FC<ShippingAddressSectionProps> = ({ onSelec
       return res.data;
     },
     onSuccess: (data) => {
-      console.log('Set default success', data);
+
       queryClient.invalidateQueries({ queryKey: ["shipping-addresses"] });
     },
   });
@@ -111,14 +114,14 @@ const ShippingAddressSection: React.FC<ShippingAddressSectionProps> = ({ onSelec
   const handleAdd = () => {
     setEditAddress(null);
     reset();
+    if (user?.phone) {
+      setValue("phone", user.phone);
+    }
     setShowModal(true);
   };
 
-  console.log('Addresses:', addresses);
-
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <p className="text-sm text-gray-500 mt-1">Manage your delivery addresses</p>
@@ -132,7 +135,6 @@ const ShippingAddressSection: React.FC<ShippingAddressSectionProps> = ({ onSelec
         </button>
       </div>
 
-      {/* Address List */}
       <div className="space-y-4">
         {isLoading ? (
           <div>Loading...</div>
@@ -186,6 +188,11 @@ const ShippingAddressSection: React.FC<ShippingAddressSectionProps> = ({ onSelec
 
               <div className="mt-3">
                 <p className="font-medium text-gray-900">{address.name}</p>
+                {address.phone && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    {address.phone}
+                  </p>
+                )}
                 <p className="text-sm text-gray-600 mt-1">
                   {address.street}
                 </p>
@@ -199,11 +206,9 @@ const ShippingAddressSection: React.FC<ShippingAddressSectionProps> = ({ onSelec
         )}
       </div>
 
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
           <div className="bg-white w-full max-w-lg rounded-xl shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            {/* Close Button */}
             <button
               onClick={() => { setShowModal(false); setEditAddress(null); }}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
@@ -211,7 +216,6 @@ const ShippingAddressSection: React.FC<ShippingAddressSectionProps> = ({ onSelec
               <X className="h-6 w-6" />
             </button>
 
-            {/* Modal Header */}
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-xl font-semibold text-gray-800">
                 {editAddress ? "Edit Address" : "Add New Address"}
@@ -221,9 +225,7 @@ const ShippingAddressSection: React.FC<ShippingAddressSectionProps> = ({ onSelec
               </p>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
-              {/* Label Select */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Address Label
@@ -238,7 +240,6 @@ const ShippingAddressSection: React.FC<ShippingAddressSectionProps> = ({ onSelec
                 </select>
               </div>
 
-              {/* Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Full Name *
@@ -254,8 +255,27 @@ const ShippingAddressSection: React.FC<ShippingAddressSectionProps> = ({ onSelec
                   </p>
                 )}
               </div>
-
-              {/* Street Address */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  placeholder="+1 (555) 123-4567"
+                  {...register("phone", {
+                    pattern: {
+                      value: /^[\+]?[1-9][\d]{0,15}$/,
+                      message: "Invalid phone number format",
+                    },
+                  })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                />
+                {errors.phone && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.phone.message}
+                  </p>
+                )}
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Street Address *
@@ -271,8 +291,6 @@ const ShippingAddressSection: React.FC<ShippingAddressSectionProps> = ({ onSelec
                   </p>
                 )}
               </div>
-
-              {/* City and State */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -306,7 +324,6 @@ const ShippingAddressSection: React.FC<ShippingAddressSectionProps> = ({ onSelec
                 </div>
               </div>
 
-              {/* ZIP and Country */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -343,7 +360,6 @@ const ShippingAddressSection: React.FC<ShippingAddressSectionProps> = ({ onSelec
                 </div>
               </div>
 
-              {/* Default Address Checkbox */}
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -355,8 +371,6 @@ const ShippingAddressSection: React.FC<ShippingAddressSectionProps> = ({ onSelec
                   Set as default address
                 </label>
               </div>
-
-              {/* Submit Buttons */}
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"

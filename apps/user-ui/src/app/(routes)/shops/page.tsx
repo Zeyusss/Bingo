@@ -9,6 +9,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import Footer from "apps/user-ui/src/shared/components/homepage/Footer";
 import ShopFilterSidebar from "apps/user-ui/src/shared/components/filters/ShopFilterSidebar";
 import FilterButton from "apps/user-ui/src/shared/components/filters/FilterButton";
+import ProductListAnimator from "apps/user-ui/src/shared/components/animations/ProductListAnimator";
 
 const Page = () => {
   const router = useRouter();
@@ -112,7 +113,6 @@ const Page = () => {
 
   return (
     <div className="w-full">
-      {/* Hero Section */}
       <div className="relative h-[320px] md:h-[420px] overflow-hidden bg-gradient-to-r from-gray-100 to-gray-200">
         <div
           className="absolute inset-0"
@@ -146,7 +146,6 @@ const Page = () => {
 
       <div className="w-full pb-10">
         <div className="w-[95%] m-auto pt-8">
-          {/* Filter Sidebar */}
           <ShopFilterSidebar
             isOpen={isFilterSidebarOpen}
             onClose={() => setIsFilterSidebarOpen(false)}
@@ -166,11 +165,8 @@ const Page = () => {
           />
 
           <div className="w-full flex flex-col lg:flex-row gap-8">
-            {/* Main Content Area */}
             <div className="flex-1 px-2 lg:px-3">
-              {/* Top Bar with Filter Button and Controls */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                {/* Left side - Filter button and results count */}
                 <div className="flex items-center gap-4">
                   <FilterButton
                     onClick={() => setIsFilterSidebarOpen(true)}
@@ -188,10 +184,7 @@ const Page = () => {
                     )}
                   </div>
                 </div>
-
-                {/* Right side - View controls and sorting */}
                 <div className="flex items-center gap-4 flex-wrap justify-end">
-                  {/* View icons */}
                   <div className="flex items-center gap-2 text-gray-400">
                     <button
                       onClick={() => setViewMode("grid-3")}
@@ -220,8 +213,6 @@ const Page = () => {
                       </svg>
                     </button>
                   </div>
-
-                  {/* Sort dropdown */}
                   <div className="relative">
                     <select
                       className="pl-4 pr-8 py-1 rounded-full border text-sm appearance-none cursor-pointer bg-white shadow-sm"
@@ -250,8 +241,6 @@ const Page = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Shop Grid */}
               {isShopLoading ? (
                 <div
                   className={`grid gap-4 ${
@@ -277,17 +266,21 @@ const Page = () => {
                   </p>
                 </div>
               ) : (
-                <div
+                <ProductListAnimator
                   className={`grid gap-4 ${
                     viewMode === "grid-3"
                       ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
                       : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
                   }`}
+                  listKey={`shops-${viewMode}-${selectedCategories.join(',')}-${selectedCountries.join(',')}-${page}-${sortBy}-${minRating}`}
+                  layout="grid"
+                  staggerDelay={0.08}
+                  animationDuration={0.4}
                 >
                   {displayedShops.map((shop: any) => (
                     <ShopCard key={shop.id} shop={shop} />
                   ))}
-                </div>
+                </ProductListAnimator>
               )}
               {totalPages > 1 && (
                 <div className="flex justify-center mt-8 gap-2">

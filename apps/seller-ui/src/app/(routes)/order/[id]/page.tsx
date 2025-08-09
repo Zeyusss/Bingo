@@ -341,6 +341,12 @@ const Page = () => {
                       {order.shippingAddress.name}
                     </div>
                   )}
+                  {order.shippingAddress.phone && (
+                    <div>
+                      <span className="font-semibold">Phone:</span>{" "}
+                      {order.shippingAddress.phone}
+                    </div>
+                  )}
                   <div>
                     <span className="font-semibold">Street:</span>{" "}
                     {order.shippingAddress.street}

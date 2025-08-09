@@ -20,7 +20,7 @@ const CategoryBar = () => {
         </div>
 
         <div className="mt-2 lg:mt-0 ml-6 shrink-0 border border-gray-200 bg-gray-100 text-black px-4 py-2 rounded-full font-semibold text-sm shadow-sm hover:bg-gray-200 transition cursor-pointer whitespace-nowrap">
-          Free shipping for all orders of 1.300 L.E
+          Free shipping for all orders over 5.000 L.E
         </div>
       </div>
     </div>

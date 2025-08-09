@@ -1,5 +1,6 @@
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Heart, Eye, ShoppingCart, BarChart3 } from "lucide-react";
 import ProductDetailsCard from "./product-details";
 import { useStore } from "apps/user-ui/src/store";
@@ -123,7 +124,7 @@ const ProductCard = ({
   
   useEffect(() => {
     if (product?.createdAt) {
-      const isProductNew = Date.now() - new Date(product.createdAt).getTime() < 7 * 24 * 60 * 60 * 1000;
+      const isProductNew = Date.now() - new Date(product.createdAt).getTime() < 1 * 24 * 60 * 60 * 1000;
       setIsNew(isProductNew);
     }
   }, [product?.createdAt]);
@@ -378,7 +379,10 @@ const ProductCard = ({
         </div>
       </div>
 
-      {open && <ProductDetailsCard data={product} setOpen={setOpen} />}
+      {open && typeof window !== 'undefined' && createPortal(
+        <ProductDetailsCard data={product} setOpen={setOpen} />,
+        document.body
+      )}
     </div>
   );
 };

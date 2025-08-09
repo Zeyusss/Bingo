@@ -18,6 +18,7 @@ import {
   getFilteredEvents,
   getFilteredProducts,
   getFilteredShops,
+  getTodaysDeals,
   getProductDetails,
   getShopProducts,
   restoreProduct,
@@ -55,6 +56,7 @@ router.get("/get-all-events", getAllEvents);
 router.get("/get-product/:slug", getProductDetails);
 router.get("/get-filtered-products", getFilteredProducts);
 router.get("/get-filtered-offers", getFilteredEvents);
+router.get("/get-todays-deals", getTodaysDeals);
 router.get("/get-filtered-shops", getFilteredShops);
 router.get("/search-products", searchProducts);
 router.get("/search-advanced", searchRateLimiter, searchAdvanced);

@@ -78,14 +78,14 @@ const ChatPage = () => {
     
     const handleMessage = (event: any) => {
       const data = JSON.parse(event.data);
-      console.log('Seller-UI received WebSocket message:', data);
+
 
       if (data.type === "NEW_MESSAGE") {
         const newMsg = data?.payload;
-        console.log('Processing NEW_MESSAGE:', newMsg);
+
 
         if (newMsg.conversationId === conversationId) {
-          console.log('Adding message to current conversation:', conversationId);
+
           queryClient.setQueryData(
             ["messages", conversationId],
             (old: any = []) => [

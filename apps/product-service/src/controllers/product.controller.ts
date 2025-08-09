@@ -206,7 +206,6 @@ export const createProduct = async (
       !short_description ||
       !category ||
       !subCategory ||
-      !sale_price ||
       !images ||
       !tags ||
       !stock ||
@@ -249,7 +248,7 @@ export const createProduct = async (
         discount_codes: discountCodes.map((codeId: string) => codeId),
         sizes: sizes || [],
         stock: parseInt(stock),
-        sale_price: parseFloat(sale_price),
+        sale_price: sale_price ? parseFloat(sale_price) : parseFloat(regular_price),
         regular_price: parseFloat(regular_price),
         custom_properties: customProperties || {},
         custom_specifications: custom_specifications || {},
@@ -791,6 +790,161 @@ export const getFilteredEvents = async (
   }
 };
 
+//get today's deals 
+export const getTodaysDeals = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const {
+      priceRange = [0, 10000],
+      categories = [],
+      colors = [],
+      sizes = [],
+      page = 1,
+      limit = 12,
+      sort = "newest",
+      search = "",
+      status = [],
+    } = req.query;
+
+    const parsedPriceRange =
+      typeof priceRange === "string"
+        ? priceRange.split(",").map(Number)
+        : [0, 10000];
+    const parsedPage = Number(page);
+    const parsedLimit = Number(limit);
+
+    const skip = (parsedPage - 1) * parsedLimit;
+
+    
+    const baseQuery: any = {
+      starting_date: null,
+      isDeleted: false,
+    };
+
+    
+    if (categories && (categories as string[]).length > 0) {
+      const categoryArray = Array.isArray(categories)
+        ? categories
+        : String(categories).split(",");
+
+      baseQuery.category = {
+        in: categoryArray,
+      };
+    }
+
+    
+    if (colors && (colors as string[]).length > 0) {
+      const colorArray = Array.isArray(colors)
+        ? colors
+        : String(colors).split(",");
+      baseQuery.colors = {
+        hasSome: colorArray,
+      };
+    }
+
+   
+    if (sizes && (sizes as string[]).length > 0) {
+      baseQuery.sizes = {
+        hasSome: Array.isArray(sizes) ? sizes : [sizes],
+      };
+    }
+
+ 
+    if (status && (status as string[]).length > 0) {
+      const statusArray = Array.isArray(status) ? status : [status];
+      if (statusArray.includes("in_stock")) {
+        baseQuery.stock = { gt: 0 };
+      }
+      if (statusArray.includes("out_of_stock")) {
+        baseQuery.stock = { lte: 0 };
+      }
+    }
+
+    
+    if (search && typeof search === "string" && search.trim()) {
+      baseQuery.OR = [
+        {
+          title: {
+            contains: search.trim(),
+            mode: "insensitive",
+          },
+        },
+        {
+          description: {
+            contains: search.trim(),
+            mode: "insensitive",
+          },
+        },
+      ];
+    }
+
+
+    const allProducts = await prisma.products.findMany({
+      where: baseQuery,
+      include: {
+        images: true,
+        Shop: {
+          include: {
+            avatar: true,
+          },
+        },
+      },
+    });
+
+
+    const discountedProducts = allProducts.filter(product => {
+      if (product.discount_codes && product.discount_codes.length > 0) return true;
+      
+      
+      if (product.regular_price && product.sale_price) {
+        return product.sale_price < product.regular_price;
+      }
+      
+      return false;
+    }).filter(product => {
+      
+      const price = product.sale_price || product.regular_price;
+      return price >= parsedPriceRange[0] && price <= parsedPriceRange[1];
+    });
+
+    
+    discountedProducts.sort((a, b) => {
+      switch (sort) {
+        case "price-low":
+          return (a.sale_price || a.regular_price) - (b.sale_price || b.regular_price);
+        case "price-high":
+          return (b.sale_price || b.regular_price) - (a.sale_price || a.regular_price);
+        case "newest":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case "average":
+        default:
+         
+          return (b.ratings || 0) - (a.ratings || 0);
+      }
+    });
+
+
+    const total = discountedProducts.length;
+    const products = discountedProducts.slice(skip, skip + parsedLimit);
+
+    const totalPages = Math.ceil(total / parsedLimit);
+
+    res.json({
+      products,
+      pagination: {
+        total,
+        page: parsedPage,
+        totalPages,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 //get filtered Shops
 export const getFilteredShops = async (
   req: Request,
@@ -823,7 +977,7 @@ export const getFilteredShops = async (
       filters.country = { in: country };
     }
 
-    // Build orderBy for sorting
+    
     let orderBy: any = {};
     switch (sortBy) {
       case "oldest":
@@ -838,7 +992,7 @@ export const getFilteredShops = async (
         break;
     }
 
-    // Get all shops
+  
     const allShops = await prisma.shops.findMany({
       where: filters,
       include: {
@@ -1795,16 +1949,33 @@ export const getSearchFilters = async (
   next: NextFunction
 ) => {
   try {
-    const categories = await prisma.products.findMany({
-      where: {
-        isDeleted: false,
-        status: "Active",
-      },
-      select: {
-        category: true,
-      },
-      distinct: ["category"],
-    });
+    const predefinedCategories = [
+      { value: "clothing", label: "Clothing & Fashion" },
+      { value: "jewelry", label: "Jewelry & Accessories" },
+      { value: "home_decor", label: "Home Decor" },
+      { value: "art", label: "Art & Collectibles" },
+      { value: "toys", label: "Toys & Games" },
+      { value: "craft_supplies", label: "Craft Supplies & Tools" },
+      { value: "weddings", label: "Weddings & Parties" },
+      { value: "bags", label: "Bags & Purses" },
+      { value: "beauty", label: "Beauty & Personal Care" },
+      { value: "stationery", label: "Stationery & Office" },
+      { value: "vintage", label: "Vintage Items" },
+      { value: "furniture", label: "Furniture & Woodwork" },
+      { value: "ceramics", label: "Ceramics & Pottery" },
+      { value: "candles", label: "Candles & Aromatherapy" },
+      { value: "bath", label: "Bath & Body" },
+      { value: "knitting", label: "Knitting & Crochet" },
+      { value: "leather", label: "Leather Goods" },
+      { value: "pet_supplies", label: "Pet Supplies" },
+      { value: "digital", label: "Digital Downloads" },
+      { value: "food", label: "Homemade Food & Treats" },
+      { value: "plants", label: "Plants & Gardening" },
+      { value: "glass", label: "Glass Art" },
+      { value: "seasonal", label: "Seasonal & Holiday Items" },
+      { value: "calligraphy", label: "Calligraphy & Lettering" },
+      { value: "metalwork", label: "Metal Work" },
+    ];
 
     const priceRange = await prisma.products.aggregate({
       where: {
@@ -1845,13 +2016,10 @@ export const getSearchFilters = async (
     res.status(200).json({
       success: true,
       filters: {
-        categories: categories
-          .map((c) => ({
-            name: c.category,
-            value: c.category,
-            count: 0,
-          }))
-          .filter((item) => item.name),
+        categories: predefinedCategories.map((category) => ({
+          name: category.label,
+          value: category.value,
+        })),
         priceRange: {
           min: priceRange._min.sale_price || 0,
           max: priceRange._max.sale_price || 1000,
