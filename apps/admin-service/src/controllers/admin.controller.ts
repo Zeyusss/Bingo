@@ -98,16 +98,16 @@ export const getAllProducts = async (
           id: true,
           title: true,
           slug: true,
-          detailed_description: true, 
-          short_description: true, 
+          detailed_description: true,
+          short_description: true,
           sale_price: true,
-          regular_price: true, 
+          regular_price: true,
           stock: true,
           createdAt: true,
           ratings: true,
           category: true,
-          subCategory: true, 
-          tags: true, 
+          subCategory: true,
+          tags: true,
           images: {
             select: { url: true },
             take: 1,
@@ -1138,6 +1138,204 @@ export const moveSubcategory = async (
       success: true,
       message: "Subcategory moved successfully",
       subCategories: updated.subCategories,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Verification Management Controllers
+
+// Get pending verifications
+export const getPendingVerifications = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const pendingVerifications = await prisma.sellers.findMany({
+      where: {
+        OR: [
+          { verificationStatus: "Pending" },
+          { verificationStatus: "RequiresResubmission" },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        country: true,
+        verificationSubmittedAt: true,
+        verificationStatus: true,
+        shop: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        verificationSubmittedAt: "asc",
+      },
+      skip,
+      take: Number(limit),
+    });
+
+    const totalCount = await prisma.sellers.count({
+      where: {
+        OR: [
+          { verificationStatus: "Pending" },
+          { verificationStatus: "RequiresResubmission" },
+        ],
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      verifications: pendingVerifications,
+      pagination: {
+        currentPage: Number(page),
+        totalPages: Math.ceil(totalCount / Number(limit)),
+        totalCount,
+        hasMore: skip + pendingVerifications.length < totalCount,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Get verification details for a specific seller
+export const getVerificationDetails = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { sellerId } = req.params;
+
+    const seller = await prisma.sellers.findUnique({
+      where: { id: sellerId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone_number: true,
+        country: true,
+        verificationStatus: true,
+        idFrontImage: true,
+        idBackImage: true,
+        contractSignedImage: true,
+        personalImage: true,
+        verificationSubmittedAt: true,
+        verificationReviewedAt: true,
+        verificationNotes: true,
+        createdAt: true,
+        shop: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+          },
+        },
+      },
+    });
+
+    if (!seller) {
+      return res.status(404).json({
+        success: false,
+        message: "Seller not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      verification: seller,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Review verification (approve/reject)
+export const reviewVerification = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { sellerId } = req.params;
+    const { action, notes } = req.body; // action: 'approve' | 'reject' | 'require_resubmission'
+    const adminId = req.user?.id;
+
+    if (
+      !action ||
+      !["approve", "reject", "require_resubmission"].includes(action)
+    ) {
+      return next(
+        new ValidationError(
+          "Invalid action. Must be 'approve', 'reject', or 'require_resubmission'"
+        )
+      );
+    }
+
+    const seller = await prisma.sellers.findUnique({
+      where: { id: sellerId },
+      select: {
+        id: true,
+        verificationStatus: true,
+        name: true,
+        email: true,
+      },
+    });
+
+    if (!seller) {
+      return res.status(404).json({
+        success: false,
+        message: "Seller not found",
+      });
+    }
+
+    if (seller.verificationStatus !== "Pending") {
+      return next(new ValidationError("Verification is not pending review"));
+    }
+
+    let newStatus: "Approved" | "Rejected" | "RequiresResubmission";
+    let isVerified = false;
+
+    switch (action) {
+      case "approve":
+        newStatus = "Approved";
+        isVerified = true;
+        break;
+      case "reject":
+        newStatus = "Rejected";
+        break;
+      case "require_resubmission":
+        newStatus = "RequiresResubmission";
+        break;
+    }
+
+    await prisma.sellers.update({
+      where: { id: sellerId },
+      data: {
+        verificationStatus: newStatus,
+        isVerified,
+        verificationReviewedAt: new Date(),
+        verificationNotes: notes || null,
+        adminReviewerId: adminId,
+      },
+    });
+
+    // Here you could add notification logic to inform the seller
+
+    res.status(200).json({
+      success: true,
+      message: `Verification ${action}d successfully`,
+      status: newStatus,
     });
   } catch (error) {
     return next(error);

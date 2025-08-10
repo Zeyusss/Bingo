@@ -24,6 +24,10 @@ import {
   getShopVisitorAnalytics,
   getShopTopSellingProducts,
   trackShopVisitor,
+  submitVerification,
+  getVerificationStatus,
+  uploadVerificationDocument,
+  downloadContract,
 } from "../controllers/seller.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isSeller } from "@packages/middleware/authorizeRoles";
@@ -81,5 +85,31 @@ router.get(
 );
 
 router.post("/track-visitor", trackShopVisitor);
+
+// Identity Verification Routes
+router.get(
+  "/verification/status",
+  isAuthenticated,
+  isSeller,
+  getVerificationStatus
+);
+router.post(
+  "/verification/upload-document",
+  isAuthenticated,
+  isSeller,
+  uploadVerificationDocument
+);
+router.post(
+  "/verification/submit",
+  isAuthenticated,
+  isSeller,
+  submitVerification
+);
+router.get(
+  "/verification/download-contract",
+  isAuthenticated,
+  isSeller,
+  downloadContract
+);
 
 export default router;
