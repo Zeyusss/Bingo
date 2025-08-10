@@ -30,6 +30,7 @@ import {
   getSearchSuggestions,
   getPopularSearches,
   getSearchFilters,
+  getTrendingProducts,
 } from "../controllers/product.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import {
@@ -57,6 +58,7 @@ router.get("/get-product/:slug", getProductDetails);
 router.get("/get-filtered-products", getFilteredProducts);
 router.get("/get-filtered-offers", getFilteredEvents);
 router.get("/get-todays-deals", getTodaysDeals);
+router.get("/get-trending-products", getTrendingProducts);
 router.get("/get-filtered-shops", getFilteredShops);
 router.get("/search-products", searchProducts);
 router.get("/search-advanced", searchRateLimiter, searchAdvanced);

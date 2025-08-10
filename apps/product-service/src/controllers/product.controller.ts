@@ -248,7 +248,9 @@ export const createProduct = async (
         discount_codes: discountCodes.map((codeId: string) => codeId),
         sizes: sizes || [],
         stock: parseInt(stock),
-        sale_price: sale_price ? parseFloat(sale_price) : parseFloat(regular_price),
+        sale_price: sale_price
+          ? parseFloat(sale_price)
+          : parseFloat(regular_price),
         regular_price: parseFloat(regular_price),
         custom_properties: customProperties || {},
         custom_specifications: custom_specifications || {},
@@ -790,7 +792,7 @@ export const getFilteredEvents = async (
   }
 };
 
-//get today's deals 
+//get today's deals
 export const getTodaysDeals = async (
   req: Request,
   res: Response,
@@ -818,13 +820,11 @@ export const getTodaysDeals = async (
 
     const skip = (parsedPage - 1) * parsedLimit;
 
-    
     const baseQuery: any = {
       starting_date: null,
       isDeleted: false,
     };
 
-    
     if (categories && (categories as string[]).length > 0) {
       const categoryArray = Array.isArray(categories)
         ? categories
@@ -835,7 +835,6 @@ export const getTodaysDeals = async (
       };
     }
 
-    
     if (colors && (colors as string[]).length > 0) {
       const colorArray = Array.isArray(colors)
         ? colors
@@ -845,14 +844,12 @@ export const getTodaysDeals = async (
       };
     }
 
-   
     if (sizes && (sizes as string[]).length > 0) {
       baseQuery.sizes = {
         hasSome: Array.isArray(sizes) ? sizes : [sizes],
       };
     }
 
- 
     if (status && (status as string[]).length > 0) {
       const statusArray = Array.isArray(status) ? status : [status];
       if (statusArray.includes("in_stock")) {
@@ -863,7 +860,6 @@ export const getTodaysDeals = async (
       }
     }
 
-    
     if (search && typeof search === "string" && search.trim()) {
       baseQuery.OR = [
         {
@@ -881,7 +877,6 @@ export const getTodaysDeals = async (
       ];
     }
 
-
     const allProducts = await prisma.products.findMany({
       where: baseQuery,
       include: {
@@ -894,38 +889,43 @@ export const getTodaysDeals = async (
       },
     });
 
+    const discountedProducts = allProducts
+      .filter((product) => {
+        if (product.discount_codes && product.discount_codes.length > 0)
+          return true;
 
-    const discountedProducts = allProducts.filter(product => {
-      if (product.discount_codes && product.discount_codes.length > 0) return true;
-      
-      
-      if (product.regular_price && product.sale_price) {
-        return product.sale_price < product.regular_price;
-      }
-      
-      return false;
-    }).filter(product => {
-      
-      const price = product.sale_price || product.regular_price;
-      return price >= parsedPriceRange[0] && price <= parsedPriceRange[1];
-    });
+        if (product.regular_price && product.sale_price) {
+          return product.sale_price < product.regular_price;
+        }
 
-    
+        return false;
+      })
+      .filter((product) => {
+        const price = product.sale_price || product.regular_price;
+        return price >= parsedPriceRange[0] && price <= parsedPriceRange[1];
+      });
+
     discountedProducts.sort((a, b) => {
       switch (sort) {
         case "price-low":
-          return (a.sale_price || a.regular_price) - (b.sale_price || b.regular_price);
+          return (
+            (a.sale_price || a.regular_price) -
+            (b.sale_price || b.regular_price)
+          );
         case "price-high":
-          return (b.sale_price || b.regular_price) - (a.sale_price || a.regular_price);
+          return (
+            (b.sale_price || b.regular_price) -
+            (a.sale_price || a.regular_price)
+          );
         case "newest":
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
         case "average":
         default:
-         
           return (b.ratings || 0) - (a.ratings || 0);
       }
     });
-
 
     const total = discountedProducts.length;
     const products = discountedProducts.slice(skip, skip + parsedLimit);
@@ -977,7 +977,6 @@ export const getFilteredShops = async (
       filters.country = { in: country };
     }
 
-    
     let orderBy: any = {};
     switch (sortBy) {
       case "oldest":
@@ -992,7 +991,6 @@ export const getFilteredShops = async (
         break;
     }
 
-  
     const allShops = await prisma.shops.findMany({
       where: filters,
       include: {
@@ -2046,5 +2044,254 @@ export const getSearchFilters = async (
     });
   } catch (error) {
     next(error);
+  }
+};
+
+// trending products (most sold this week + all other products)
+export const getTrendingProducts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const {
+      categories,
+      colors,
+      sizes,
+      status,
+      priceRange,
+      page = "1",
+      limit = "12",
+      sort = "trending",
+      search,
+    } = req.query;
+
+    const pageNum = parseInt(page as string) || 1;
+    const limitNum = parseInt(limit as string) || 12;
+    const offset = (pageNum - 1) * limitNum;
+
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    const daysSinceLastFriday = (now.getDay() + 2) % 7;
+    startOfWeek.setDate(now.getDate() - daysSinceLastFriday);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const last30Days = new Date(now);
+    last30Days.setDate(now.getDate() - 30);
+    last30Days.setHours(0, 0, 0, 0);
+
+    const salesData = await prisma.order_items.findMany({
+      where: {
+        createdAt: {
+          gte: startOfWeek,
+        },
+        order: {
+          status: {
+            in: ["completed", "delivered", "shipped"],
+          },
+        },
+      },
+      include: {
+        order: {
+          select: {
+            status: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    const salesMap = new Map();
+    salesData.forEach((item) => {
+      const productId = item.productId;
+      const currentQuantity = salesMap.get(productId) || 0;
+      salesMap.set(productId, currentQuantity + item.quantity);
+    });
+
+    const filterConditions: any = {
+      isDeleted: false,
+      starting_date: null,
+    };
+
+    if (categories) {
+      const categoryArray = (categories as string)
+        .split(",")
+        .map((cat) => cat.trim());
+      filterConditions.category = { in: categoryArray };
+    }
+
+    if (colors) {
+      const colorArray = (colors as string)
+        .split(",")
+        .map((color) => color.trim());
+      filterConditions.colors = { hasSome: colorArray };
+    }
+
+    if (sizes) {
+      const sizeArray = (sizes as string).split(",").map((size) => size.trim());
+      filterConditions.sizes = { hasSome: sizeArray };
+    }
+
+    if (status) {
+      const statusArray = (status as string).split(",").map((s) => s.trim());
+      filterConditions.status = { in: statusArray };
+    }
+
+    if (search) {
+      filterConditions.OR = [
+        { title: { contains: search as string, mode: "insensitive" } },
+        { description: { contains: search as string, mode: "insensitive" } },
+        { tags: { hasSome: [(search as string).toLowerCase()] } },
+      ];
+    }
+
+    if (priceRange) {
+      const [minPrice, maxPrice] = (priceRange as string)
+        .split(",")
+        .map(Number);
+      if (!isNaN(minPrice) && !isNaN(maxPrice)) {
+        filterConditions.AND = [
+          {
+            OR: [
+              { sale_price: { gte: minPrice, lte: maxPrice } },
+              {
+                AND: [
+                  { sale_price: null },
+                  { regular_price: { gte: minPrice, lte: maxPrice } },
+                ],
+              },
+            ],
+          },
+        ];
+      }
+    }
+
+    const allProducts = await prisma.products.findMany({
+      where: filterConditions,
+      include: {
+        images: true,
+        Shop: {
+          include: {
+            avatar: true,
+            sellers: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const productsWithDefaults = allProducts.map((product: any) => ({
+      ...product,
+      Shop: {
+        ...product.Shop,
+        avatar: {
+          url: product.Shop?.avatar?.url || DEFAULT_PROFILE_IMAGE,
+        },
+      },
+    }));
+
+    let sortedProducts = [...productsWithDefaults];
+
+    if (sort === "trending" || sort === "popular") {
+      sortedProducts.sort((a, b) => {
+        const aSales = salesMap.get(a.id) || 0;
+        const bSales = salesMap.get(b.id) || 0;
+
+        if (aSales !== bSales) {
+          return bSales - aSales;
+        }
+
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      });
+    } else {
+      switch (sort) {
+        case "price-low":
+          sortedProducts.sort((a, b) => {
+            const aPrice = a.sale_price || a.regular_price;
+            const bPrice = b.sale_price || b.regular_price;
+            return aPrice - bPrice;
+          });
+          break;
+        case "price-high":
+          sortedProducts.sort((a, b) => {
+            const aPrice = a.sale_price || a.regular_price;
+            const bPrice = b.sale_price || b.regular_price;
+            return bPrice - aPrice;
+          });
+          break;
+        case "newest":
+          sortedProducts.sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          break;
+        case "average":
+          sortedProducts.sort(
+            (a, b) => (b.averageRating || 0) - (a.averageRating || 0)
+          );
+          break;
+        default:
+          sortedProducts.sort((a, b) => {
+            const aSales = salesMap.get(a.id) || 0;
+            const bSales = salesMap.get(b.id) || 0;
+            return bSales - aSales;
+          });
+      }
+    }
+
+    const productsWithTrendingData = sortedProducts.map((product) => ({
+      ...product,
+      weeklySales: salesMap.get(product.id) || 0,
+      isTrending: (salesMap.get(product.id) || 0) > 0,
+    }));
+
+    const paginatedProducts = productsWithTrendingData.slice(
+      offset,
+      offset + limitNum
+    );
+    const totalProducts = productsWithTrendingData.length;
+    const totalPages = Math.ceil(totalProducts / limitNum);
+
+    const trendingCount = productsWithTrendingData.filter(
+      (p) => p.isTrending
+    ).length;
+    const totalWeeklySales = Array.from(salesMap.values()).reduce(
+      (sum, sales) => sum + sales,
+      0
+    );
+
+    return res.status(200).json({
+      products: paginatedProducts,
+      pagination: {
+        currentPage: pageNum,
+        totalPages,
+        totalProducts,
+        limit: limitNum,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1,
+      },
+      trending: {
+        weekStart: startOfWeek.toISOString(),
+        trendingProductsCount: trendingCount,
+        totalWeeklySales,
+        topTrendingProducts: productsWithTrendingData
+          .filter((p) => p.isTrending)
+          .slice(0, 10)
+          .map((p) => ({
+            id: p.id,
+            title: p.title,
+            weeklySales: p.weeklySales,
+          })),
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching trending products:", error);
+    return next(error);
   }
 };

@@ -6,7 +6,7 @@ import Link from "next/link";
 const CategoryBar = () => {
   return (
     <div className="w-full py-2 border-b border-gray-200 hidden lg:block">
-      <div className="flex flex-wrap items-center justify-between px-[10%] overflow-x-hidden">
+      <div className="flex flex-wrap items-center justify-between px-[3%] overflow-x-hidden">
         <div className="flex items-center">
           {navItems.map((item: NavItemsTypes, index: number) => (
             <Link
