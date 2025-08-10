@@ -16,6 +16,10 @@ export const navItems:NavItemsTypes[]= [
         href:"/todays-deals",
     },
     {
+        title:"Trending",
+        href:"/trending",
+    },
+    {
         title:"Artists",
         href:"/shops",
     },
