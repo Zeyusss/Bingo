@@ -10,6 +10,9 @@ import {
   Calendar,
   Globe,
   ArrowLeft,
+  Shield,
+  CheckCircle,
+  Layout,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -74,14 +77,10 @@ const Page = () => {
     imageUrl: string,
     type: "cover" | "avatar"
   ) => {
-
-
     queryClient.invalidateQueries({ queryKey: ["seller"] });
 
     refetch().then((result: any) => {
-
       if (type === "avatar") {
-
       }
     });
   };
@@ -103,11 +102,23 @@ const Page = () => {
 
           <div className="w-full px-3 pt-2">
             <button
-              onClick={() => router.push("/dashboard")}
+              onClick={() =>
+                router.push(
+                  seller?.isVerified &&
+                    seller?.verificationStatus === "Approved"
+                    ? "/dashboard"
+                    : "/settings"
+                )
+              }
               className="flex items-center gap-2 text-gray-300 hover:text-white transition"
             >
               <ArrowLeft size={20} />
-              <span className="font-medium">Back to Dashboard</span>
+              <span className="font-medium">
+                Back to{" "}
+                {seller?.isVerified && seller?.verificationStatus === "Approved"
+                  ? "Dashboard"
+                  : "Settings"}
+              </span>
             </button>
           </div>
 
@@ -189,13 +200,61 @@ const Page = () => {
                   </div>
                 </div>
                 {seller?.id ? (
-                  <button
-                    className="px-6 py-2 h-[40px] bg-blue-600 rounded-lg font-semibold flex items-center justify-center hover:bg-blue-700 transition"
-                    onClick={() => router.push("/edit-profile")}
-                  >
-                    <Pencil size={18} />
-                    Edit Profile
-                  </button>
+                  <div className="flex flex-col gap-3">
+                    {/* Verification Status */}
+                    {(!seller?.isVerified ||
+                      seller?.verificationStatus === "None" ||
+                      seller?.verificationStatus === "Pending" ||
+                      seller?.verificationStatus === "Rejected" ||
+                      seller?.verificationStatus ===
+                        "RequiresResubmission") && (
+                      <button
+                        className="px-6 py-2 h-[40px] bg-yellow-600 rounded-lg font-semibold flex items-center justify-center hover:bg-yellow-700 transition"
+                        onClick={() => router.push("/settings/verification")}
+                      >
+                        <Shield size={18} className="mr-2" />
+                        {seller?.verificationStatus === "None"
+                          ? "Verify Identity"
+                          : seller?.verificationStatus === "Pending"
+                          ? "View Verification Status"
+                          : seller?.verificationStatus === "Rejected" ||
+                            seller?.verificationStatus ===
+                              "RequiresResubmission"
+                          ? "Update Verification"
+                          : "Verify Identity"}
+                      </button>
+                    )}
+
+                    {seller?.isVerified &&
+                      seller?.verificationStatus === "Approved" && (
+                        <div className="flex items-center gap-2 px-4 py-2 bg-green-600 rounded-lg">
+                          <CheckCircle size={18} className="text-white" />
+                          <span className="text-white font-medium">
+                            Verified Seller
+                          </span>
+                        </div>
+                      )}
+
+                    {/* Dashboard Button - Only show for verified sellers */}
+                    {seller?.isVerified &&
+                      seller?.verificationStatus === "Approved" && (
+                        <button
+                          className="px-6 py-2 h-[40px] bg-blue-600 rounded-lg font-semibold flex items-center justify-center hover:bg-blue-700 transition"
+                          onClick={() => router.push("/dashboard")}
+                        >
+                          <Layout size={18} className="mr-2" />
+                          Dashboard
+                        </button>
+                      )}
+
+                    <button
+                      className="px-6 py-2 h-[40px] bg-gray-600 rounded-lg font-semibold flex items-center justify-center hover:bg-gray-700 transition"
+                      onClick={() => router.push("/edit-profile")}
+                    >
+                      <Pencil size={18} className="mr-2" />
+                      Edit Profile
+                    </button>
+                  </div>
                 ) : (
                   <div></div>
                 )}
