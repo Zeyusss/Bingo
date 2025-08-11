@@ -75,7 +75,7 @@ const ChatPage = () => {
 
   useEffect(() => {
     if (!ws) return;
-    
+
     const handleMessage = (event: any) => {
       const data = JSON.parse(event.data);
       if (data.type === "NEW_MESSAGE") {
@@ -84,12 +84,14 @@ const ChatPage = () => {
           queryClient.setQueryData(
             ["messages", conversationId],
             (old: any = []) => {
-              
-              const isOwnMessage = newMsg.senderType === "seller" && newMsg.senderId === seller?.id;
-              
+              const isOwnMessage =
+                newMsg.senderType === "seller" &&
+                newMsg.senderId === seller?.id;
+
               if (isOwnMessage) {
-                
-                const filteredMessages = old.filter((msg: any) => !msg.isOptimistic);
+                const filteredMessages = old.filter(
+                  (msg: any) => !msg.isOptimistic
+                );
                 return [
                   ...filteredMessages,
                   {
@@ -134,9 +136,9 @@ const ChatPage = () => {
         );
       }
     };
-    
+
     ws.onmessage = handleMessage;
-    
+
     return () => {
       ws.onmessage = null;
     };
@@ -186,7 +188,7 @@ const ChatPage = () => {
       senderType: "seller",
       seen: false,
       createdAt: new Date().toISOString(),
-      isOptimistic: true, 
+      isOptimistic: true,
     };
 
     queryClient.setQueryData(
@@ -212,7 +214,6 @@ const ChatPage = () => {
     <div className="w-full bg-gray-50">
       <div className="md:w-[90%] mx-auto pt-5">
         <div className="flex flex-col md:flex-row h-[80vh] rounded-lg shadow border overflow-hidden">
-          {/* Chat Sidebar */}
           <div className="w-full md:w-[320px] border-r bg-white shadow-inner">
             <div className="p-4 border-b text-lg font-semibold text-gray-800">
               Messages
@@ -240,7 +241,10 @@ const ChatPage = () => {
                     >
                       <div className="flex items-center gap-3">
                         <Image
-                          src={chat.user?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"}
+                          src={
+                            chat.user?.avatar?.url ||
+                            "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"
+                          }
                           alt={chat.user?.name}
                           width={36}
                           height={36}
@@ -279,7 +283,10 @@ const ChatPage = () => {
               <>
                 <div className="p-4 border-b bg-white flex items-center gap-3 shadow-sm">
                   <Image
-                    src={selectedChat.user?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"}
+                    src={
+                      selectedChat.user?.avatar?.url ||
+                      "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"
+                    }
                     alt={selectedChat.user.name}
                     width={40}
                     height={40}
@@ -319,7 +326,9 @@ const ChatPage = () => {
                       </div>
                       <div
                         className={`text-[11px] text-gray-400 mt-1 ${
-                          msg.senderType === "seller" ? "text-right" : "text-left"
+                          msg.senderType === "seller"
+                            ? "text-right"
+                            : "text-left"
                         }`}
                       >
                         {msg.time ||

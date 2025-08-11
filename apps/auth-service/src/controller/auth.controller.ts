@@ -378,7 +378,6 @@ export const refreshToken = async (
 //get logged in user info
 export const getUser = async (req: any, res: Response, next: NextFunction) => {
   try {
-    // Fetch fresh user data with avatar relation
     const user = await prisma.users.findUnique({
       where: { id: req.user.id },
       include: {
@@ -721,8 +720,18 @@ export const getSeller = async (
   try {
     const seller = req.seller;
     
+    let followersCount = 0;
+    if (seller.shop?.id) {
+      followersCount = await prisma.followers.count({
+        where: {
+          shopId: seller.shop.id,
+        },
+      });
+    }
+    
     const formattedSeller = {
       ...seller,
+      followers: followersCount,
       shop: seller.shop ? {
         ...seller.shop,
         avatar: seller.shop.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756",

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
+import useSeller from "../../../hooks/useSeller";
 
 type FormData = {
   email: string;
@@ -19,6 +20,13 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [showRestrictedModal, setShowRestrictedModal] = useState(false);
   const router = useRouter();
+  const { seller, isLoading } = useSeller();
+
+  React.useEffect(() => {
+    if (!isLoading && seller) {
+      router.replace("/dashboard");
+    }
+  }, [seller, isLoading, router]);
 
   const {
     register,

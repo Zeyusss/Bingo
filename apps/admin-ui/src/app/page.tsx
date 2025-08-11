@@ -6,6 +6,7 @@ import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import axios, { AxiosError } from "axios";
 import { Modal } from "./shared/components/ui/modal";
+import useAdmin from "../hooks/useAdmin";
 
 type FormData = {
   email: string;
@@ -22,6 +23,14 @@ const Page = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [showRestrictedModal, setShowRestrictedModal] = useState(false);
   const router = useRouter();
+  const { admin, isLoading } = useAdmin();
+
+
+  useEffect(() => {
+    if (!isLoading && admin) {
+      router.replace("/dashboard");
+    }
+  }, [admin, isLoading, router]);
 
   useEffect(() => {
     axios

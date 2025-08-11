@@ -23,7 +23,7 @@ import {
 import { Skeleton } from "apps/seller-ui/src/shared/components/ui/skeleton"
 
 const fetchOrders = async () => {
-  const res = await axiosInstance.get("order/api/get-seller-orders")
+  const res = await axiosInstance.get("/order/api/get-seller-orders")
   return res.data.orders
 }
 

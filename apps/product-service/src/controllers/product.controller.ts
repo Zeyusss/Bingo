@@ -287,6 +287,17 @@ export const getShopProducts = async (
       },
       include: {
         images: true,
+        Shop: {
+          select: {
+            id: true,
+            name: true,
+            avatar: {
+              select: {
+                url: true,
+              },
+            },
+          },
+        },
       },
     });
     res.status(201).json({
