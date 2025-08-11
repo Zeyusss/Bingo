@@ -110,8 +110,9 @@ model sellers {
   verificationStatus      VerificationStatus  @default(None)
   idFrontImage            String?
   idBackImage             String?
-  contractSignedImage     String?
   personalImage           String?
+  termsAccepted           Boolean             @default(false)
+  termsAcceptedAt         DateTime?
   verificationSubmittedAt DateTime?
   verificationReviewedAt  DateTime?
   verificationNotes       String?

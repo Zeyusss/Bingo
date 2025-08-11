@@ -257,6 +257,19 @@ const VerificationManagementPage = () => {
                           verification.verificationSubmittedAt
                         ).toLocaleDateString()}
                       </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        {verification.termsAccepted ? (
+                          <div className="flex items-center gap-1 text-green-600">
+                            <CheckCircle size={12} />
+                            <span className="text-xs">Terms Accepted</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-red-500">
+                            <XCircle size={12} />
+                            <span className="text-xs">Terms Pending</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))
                 )}
@@ -391,12 +404,6 @@ const VerificationManagementPage = () => {
                           image: verificationDetails.verification.idBackImage,
                         },
                         {
-                          title: "Signed Contract",
-                          image:
-                            verificationDetails.verification
-                              .contractSignedImage,
-                        },
-                        {
                           title: "Personal Photo",
                           image: verificationDetails.verification.personalImage,
                         },
@@ -432,40 +439,108 @@ const VerificationManagementPage = () => {
                     </div>
                   </div>
 
+                  {/* Terms Acceptance Status */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-3">
+                      Terms & Conditions Acceptance
+                    </h3>
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-1">
+                            Verification Terms
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            Seller agreement to verification terms and
+                            conditions
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          {verificationDetails.verification.termsAccepted ? (
+                            <div className="flex items-center gap-2 text-green-600">
+                              <CheckCircle size={18} />
+                              <span className="font-medium">Accepted</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 text-red-500">
+                              <XCircle size={18} />
+                              <span className="font-medium">Not Accepted</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {verificationDetails.verification.termsAcceptedAt && (
+                        <div className="mt-2 pt-2 border-t border-gray-100">
+                          <p className="text-xs text-gray-500">
+                            Accepted on:{" "}
+                            {new Date(
+                              verificationDetails.verification.termsAcceptedAt
+                            ).toLocaleDateString("en-US", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Review Actions */}
                   {verificationDetails.verification.verificationStatus ===
                     "Pending" && (
-                    <div className="flex gap-3 pt-4 border-t border-gray-200">
-                      <button
-                        onClick={() => {
-                          setReviewAction("approve");
-                          setShowReviewModal(true);
-                        }}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition"
-                      >
-                        <CheckCircle size={18} />
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => {
-                          setReviewAction("reject");
-                          setShowReviewModal(true);
-                        }}
-                        className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition"
-                      >
-                        <XCircle size={18} />
-                        Reject
-                      </button>
-                      <button
-                        onClick={() => {
-                          setReviewAction("require_resubmission");
-                          setShowReviewModal(true);
-                        }}
-                        className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg transition"
-                      >
-                        <FileText size={18} />
-                        Request Resubmission
-                      </button>
+                    <div className="space-y-4">
+                      {/* Terms Warning */}
+                      {!verificationDetails.verification.termsAccepted && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                          <div className="flex items-center gap-2 text-yellow-800">
+                            <AlertTriangle size={18} />
+                            <p className="font-medium">Terms Not Accepted</p>
+                          </div>
+                          <p className="text-yellow-700 text-sm mt-1">
+                            This verification cannot be approved until the
+                            seller accepts the terms and conditions.
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="flex gap-3 pt-4 border-t border-gray-200">
+                        <button
+                          onClick={() => {
+                            setReviewAction("approve");
+                            setShowReviewModal(true);
+                          }}
+                          disabled={
+                            !verificationDetails.verification.termsAccepted
+                          }
+                          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition"
+                        >
+                          <CheckCircle size={18} />
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => {
+                            setReviewAction("reject");
+                            setShowReviewModal(true);
+                          }}
+                          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition"
+                        >
+                          <XCircle size={18} />
+                          Reject
+                        </button>
+                        <button
+                          onClick={() => {
+                            setReviewAction("require_resubmission");
+                            setShowReviewModal(true);
+                          }}
+                          className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg transition"
+                        >
+                          <FileText size={18} />
+                          Request Resubmission
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

@@ -28,6 +28,7 @@ import {
   getVerificationStatus,
   uploadVerificationDocument,
   downloadContract,
+  acceptTerms,
 } from "../controllers/seller.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isSeller } from "@packages/middleware/authorizeRoles";
@@ -98,6 +99,12 @@ router.post(
   isAuthenticated,
   isSeller,
   uploadVerificationDocument
+);
+router.post(
+  "/verification/accept-terms",
+  isAuthenticated,
+  isSeller,
+  acceptTerms
 );
 router.post(
   "/verification/submit",
