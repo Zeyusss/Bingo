@@ -79,7 +79,7 @@ const ProductDetailsCard = ({
     }
     
     try {
-      const res = await axiosInstance.post("/chatting/api/create-user-conversationGroup",{sellerId},isProtected)
+      const res = await axiosInstance.post("/chatting/api/create-user-conversationGroup",{sellerId: data?.Shop?.sellerId},isProtected)
       router.push(`/inbox?conversationId=${res.data.conversation.id}`);
     } catch (error) {
       console.error("Failed to create conversation:", error);
