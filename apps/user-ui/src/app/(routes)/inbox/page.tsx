@@ -11,8 +11,9 @@ import React, { useEffect, useRef, useState } from "react";
 
 const page = () => {
   const searchParams = useSearchParams();
-  const { user } = useRequireAuth();
+  const { user ,isLoading:userLoading } = useRequireAuth();
   const router = useRouter();
+  const wsRef = useRouter()
   const messageContainerRef = useRef<HTMLDivElement | null>(null);
   const scrollAnchorRef = useRef<HTMLDivElement | null>(null);
   const queryClient = useQueryClient();
@@ -84,15 +85,32 @@ const page = () => {
         if (newMsg.conversationId === conversationId) {
           queryClient.setQueryData(
             ["messages", conversationId],
-            (old: any = []) => [
-              ...old,
-              {
-                content: newMsg.content,
-                senderType: newMsg.senderType,
-                seen: false,
-                createdAt: newMsg.createdAt || new Date().toISOString(),
-              },
-            ]
+            (old: any = []) => {
+              const isOwnMessage = newMsg.senderType === "user" && newMsg.senderId === user?.id;
+              
+              if (isOwnMessage) {
+                const filteredMessages = old.filter((msg: any) => !msg.isOptimistic);
+                return [
+                  ...filteredMessages,
+                  {
+                    content: newMsg.content,
+                    senderType: newMsg.senderType,
+                    seen: false,
+                    createdAt: newMsg.createdAt || new Date().toISOString(),
+                  },
+                ];
+              } else {
+                return [
+                  ...old,
+                  {
+                    content: newMsg.content,
+                    senderType: newMsg.senderType,
+                    seen: false,
+                    createdAt: newMsg.createdAt || new Date().toISOString(),
+                  },
+                ];
+              }
+            }
           );
           scrollToBottom();
         }
@@ -170,11 +188,26 @@ const page = () => {
       messageBody: message,
       senderType: "user",
     };
+    const tempMessageId = `temp_${Date.now()}_${Math.random()}`;
+    const optimisticMessage = {
+      id: tempMessageId,
+      content: payload.messageBody,
+      senderType: "user",
+      seen: false,
+      createdAt: new Date().toISOString(),
+      isOptimistic: true, 
+    };
+
+    queryClient.setQueryData(
+      ["messages", selectedChat.conversationId],
+      (old: any = []) => [...old, optimisticMessage]
+    );
 
     ws?.send(JSON.stringify(payload));
+    
     setChats((prevChats) =>
       prevChats.map((chat) =>
-        chat.conversationId
+        chat.conversationId === selectedChat.conversationId
           ? { ...chat, lastMessage: payload.messageBody }
           : chat
       )

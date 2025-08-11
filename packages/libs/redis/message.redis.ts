@@ -11,7 +11,7 @@ export const incrementUnseenCount = async (
 export const getUnseenCount = async (
   receiverType: "user" | "seller",
   conversationId: string
-) => {
+): Promise<number> => {
   const key = `unseen:${receiverType}_${conversationId}`;
   const count = await redis.get(key);
   return parseInt(count || "0");

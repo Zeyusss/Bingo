@@ -78,25 +78,39 @@ const ChatPage = () => {
     
     const handleMessage = (event: any) => {
       const data = JSON.parse(event.data);
-
-
       if (data.type === "NEW_MESSAGE") {
         const newMsg = data?.payload;
-
-
         if (newMsg.conversationId === conversationId) {
-
           queryClient.setQueryData(
             ["messages", conversationId],
-            (old: any = []) => [
-              ...old,
-              {
-                content: newMsg.messageBody || newMsg.content || "",
-                senderType: newMsg.senderType,
-                seen: false,
-                createdAt: newMsg.createdAt || new Date().toISOString(),
-              },
-            ]
+            (old: any = []) => {
+              
+              const isOwnMessage = newMsg.senderType === "seller" && newMsg.senderId === seller?.id;
+              
+              if (isOwnMessage) {
+                
+                const filteredMessages = old.filter((msg: any) => !msg.isOptimistic);
+                return [
+                  ...filteredMessages,
+                  {
+                    content: newMsg.messageBody || newMsg.content || "",
+                    senderType: newMsg.senderType,
+                    seen: false,
+                    createdAt: newMsg.createdAt || new Date().toISOString(),
+                  },
+                ];
+              } else {
+                return [
+                  ...old,
+                  {
+                    content: newMsg.messageBody || newMsg.content || "",
+                    senderType: newMsg.senderType,
+                    seen: false,
+                    createdAt: newMsg.createdAt || new Date().toISOString(),
+                  },
+                ];
+              }
+            }
           );
           scrollToBottom();
         }
@@ -165,7 +179,30 @@ const ChatPage = () => {
       senderType: "seller",
     };
 
+    const tempMessageId = `temp_${Date.now()}_${Math.random()}`;
+    const optimisticMessage = {
+      id: tempMessageId,
+      content: payload.messageBody,
+      senderType: "seller",
+      seen: false,
+      createdAt: new Date().toISOString(),
+      isOptimistic: true, 
+    };
+
+    queryClient.setQueryData(
+      ["messages", selectedChat.conversationId],
+      (old: any = []) => [...old, optimisticMessage]
+    );
+
     ws.send(JSON.stringify(payload));
+
+    setChats((prevChats) =>
+      prevChats.map((chat) =>
+        chat.conversationId === selectedChat.conversationId
+          ? { ...chat, lastMessage: payload.messageBody }
+          : chat
+      )
+    );
 
     setMessage("");
     scrollToBottom();
@@ -187,7 +224,7 @@ const ChatPage = () => {
                 </div>
               ) : chats.length === 0 ? (
                 <div className="py-5 text-sm text-center text-gray-500">
-                  No Conversation
+                  No Conversation available yet.
                 </div>
               ) : (
                 chats.map((chat) => {
@@ -237,7 +274,6 @@ const ChatPage = () => {
             </div>
           </div>
 
-          {/* Chat Window */}
           <div className="flex-1 flex flex-col bg-gray-100">
             {selectedChat ? (
               <>

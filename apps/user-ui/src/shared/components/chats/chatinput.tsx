@@ -24,7 +24,7 @@ const ChatInput = ({onSendMessage,message,setMessage}:{
     const handleImageUpload = (e:React.ChangeEvent<HTMLInputElement>)=>{
         const file = e.target.files?.[0];
         if(file){
-
+        console.log("Uploading image:",file.name)
         }
     }
   return (

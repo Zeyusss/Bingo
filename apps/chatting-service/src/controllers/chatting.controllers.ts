@@ -63,7 +63,7 @@ export const newConversation = async (
 
     return res.status(201).json({ conversation: newGroup, isNew: true });
   } catch (error) {
-    return next(error);
+    next(error);
   }
 };
 
@@ -357,7 +357,7 @@ export const fetchSellerMessages = async (
         },
       });
 
-      const redisKey = `online:seller:${userParticipant.userId}`;
+      const redisKey = `online:user:user_${userParticipant.userId}`;
       const redisResult = await redis.get(redisKey);
       isOnline = !!redisResult;
     }
