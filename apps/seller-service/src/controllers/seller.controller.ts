@@ -1130,8 +1130,9 @@ export const getVerificationStatus = async (
         verificationStatus: true,
         idFrontImage: true,
         idBackImage: true,
-        contractSignedImage: true,
         personalImage: true,
+        termsAccepted: true,
+        termsAcceptedAt: true,
         verificationSubmittedAt: true,
         verificationReviewedAt: true,
         verificationNotes: true,
@@ -1211,6 +1212,45 @@ export const uploadVerificationDocument = async (
   }
 };
 
+// Accept terms and conditions
+export const acceptTerms = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const sellerId = req.seller?.id;
+    const { confirmed } = req.body;
+
+    if (!confirmed) {
+      return next(new ValidationError("Terms confirmation is required"));
+    }
+
+    const seller = await prisma.sellers.findUnique({
+      where: { id: sellerId },
+    });
+
+    if (!seller) {
+      return next(new NotFoundError("Seller not found"));
+    }
+
+    await prisma.sellers.update({
+      where: { id: sellerId },
+      data: {
+        termsAccepted: true,
+        termsAcceptedAt: new Date(),
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Terms and conditions accepted successfully",
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 // Submit verification for review
 export const submitVerification = async (
   req: any,
@@ -1225,8 +1265,8 @@ export const submitVerification = async (
       select: {
         idFrontImage: true,
         idBackImage: true,
-        contractSignedImage: true,
         personalImage: true,
+        termsAccepted: true,
         verificationStatus: true,
       },
     });
@@ -1235,16 +1275,19 @@ export const submitVerification = async (
       return next(new NotFoundError("Seller not found"));
     }
 
-    // Check if all required documents are uploaded
-    if (
-      !seller.idFrontImage ||
-      !seller.idBackImage ||
-      !seller.contractSignedImage ||
-      !seller.personalImage
-    ) {
+    // Check if all required documents are uploaded and terms are accepted
+    if (!seller.idFrontImage || !seller.idBackImage || !seller.personalImage) {
       return next(
         new ValidationError(
-          "All verification documents must be uploaded before submission"
+          "All verification documents (ID front, ID back, and personal photo) must be uploaded before submission"
+        )
+      );
+    }
+
+    if (!seller.termsAccepted) {
+      return next(
+        new ValidationError(
+          "You must accept the terms and conditions before submitting verification"
         )
       );
     }

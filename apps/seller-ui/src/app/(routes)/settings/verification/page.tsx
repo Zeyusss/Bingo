@@ -29,8 +29,9 @@ interface VerificationData {
     | "RequiresResubmission";
   idFrontImage?: string;
   idBackImage?: string;
-  contractSignedImage?: string;
   personalImage?: string;
+  termsAccepted?: boolean;
+  termsAcceptedAt?: string;
   verificationSubmittedAt?: string;
   verificationReviewedAt?: string;
   verificationNotes?: string;
@@ -45,9 +46,12 @@ const VerificationPage = () => {
   const [uploadedFiles, setUploadedFiles] = useState({
     idFront: null as string | null,
     idBack: null as string | null,
-    contract: null as string | null,
     personal: null as string | null,
   });
+
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
 
   useEffect(() => {
     if (!seller && !isLoading) {
@@ -65,6 +69,13 @@ const VerificationPage = () => {
     enabled: !!seller,
     staleTime: 1000 * 60 * 5,
   });
+
+  // Sync terms accepted state with backend data
+  useEffect(() => {
+    if (verification?.termsAccepted) {
+      setTermsAccepted(true);
+    }
+  }, [verification?.termsAccepted]);
 
   // Upload document mutation
   const uploadDocumentMutation = useMutation({
@@ -93,6 +104,28 @@ const VerificationPage = () => {
     },
   });
 
+  // Accept terms mutation
+  const acceptTermsMutation = useMutation({
+    mutationFn: async () => {
+      const res = await axiosInstance.post(
+        "/seller/api/verification/accept-terms",
+        {
+          confirmed: true,
+        }
+      );
+      return res.data;
+    },
+    onSuccess: () => {
+      setTermsAccepted(true);
+      refetchVerification();
+    },
+    onError: (error) => {
+      console.error("Failed to accept terms:", error);
+      setTermsAccepted(false);
+      // Show error modal or toast here if needed
+    },
+  });
+
   // Submit verification mutation
   const submitVerificationMutation = useMutation({
     mutationFn: async () => {
@@ -104,30 +137,6 @@ const VerificationPage = () => {
       queryClient.invalidateQueries({ queryKey: ["seller"] });
     },
   });
-
-  // Download contract
-  const downloadContract = async () => {
-    try {
-      const response = await axiosInstance.get(
-        "/seller/api/verification/download-contract",
-        {
-          responseType: "blob",
-        }
-      );
-
-      const blob = new Blob([response.data], { type: "text/plain" });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "seller_verification_contract.txt";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Failed to download contract:", error);
-    }
-  };
 
   const handleFileUpload = (file: File, documentType: string) => {
     const reader = new FileReader();
@@ -142,11 +151,55 @@ const VerificationPage = () => {
     return (
       (verification?.idFrontImage || uploadedFiles.idFront) &&
       (verification?.idBackImage || uploadedFiles.idBack) &&
-      (verification?.contractSignedImage || uploadedFiles.contract) &&
-      (verification?.personalImage || uploadedFiles.personal)
+      (verification?.personalImage || uploadedFiles.personal) &&
+      termsAccepted
     );
   };
 
+  const downloadContract = () => {
+    // Create a simple terms document download
+    const termsContent = `
+SELLER VERIFICATION TERMS AND CONDITIONS
+
+By accepting these terms, you agree to:
+
+1. Provide accurate and truthful information during the verification process
+2. Upload clear, readable images of required identification documents
+3. Comply with all platform policies and guidelines
+4. Maintain professional conduct as a seller on our platform
+5. Accept responsibility for all products and services you offer
+
+For full terms and conditions, please visit our website or contact support.
+
+Date: ${new Date().toLocaleDateString()}
+    `;
+
+    const blob = new Blob([termsContent], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "seller-verification-terms.txt";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleTermsAcceptance = () => {
+    // Show first confirmation modal instead of alert
+    setShowTermsModal(true);
+  };
+
+  const handleFirstConfirmation = () => {
+    setShowTermsModal(false);
+    setShowConfirmationModal(true);
+  };
+
+  const handleFinalConfirmation = () => {
+    setShowConfirmationModal(false);
+    // Call backend to accept terms
+    acceptTermsMutation.mutate();
+  };
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -201,8 +254,8 @@ const VerificationPage = () => {
     },
     {
       number: 2,
-      title: "Contract",
-      description: "Download, sign, and upload contract",
+      title: "Terms & Conditions",
+      description: "Download and accept verification terms",
       icon: FileText,
     },
     {
@@ -397,20 +450,18 @@ const VerificationPage = () => {
           {currentStep === 2 && (
             <div className="space-y-6">
               <h3 className="text-xl font-semibold text-white mb-4">
-                Contract Verification
+                Terms & Conditions Acceptance
               </h3>
 
               <div className="space-y-4">
                 <div className="p-4 bg-blue-900/50 border border-blue-700 rounded-lg">
                   <h4 className="font-semibold text-blue-100 mb-2">
-                    Instructions:
+                    Terms and Conditions:
                   </h4>
-                  <ol className="list-decimal list-inside text-blue-200 space-y-1">
-                    <li>Download the verification contract</li>
-                    <li>Print the contract and sign it clearly</li>
-                    <li>Take a clear photo of the signed contract</li>
-                    <li>Upload the photo below</li>
-                  </ol>
+                  <p className="text-blue-200 mb-3">
+                    Please download and read our verification terms and
+                    conditions, then confirm your acceptance below.
+                  </p>
                 </div>
 
                 <button
@@ -418,57 +469,56 @@ const VerificationPage = () => {
                   className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition"
                 >
                   <Download size={20} />
-                  Download Contract
+                  Download Terms & Conditions
                 </button>
 
-                <div>
-                  <label className="block text-gray-300 font-medium mb-2">
-                    Signed Contract
-                  </label>
-                  <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
-                    {verification?.contractSignedImage ||
-                    uploadedFiles.contract ? (
-                      <div className="space-y-3">
-                        <Image
-                          src={
-                            verification?.contractSignedImage ||
-                            uploadedFiles.contract!
+                <div className="p-4 bg-yellow-900/30 border border-yellow-600 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      id="termsAccepted"
+                      checked={termsAccepted}
+                      disabled={verification?.termsAccepted} // Disable if already accepted on backend
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          handleTermsAcceptance();
+                        } else {
+                          // Don't allow unchecking if it was accepted from backend
+                          if (!verification?.termsAccepted) {
+                            setTermsAccepted(false);
                           }
-                          alt="Signed Contract"
-                          width={200}
-                          height={120}
-                          className="mx-auto rounded border"
-                        />
-                        <p className="text-green-400">✓ Uploaded</p>
-                      </div>
-                    ) : (
-                      <div>
-                        <Upload
-                          size={48}
-                          className="mx-auto text-gray-400 mb-3"
-                        />
-                        <p className="text-gray-400 mb-3">
-                          Upload signed contract photo
-                        </p>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleFileUpload(file, "contract");
-                          }}
-                          className="hidden"
-                          id="contract"
-                        />
-                        <label
-                          htmlFor="contract"
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded cursor-pointer"
-                        >
-                          Choose File
-                        </label>
-                      </div>
-                    )}
+                        }
+                      }}
+                      className="mt-1 w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 disabled:opacity-50"
+                    />
+                    <label
+                      htmlFor="termsAccepted"
+                      className="text-gray-300 leading-relaxed"
+                    >
+                      I have read, understood, and agree to the verification
+                      terms and conditions. I confirm that all information
+                      provided is accurate and that I understand the
+                      verification requirements for becoming a seller on this
+                      platform.
+                    </label>
                   </div>
+
+                  {termsAccepted && (
+                    <div className="mt-3 p-3 bg-green-900/30 border border-green-600 rounded-lg">
+                      <p className="text-green-400 text-sm flex items-center gap-2">
+                        <span>✓</span>
+                        Terms accepted and confirmed
+                        {verification?.termsAcceptedAt && (
+                          <span className="text-green-300 ml-2">
+                            on{" "}
+                            {new Date(
+                              verification.termsAcceptedAt
+                            ).toLocaleDateString()}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -559,12 +609,6 @@ const VerificationPage = () => {
                     image: verification?.idBackImage || uploadedFiles.idBack,
                   },
                   {
-                    title: "Signed Contract",
-                    image:
-                      verification?.contractSignedImage ||
-                      uploadedFiles.contract,
-                  },
-                  {
                     title: "Personal Photo",
                     image:
                       verification?.personalImage || uploadedFiles.personal,
@@ -591,6 +635,26 @@ const VerificationPage = () => {
                     )}
                   </div>
                 ))}
+
+                {/* Terms Acceptance Status */}
+                <div className="border border-gray-600 rounded-lg p-4">
+                  <h4 className="font-medium text-white mb-2">
+                    Terms & Conditions
+                  </h4>
+                  {termsAccepted ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 p-3 bg-green-900/30 border border-green-600 rounded-lg">
+                        <span className="text-green-400">✓</span>
+                        <span className="text-green-400 text-sm">
+                          Terms accepted and confirmed
+                        </span>
+                      </div>
+                      <p className="text-green-400 text-sm">✓ Accepted</p>
+                    </div>
+                  ) : (
+                    <p className="text-red-400 text-sm">✗ Not accepted</p>
+                  )}
+                </div>
               </div>
 
               {canSubmit() &&
@@ -695,6 +759,75 @@ const VerificationPage = () => {
           </button>
         </div>
       </div>
+
+      {/* Terms Confirmation Modal */}
+      {showTermsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 border border-gray-600 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold text-white mb-4">
+              Confirm Terms Acceptance
+            </h3>
+            <p className="text-gray-300 mb-6 leading-relaxed">
+              Are you sure you want to accept the verification terms and
+              conditions?
+              <br />
+              <br />
+              Please confirm that you have read and understood all terms before
+              proceeding. This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowTermsModal(false)}
+                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleFirstConfirmation}
+                className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg transition"
+              >
+                Yes, Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Final Confirmation Modal */}
+      {showConfirmationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 border border-green-600 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold text-red-green mb-4">
+              Final Confirmation Required
+            </h3>
+            <p className="text-gray-300 mb-6 leading-relaxed">
+              <strong className="text-green-400">Final confirmation:</strong> Do
+              you fully accept all terms and conditions for seller verification?
+              <br />
+              <br />
+              By clicking "Accept Terms", you agree to be bound by these terms
+              and this action is irreversible.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirmationModal(false)}
+                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleFinalConfirmation}
+                disabled={acceptTermsMutation.isPending}
+                className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition"
+              >
+                {acceptTermsMutation.isPending
+                  ? "Processing..."
+                  : "Accept Terms"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

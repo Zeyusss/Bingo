@@ -1168,6 +1168,8 @@ export const getPendingVerifications = async (
         name: true,
         email: true,
         country: true,
+        termsAccepted: true,
+        termsAcceptedAt: true,
         verificationSubmittedAt: true,
         verificationStatus: true,
         shop: {
@@ -1228,8 +1230,9 @@ export const getVerificationDetails = async (
         verificationStatus: true,
         idFrontImage: true,
         idBackImage: true,
-        contractSignedImage: true,
         personalImage: true,
+        termsAccepted: true,
+        termsAcceptedAt: true,
         verificationSubmittedAt: true,
         verificationReviewedAt: true,
         verificationNotes: true,
@@ -1287,6 +1290,7 @@ export const reviewVerification = async (
       select: {
         id: true,
         verificationStatus: true,
+        termsAccepted: true,
         name: true,
         email: true,
       },
@@ -1303,6 +1307,15 @@ export const reviewVerification = async (
       return next(new ValidationError("Verification is not pending review"));
     }
 
+    // Validate that terms were accepted before allowing approval
+    if (action === "approve" && !seller.termsAccepted) {
+      return next(
+        new ValidationError(
+          "Cannot approve verification: Seller has not accepted terms and conditions"
+        )
+      );
+    }
+
     let newStatus: "Approved" | "Rejected" | "RequiresResubmission";
     let isVerified = false;
 
@@ -1317,6 +1330,12 @@ export const reviewVerification = async (
       case "require_resubmission":
         newStatus = "RequiresResubmission";
         break;
+      default:
+        return next(
+          new ValidationError(
+            "Invalid action. Must be 'approve', 'reject', or 'require_resubmission'"
+          )
+        );
     }
 
     await prisma.sellers.update({
@@ -1336,6 +1355,172 @@ export const reviewVerification = async (
       success: true,
       message: `Verification ${action}d successfully`,
       status: newStatus,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Get verification statistics for admin dashboard
+export const getVerificationStats = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const [
+      totalSellers,
+      pendingVerifications,
+      approvedVerifications,
+      rejectedVerifications,
+      requiresResubmission,
+      sellersWithTermsAccepted,
+      sellersWithoutTerms,
+    ] = await Promise.all([
+      // Total sellers count
+      prisma.sellers.count(),
+
+      // Pending verifications
+      prisma.sellers.count({
+        where: { verificationStatus: "Pending" },
+      }),
+
+      // Approved verifications
+      prisma.sellers.count({
+        where: { verificationStatus: "Approved" },
+      }),
+
+      // Rejected verifications
+      prisma.sellers.count({
+        where: { verificationStatus: "Rejected" },
+      }),
+
+      // Requires resubmission
+      prisma.sellers.count({
+        where: { verificationStatus: "RequiresResubmission" },
+      }),
+
+      // Sellers who have accepted terms
+      prisma.sellers.count({
+        where: { termsAccepted: true },
+      }),
+
+      // Sellers who haven't accepted terms yet
+      prisma.sellers.count({
+        where: { termsAccepted: false },
+      }),
+    ]);
+
+    // Calculate percentages
+    const verificationRate =
+      totalSellers > 0 ? (approvedVerifications / totalSellers) * 100 : 0;
+    const termsAcceptanceRate =
+      totalSellers > 0 ? (sellersWithTermsAccepted / totalSellers) * 100 : 0;
+
+    res.status(200).json({
+      success: true,
+      stats: {
+        total: {
+          sellers: totalSellers,
+          pending: pendingVerifications,
+          approved: approvedVerifications,
+          rejected: rejectedVerifications,
+          requiresResubmission: requiresResubmission,
+        },
+        terms: {
+          accepted: sellersWithTermsAccepted,
+          notAccepted: sellersWithoutTerms,
+          acceptanceRate: Math.round(termsAcceptanceRate * 100) / 100,
+        },
+        rates: {
+          verificationRate: Math.round(verificationRate * 100) / 100,
+          termsAcceptanceRate: Math.round(termsAcceptanceRate * 100) / 100,
+        },
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Get all verifications history (for admin dashboard with filtering)
+export const getVerificationHistory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { page = 1, limit = 10, status, termsAccepted, search } = req.query;
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    // Build where clause for filtering
+    const whereClause: any = {};
+
+    if (status && status !== "all") {
+      whereClause.verificationStatus = status;
+    }
+
+    if (termsAccepted !== undefined) {
+      whereClause.termsAccepted = termsAccepted === "true";
+    }
+
+    if (search) {
+      whereClause.OR = [
+        { name: { contains: search as string, mode: "insensitive" } },
+        { email: { contains: search as string, mode: "insensitive" } },
+      ];
+    }
+
+    const [verifications, totalCount] = await Promise.all([
+      prisma.sellers.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          country: true,
+          verificationStatus: true,
+          termsAccepted: true,
+          termsAcceptedAt: true,
+          verificationSubmittedAt: true,
+          verificationReviewedAt: true,
+          verificationNotes: true,
+          isVerified: true,
+          createdAt: true,
+          shop: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          verificationReviewedAt: "desc",
+        },
+        skip,
+        take: Number(limit),
+      }),
+
+      prisma.sellers.count({
+        where: whereClause,
+      }),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      verifications,
+      pagination: {
+        currentPage: Number(page),
+        totalPages: Math.ceil(totalCount / Number(limit)),
+        totalCount,
+        hasMore: skip + verifications.length < totalCount,
+      },
+      filters: {
+        status: status || "all",
+        termsAccepted: termsAccepted || "all",
+        search: search || "",
+      },
     });
   } catch (error) {
     return next(error);

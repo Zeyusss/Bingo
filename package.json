@@ -19,7 +19,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@nivo/line": "^0.99.0",
     "@nivo/pie": "^0.99.0",
-    "@prisma/client": "^6.10.1",
+    "@prisma/client": "^6.13.0",
     "@stripe/react-stripe-js": "^3.7.0",
     "@stripe/stripe-js": "^7.5.0",
     "@tanstack/react-query": "^5.81.5",

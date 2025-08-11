@@ -36,6 +36,8 @@ import {
   getPendingVerifications,
   getVerificationDetails,
   reviewVerification,
+  getVerificationStats,
+  getVerificationHistory,
 } from "../controllers/admin.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isAdmin } from "@packages/middleware/authorizeRoles";
@@ -154,6 +156,18 @@ router.post(
   isAuthenticated,
   isAdmin,
   reviewVerification
+);
+router.get(
+  "/verifications/stats",
+  isAuthenticated,
+  isAdmin,
+  getVerificationStats
+);
+router.get(
+  "/verifications/history",
+  isAuthenticated,
+  isAdmin,
+  getVerificationHistory
 );
 
 export default router;
