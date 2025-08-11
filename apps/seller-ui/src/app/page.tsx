@@ -57,7 +57,6 @@ const Page = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-  // Fetch reviews data
   const { data: reviews = [] } = useQuery({
     queryKey: ["shop-reviews"],
     queryFn: async () => {
@@ -93,7 +92,7 @@ const Page = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       ) : (
-        <div className="w-full min-h-screen bg-gray-900">
+        <div className="w-full min-h-screen bg-[#F3F1EE]">
           <ImageUploadModal
             isOpen={!!editType}
             onClose={() => setEditType(null)}
@@ -104,14 +103,14 @@ const Page = () => {
           <div className="w-full px-3 pt-2">
             <button
               onClick={() => router.push("/dashboard")}
-              className="flex items-center gap-2 text-gray-300 hover:text-white transition"
+              className="flex items-center gap-2 "
             >
               <ArrowLeft size={20} />
               <span className="font-medium">Back to Dashboard</span>
             </button>
           </div>
 
-          <div className="relative w-full flex justify-center bg-gray-800">
+          <div className="relative w-full flex justify-center bg-gray-200">
             <Image
               src={
                 seller?.shop?.coverBanner ||
@@ -135,7 +134,7 @@ const Page = () => {
 
           {/* seller info section */}
           <div className="w-[85%] lg:w-[70%] mt-[-50px] mx-auto relative z-20 flex flex-col lg:flex-row gap-6">
-            <div className="bg-gray-800 p-6 rounded-lg shadow-lg flex-1">
+            <div className="bg-gray-200 p-6 rounded-lg shadow-lg flex-1">
               <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
                 <div className="relative w-[100px] h-[100px] rounded-full border-4 border-slate-300">
                   <Image
@@ -159,10 +158,10 @@ const Page = () => {
                 </div>
 
                 <div className="flex-1 w-full">
-                  <h1 className="text-2xl font-semibold text-white">
+                  <h1 className="text-2xl font-semibold">
                     {seller?.shop?.name}
                   </h1>
-                  <p className="text-gray-400 text-sm mt-1">
+                  <p className="text-sm mt-1">
                     {seller?.shop?.bio || "No bio available."}
                   </p>
                   <div className="flex item-center gap-4 mt-2">
@@ -170,18 +169,18 @@ const Page = () => {
                       <Star fill="#facc15" size={18} />{" "}
                       <span>{seller?.shop?.ratings || "N/A"}</span>
                     </div>
-                    <div className="flex items-center text-gray-300 gap-1">
+                    <div className="flex items-center  gap-1">
                       <Users size={18} />{" "}
                       <span>{seller?.followers || 0} Followers</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 mt-3 text-gray-400">
+                  <div className="flex items-center gap-3 mt-3 ">
                     <Clock size={18} />
                     <span>
                       {seller?.shop?.opening_hours || "Mon - Sat: 9 AM - 6 PM"}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 mt-3 text-gray-400">
+                  <div className="flex items-center gap-2 mt-3">
                     <MapPin size={18} />{" "}
                     <span>
                       {seller?.shop?.address || "No address provided"}
@@ -190,7 +189,7 @@ const Page = () => {
                 </div>
                 {seller?.id ? (
                   <button
-                    className="px-6 py-2 h-[40px] bg-blue-600 rounded-lg font-semibold flex items-center justify-center hover:bg-blue-700 transition"
+                    className="text-white px-6 py-2 h-[40px] bg-blue-600 rounded-lg font-semibold flex items-center justify-center hover:bg-blue-700 transition"
                     onClick={() => router.push("/edit-profile")}
                   >
                     <Pencil size={18} />
@@ -202,9 +201,9 @@ const Page = () => {
               </div>
             </div>
 
-            <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-full lg:w-[30%]">
-              <h2 className="text-xl font-semibold text-white">Shop Details</h2>
-              <div className="flex items-center gap-3 mt-3 text-gray-400">
+            <div className="bg-gray-200 p-6 rounded-lg shadow-lg w-full lg:w-[30%]">
+              <h2 className="text-xl font-semibold ">Shop Details</h2>
+              <div className="flex items-center gap-3 mt-3 ">
                 <Calendar size={18} />
                 <span>
                   Joined At:{" "}
@@ -213,7 +212,7 @@ const Page = () => {
                     : "N/A"}
                 </span>
               </div>
-              <div className="flex items-center gap-3 mt-3 text-gray-400">
+              <div className="flex items-center gap-3 mt-3">
                 <Globe size={18} />
                 <span>
                   Last Updated:{" "}
@@ -234,8 +233,8 @@ const Page = () => {
                   onClick={() => setActiveTab(tab)}
                   className={`py-3 px-6 text-lg font-semibold ${
                     activeTab === tab
-                      ? "text-white border-b-2 border-blue-600"
-                      : "text-gray-400"
+                      ? "border-b-2 border-blue-600"
+                      : ""
                   } transition`}
                 >
                   {tab}
@@ -243,7 +242,7 @@ const Page = () => {
               ))}
             </div>
 
-            <div className="bg-gray-800 rounded-lg my-4 text-gray-300 min-h-[400px]">
+            <div className="bg-gray-200 rounded-lg my-4 min-h-[400px]">
               {/* Products */}
               {activeTab === "Products" && (
                 <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
@@ -251,7 +250,7 @@ const Page = () => {
                     <ProductCard key={product.id} product={product} />
                   ))}
                   {products?.length === 0 && (
-                    <p className="py-2 text-gray-400">
+                    <p className="py-2">
                       No products available yet!
                     </p>
                   )}
@@ -269,7 +268,7 @@ const Page = () => {
                     />
                   ))}
                   {events?.length === 0 && (
-                    <p className="py-2 text-gray-400">
+                    <p className="py-2">
                       No offers available yet!
                     </p>
                   )}

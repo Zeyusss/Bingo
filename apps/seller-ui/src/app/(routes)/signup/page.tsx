@@ -9,6 +9,8 @@ import axios,{AxiosError} from "axios";
 import { countries } from 'apps/seller-ui/src/utils/countries';
 import CreateShop from 'apps/seller-ui/src/shared/modules/auth/create-shop';
 import StripeSIcon from '../../assets/svg/stripe-logo';
+import useSeller from "../../../hooks/useSeller";
+import { useRouter } from "next/navigation";
 
 
 type FormData = {
@@ -29,6 +31,15 @@ const [otp,setOtp] = useState(["","","",""]);
 const [sellerData,setSellerData] = useState<FormData | null>(null);
 const [sellerId,setSellerId] = useState("");
 const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+const router = useRouter();
+const { seller, isLoading } = useSeller();
+
+
+React.useEffect(() => {
+  if (!isLoading && seller) {
+    router.replace("/dashboard");
+  }
+}, [seller, isLoading, router]);
 
 
 

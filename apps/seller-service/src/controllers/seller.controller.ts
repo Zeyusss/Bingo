@@ -1073,6 +1073,18 @@ export const trackShopVisitor = async (
       return next(new NotFoundError("User not found"));
     }
 
+    const existingVisitor = await prisma.uniqueShopVisitors.findUnique({
+      where: {
+        shopId_userId: {
+          shopId,
+          userId,
+        },
+      },
+    });
+
+    const isNewVisitor = !existingVisitor;
+
+    // Track the visitor 
     await prisma.uniqueShopVisitors.upsert({
       where: {
         shopId_userId: {
@@ -1093,9 +1105,7 @@ export const trackShopVisitor = async (
     await prisma.shopAnalytics.upsert({
       where: { shopId },
       update: {
-        totalVisitors: {
-          increment: 1,
-        },
+        totalVisitors: isNewVisitor ? { increment: 1 } : undefined,
         lastVisitedAt: new Date(),
       },
       create: {

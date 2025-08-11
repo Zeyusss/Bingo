@@ -288,6 +288,7 @@ export const createOrder = async (
             shopId,
             total: orderTotal,
             status: "Paid",
+            deliveryStatus: "Ordered",
             shippingAddressId: shippingAddressId || null,
             shippingAddressSnapshot,
             couponCode: coupon?.code || null,
@@ -302,6 +303,8 @@ export const createOrder = async (
             },
           },
         });
+
+        logger.info(`Order created successfully: ${order.id} for shop: ${shopId} with delivery status: ${order.deliveryStatus}`);
 
         for (const item of orderItems) {
           const { id: productId, quantity } = item;
