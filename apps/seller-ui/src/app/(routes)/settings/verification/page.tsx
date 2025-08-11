@@ -43,7 +43,15 @@ const VerificationPage = () => {
   const queryClient = useQueryClient();
 
   const [currentStep, setCurrentStep] = useState(1);
-  const [uploadedFiles, setUploadedFiles] = useState({
+
+  // Store selected files and their previews
+  const [selectedFiles, setSelectedFiles] = useState({
+    idFront: null as File | null,
+    idBack: null as File | null,
+    personal: null as File | null,
+  });
+
+  const [filePreviews, setFilePreviews] = useState({
     idFront: null as string | null,
     idBack: null as string | null,
     personal: null as string | null,
@@ -77,32 +85,39 @@ const VerificationPage = () => {
     }
   }, [verification?.termsAccepted]);
 
-  // Upload document mutation
-  const uploadDocumentMutation = useMutation({
-    mutationFn: async ({
-      documentType,
-      imageData,
-    }: {
-      documentType: string;
-      imageData: string;
-    }) => {
-      const res = await axiosInstance.post(
-        "/seller/api/verification/upload-document",
-        {
-          documentType,
-          imageData,
-        }
-      );
-      return res.data;
-    },
-    onSuccess: (data, variables) => {
-      setUploadedFiles((prev) => ({
+  // Handle file selection and preview generation
+  const handleFileSelect = (
+    file: File,
+    documentType: keyof typeof selectedFiles
+  ) => {
+    // Update selected files
+    setSelectedFiles((prev) => ({
+      ...prev,
+      [documentType]: file,
+    }));
+
+    // Generate preview URL
+    const reader = new FileReader();
+    reader.onload = () => {
+      setFilePreviews((prev) => ({
         ...prev,
-        [variables.documentType]: data.imageUrl,
+        [documentType]: reader.result as string,
       }));
-      refetchVerification();
-    },
-  });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Remove/replace file
+  const removeFile = (documentType: keyof typeof selectedFiles) => {
+    setSelectedFiles((prev) => ({
+      ...prev,
+      [documentType]: null,
+    }));
+    setFilePreviews((prev) => ({
+      ...prev,
+      [documentType]: null,
+    }));
+  };
 
   // Accept terms mutation
   const acceptTermsMutation = useMutation({
@@ -126,32 +141,112 @@ const VerificationPage = () => {
     },
   });
 
-  // Submit verification mutation
+  // Submit verification mutation - now handles uploading files
   const submitVerificationMutation = useMutation({
     mutationFn: async () => {
+      // First upload all selected files
+      const uploadPromises = [];
+
+      if (selectedFiles.idFront) {
+        const reader = new FileReader();
+        const promise = new Promise((resolve, reject) => {
+          reader.onload = async () => {
+            try {
+              const response = await axiosInstance.post(
+                "/seller/api/verification/upload-document",
+                {
+                  documentType: "idFront",
+                  imageData: reader.result as string,
+                }
+              );
+              resolve(response.data);
+            } catch (error) {
+              reject(error);
+            }
+          };
+          reader.onerror = reject;
+        });
+        reader.readAsDataURL(selectedFiles.idFront);
+        uploadPromises.push(promise);
+      }
+
+      if (selectedFiles.idBack) {
+        const reader = new FileReader();
+        const promise = new Promise((resolve, reject) => {
+          reader.onload = async () => {
+            try {
+              const response = await axiosInstance.post(
+                "/seller/api/verification/upload-document",
+                {
+                  documentType: "idBack",
+                  imageData: reader.result as string,
+                }
+              );
+              resolve(response.data);
+            } catch (error) {
+              reject(error);
+            }
+          };
+          reader.onerror = reject;
+        });
+        reader.readAsDataURL(selectedFiles.idBack);
+        uploadPromises.push(promise);
+      }
+
+      if (selectedFiles.personal) {
+        const reader = new FileReader();
+        const promise = new Promise((resolve, reject) => {
+          reader.onload = async () => {
+            try {
+              const response = await axiosInstance.post(
+                "/seller/api/verification/upload-document",
+                {
+                  documentType: "personal",
+                  imageData: reader.result as string,
+                }
+              );
+              resolve(response.data);
+            } catch (error) {
+              reject(error);
+            }
+          };
+          reader.onerror = reject;
+        });
+        reader.readAsDataURL(selectedFiles.personal);
+        uploadPromises.push(promise);
+      }
+
+      // Wait for all uploads to complete
+      if (uploadPromises.length > 0) {
+        await Promise.all(uploadPromises);
+      }
+
+      // Then submit verification
       const res = await axiosInstance.post("/seller/api/verification/submit");
       return res.data;
     },
     onSuccess: () => {
       refetchVerification();
       queryClient.invalidateQueries({ queryKey: ["seller"] });
+      // Clear selected files after successful submission
+      setSelectedFiles({
+        idFront: null,
+        idBack: null,
+        personal: null,
+      });
+      setFilePreviews({
+        idFront: null,
+        idBack: null,
+        personal: null,
+      });
     },
   });
 
-  const handleFileUpload = (file: File, documentType: string) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result as string;
-      uploadDocumentMutation.mutate({ documentType, imageData: base64 });
-    };
-    reader.readAsDataURL(file);
-  };
-
   const canSubmit = () => {
     return (
-      (verification?.idFrontImage || uploadedFiles.idFront) &&
-      (verification?.idBackImage || uploadedFiles.idBack) &&
-      (verification?.personalImage || uploadedFiles.personal) &&
+      (verification?.idFrontImage || selectedFiles.idFront) &&
+      (verification?.idBackImage || selectedFiles.idBack) &&
+      (verification?.personalImage || selectedFiles.personal) &&
       termsAccepted
     );
   };
@@ -355,18 +450,53 @@ Date: ${new Date().toLocaleDateString()}
                   ID Front Side
                 </label>
                 <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
-                  {verification?.idFrontImage || uploadedFiles.idFront ? (
+                  {verification?.idFrontImage || filePreviews.idFront ? (
                     <div className="space-y-3">
                       <Image
                         src={
-                          verification?.idFrontImage || uploadedFiles.idFront!
+                          filePreviews.idFront || verification?.idFrontImage!
                         }
                         alt="ID Front"
                         width={200}
                         height={120}
                         className="mx-auto rounded border"
                       />
-                      <p className="text-green-400">✓ Uploaded</p>
+                      <div className="flex gap-2 justify-center">
+                        {filePreviews.idFront ? (
+                          <>
+                            <p className="text-yellow-400">
+                              📋 Ready to upload
+                            </p>
+                            <button
+                              onClick={() => removeFile("idFront")}
+                              className="text-red-400 hover:text-red-300 text-sm underline"
+                            >
+                              Remove
+                            </button>
+                          </>
+                        ) : (
+                          <p className="text-green-400">✓ Uploaded</p>
+                        )}
+                      </div>
+                      {/* Replace/Change option */}
+                      <div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleFileSelect(file, "idFront");
+                          }}
+                          className="hidden"
+                          id="idFrontReplace"
+                        />
+                        <label
+                          htmlFor="idFrontReplace"
+                          className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded cursor-pointer text-sm"
+                        >
+                          Change Image
+                        </label>
+                      </div>
                     </div>
                   ) : (
                     <div>
@@ -382,7 +512,7 @@ Date: ${new Date().toLocaleDateString()}
                         accept="image/*"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
-                          if (file) handleFileUpload(file, "idFront");
+                          if (file) handleFileSelect(file, "idFront");
                         }}
                         className="hidden"
                         id="idFront"
@@ -404,16 +534,51 @@ Date: ${new Date().toLocaleDateString()}
                   ID Back Side
                 </label>
                 <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
-                  {verification?.idBackImage || uploadedFiles.idBack ? (
+                  {verification?.idBackImage || filePreviews.idBack ? (
                     <div className="space-y-3">
                       <Image
-                        src={verification?.idBackImage || uploadedFiles.idBack!}
+                        src={verification?.idBackImage || filePreviews.idBack!}
                         alt="ID Back"
                         width={200}
                         height={120}
                         className="mx-auto rounded border"
                       />
-                      <p className="text-green-400">✓ Uploaded</p>
+                      <div className="flex gap-2 justify-center">
+                        {filePreviews.idBack ? (
+                          <>
+                            <p className="text-yellow-400">
+                              📋 Ready to upload
+                            </p>
+                            <button
+                              onClick={() => removeFile("idBack")}
+                              className="text-red-400 hover:text-red-300 text-sm underline"
+                            >
+                              Remove
+                            </button>
+                          </>
+                        ) : (
+                          <p className="text-green-400">✓ Uploaded</p>
+                        )}
+                      </div>
+                      {/* Replace/Change option */}
+                      <div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleFileSelect(file, "idBack");
+                          }}
+                          className="hidden"
+                          id="idBackReplace"
+                        />
+                        <label
+                          htmlFor="idBackReplace"
+                          className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded cursor-pointer text-sm"
+                        >
+                          Change Image
+                        </label>
+                      </div>
                     </div>
                   ) : (
                     <div>
@@ -429,7 +594,7 @@ Date: ${new Date().toLocaleDateString()}
                         accept="image/*"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
-                          if (file) handleFileUpload(file, "idBack");
+                          if (file) handleFileSelect(file, "idBack");
                         }}
                         className="hidden"
                         id="idBack"
@@ -547,18 +712,53 @@ Date: ${new Date().toLocaleDateString()}
                   Personal Photo
                 </label>
                 <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
-                  {verification?.personalImage || uploadedFiles.personal ? (
+                  {verification?.personalImage || filePreviews.personal ? (
                     <div className="space-y-3">
                       <Image
                         src={
-                          verification?.personalImage || uploadedFiles.personal!
+                          verification?.personalImage || filePreviews.personal!
                         }
                         alt="Personal Photo"
                         width={200}
                         height={200}
                         className="mx-auto rounded-full border"
                       />
-                      <p className="text-green-400">✓ Uploaded</p>
+                      <div className="flex gap-2 justify-center">
+                        {filePreviews.personal ? (
+                          <>
+                            <p className="text-yellow-400">
+                              📋 Ready to upload
+                            </p>
+                            <button
+                              onClick={() => removeFile("personal")}
+                              className="text-red-400 hover:text-red-300 text-sm underline"
+                            >
+                              Remove
+                            </button>
+                          </>
+                        ) : (
+                          <p className="text-green-400">✓ Uploaded</p>
+                        )}
+                      </div>
+                      {/* Replace/Change option */}
+                      <div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleFileSelect(file, "personal");
+                          }}
+                          className="hidden"
+                          id="personalReplace"
+                        />
+                        <label
+                          htmlFor="personalReplace"
+                          className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded cursor-pointer text-sm"
+                        >
+                          Change Image
+                        </label>
+                      </div>
                     </div>
                   ) : (
                     <div>
@@ -574,7 +774,7 @@ Date: ${new Date().toLocaleDateString()}
                         accept="image/*"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
-                          if (file) handleFileUpload(file, "personal");
+                          if (file) handleFileSelect(file, "personal");
                         }}
                         className="hidden"
                         id="personal"
@@ -602,16 +802,18 @@ Date: ${new Date().toLocaleDateString()}
                 {[
                   {
                     title: "ID Front",
-                    image: verification?.idFrontImage || uploadedFiles.idFront,
+                    image: verification?.idFrontImage || filePreviews.idFront,
+                    hasNewFile: !!selectedFiles.idFront,
                   },
                   {
                     title: "ID Back",
-                    image: verification?.idBackImage || uploadedFiles.idBack,
+                    image: verification?.idBackImage || filePreviews.idBack,
+                    hasNewFile: !!selectedFiles.idBack,
                   },
                   {
                     title: "Personal Photo",
-                    image:
-                      verification?.personalImage || uploadedFiles.personal,
+                    image: verification?.personalImage || filePreviews.personal,
+                    hasNewFile: !!selectedFiles.personal,
                   },
                 ].map((doc, index) => (
                   <div
@@ -628,7 +830,17 @@ Date: ${new Date().toLocaleDateString()}
                           height={100}
                           className="rounded border"
                         />
-                        <p className="text-green-400 text-sm">✓ Ready</p>
+                        <div className="flex items-center gap-2">
+                          {doc.hasNewFile ? (
+                            <p className="text-yellow-400 text-sm">
+                              📋 Ready to upload
+                            </p>
+                          ) : (
+                            <p className="text-green-400 text-sm">
+                              ✓ Already uploaded
+                            </p>
+                          )}
+                        </div>
                       </div>
                     ) : (
                       <p className="text-red-400 text-sm">✗ Missing</p>
