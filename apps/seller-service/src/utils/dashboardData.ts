@@ -217,11 +217,6 @@ export async function fetchShopStats(sellerId: string) {
     }),
   ]);
 
-  const analytics = await prisma.shopAnalytics.findUnique({
-    where: { shopId: shop.id },
-  });
-
-
   let conversionRate = 0;
   if (totalVisitors?.totalVisitors && totalOrders) {
     const rawConversionRate = (totalOrders / totalVisitors.totalVisitors) * 100;
@@ -298,35 +293,31 @@ export async function fetchShopWorldActivity(sellerId: string) {
     return [];
   }
 
-
   const ordersData = await prisma.orders.findMany({
     where: {
       shopId: shop.id,
-      status: 'Paid',
-      shippingAddressSnapshot: { not: null }
+      status: "Paid",
+      shippingAddressSnapshot: { not: null },
     },
     select: {
       id: true,
-      shippingAddressSnapshot: true
-    }
+      shippingAddressSnapshot: true,
+    },
   });
-
 
   const countryOrdersMap: Record<string, number> = {};
   const countryCitiesMap: Record<string, Set<string>> = {};
 
-  ordersData.forEach(order => {
+  ordersData.forEach((order) => {
     try {
       const shippingAddress = order.shippingAddressSnapshot as any;
-      if (shippingAddress && typeof shippingAddress === 'object') {
+      if (shippingAddress && typeof shippingAddress === "object") {
         const country = shippingAddress.country;
         const city = shippingAddress.city;
-        
+
         if (country) {
-          
           countryOrdersMap[country] = (countryOrdersMap[country] || 0) + 1;
-          
-         
+
           if (!countryCitiesMap[country]) {
             countryCitiesMap[country] = new Set();
           }
@@ -336,7 +327,7 @@ export async function fetchShopWorldActivity(sellerId: string) {
         }
       }
     } catch (error) {
-      console.warn('Invalid shipping address data for order:', order.id);
+      console.warn("Invalid shipping address data for order:", order.id);
     }
   });
 
@@ -357,7 +348,9 @@ export async function fetchShopWorldActivity(sellerId: string) {
         country,
         conversionRate:
           visitors > 0
-            ? Math.round(Math.min((countryOrders / visitors) * 100, 100) * 100) / 100
+            ? Math.round(
+                Math.min((countryOrders / visitors) * 100, 100) * 100
+              ) / 100
             : 0,
       };
     })
@@ -393,16 +386,21 @@ export async function fetchShopVisitorAnalytics(sellerId: string) {
     (shopAnalytics.countryStats as Record<string, number>) || {};
   const cityStats = (shopAnalytics.cityStats as Record<string, number>) || {};
 
-
-  const actualCountryTotal = Object.values(countryStats).reduce((sum, count) => sum + count, 0);
-  const actualCityTotal = Object.values(cityStats).reduce((sum, count) => sum + count, 0);
+  const actualCountryTotal = Object.values(countryStats).reduce(
+    (sum, count) => sum + count,
+    0
+  );
+  const actualCityTotal = Object.values(cityStats).reduce(
+    (sum, count) => sum + count,
+    0
+  );
 
   const countries = Object.entries(countryStats)
     .map(([country, visitors]) => ({
       country,
       visitors,
-      states: 1, 
-      cities: Object.keys(cityStats), 
+      states: 1,
+      cities: Object.keys(cityStats),
       percentage:
         actualCountryTotal > 0
           ? Math.round((visitors / actualCountryTotal) * 100)
@@ -413,8 +411,8 @@ export async function fetchShopVisitorAnalytics(sellerId: string) {
   const locations = Object.entries(cityStats)
     .map(([city, visitors]) => {
       return {
-        country: "Unknown", 
-        state: city, 
+        country: "Unknown",
+        state: city,
         visitors,
         cities: [city],
         percentage:
@@ -424,7 +422,6 @@ export async function fetchShopVisitorAnalytics(sellerId: string) {
       };
     })
     .sort((a, b) => b.visitors - a.visitors);
-
 
   if (Object.keys(countryStats).length > 0) {
     const country = Object.keys(countryStats)[0];
@@ -456,7 +453,6 @@ export async function fetchShopDeviceUsage(sellerId: string) {
     ];
   }
 
-
   const shopAnalytics = await prisma.shopAnalytics.findUnique({
     where: { shopId: shop.id },
   });
@@ -474,7 +470,6 @@ export async function fetchShopDeviceUsage(sellerId: string) {
     (sum, count) => sum + count,
     0
   );
-
 
   const deviceCategories = {
     Phone: 0,

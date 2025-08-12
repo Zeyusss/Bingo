@@ -7,7 +7,6 @@ import {
   Monitor,
   Tablet,
   TrendingUp,
-  MapPin,
   BarChart3,
   AlertCircle,
   RefreshCw,
@@ -49,7 +48,6 @@ export default function OrderActivity() {
   const {
     data: shopStats,
     isLoading: statsLoading,
-    error: statsError,
     refetch: refetchStats,
   } = useShopStats();
 

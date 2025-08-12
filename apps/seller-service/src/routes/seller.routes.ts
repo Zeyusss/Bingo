@@ -24,12 +24,14 @@ import {
   getShopVisitorAnalytics,
   getShopTopSellingProducts,
   trackShopVisitor,
+  createEvent,
+  updateEvent,
+  removeEvent,
   submitVerification,
   getVerificationStatus,
   uploadVerificationDocument,
   downloadContract,
   acceptTerms,
-
 } from "../controllers/seller.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isSeller } from "@packages/middleware/authorizeRoles";
