@@ -3,16 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import {
-  Search,
-  Filter,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  Ban,
-  CheckCircle,
-  Eye,
-} from "lucide-react";
+import { Search, Filter, Edit, Trash2, Eye } from "lucide-react";
 import { Button } from "../../shared/components/ui/button";
 import { Input } from "../../shared/components/ui/input";
 import { Modal } from "../../shared/components/ui/modal";
@@ -48,25 +39,28 @@ interface EditUserData {
 const UsersPage = () => {
   const [showHelpModal, setShowHelpModal] = useState(false);
 
-
   const helpSections: HelpSection[] = [
     {
       title: "Overview",
-      content: "The Users Management page allows you to view, manage, and moderate all platform users including customers, sellers, and administrators. Monitor user activity, manage permissions, and maintain platform security.",
+      content:
+        "The Users Management page allows you to view, manage, and moderate all platform users including customers, sellers, and administrators. Monitor user activity, manage permissions, and maintain platform security.",
       subsections: [
         {
           title: "User Types",
-          content: "Admin (platform administrators), Seller (merchants and vendors), User (customers and buyers)"
+          content:
+            "Admin (platform administrators), Seller (merchants and vendors), User (customers and buyers)",
         },
         {
           title: "Management Actions",
-          content: "View profiles, edit information, block/unblock users, delete accounts, manage permissions"
+          content:
+            "View profiles, edit information, block/unblock users, delete accounts, manage permissions",
         },
         {
           title: "Monitoring",
-          content: "Track user activity, registration trends, and account status changes"
-        }
-      ]
+          content:
+            "Track user activity, registration trends, and account status changes",
+        },
+      ],
     },
     {
       title: "Search & Filtering",
@@ -74,17 +68,19 @@ const UsersPage = () => {
       subsections: [
         {
           title: "Search Function",
-          content: "Search users by name, email, or ID using the search bar"
+          content: "Search users by name, email, or ID using the search bar",
         },
         {
           title: "Role Filtering",
-          content: "Filter by user type: All, Admin, Seller, or User to focus on specific groups"
+          content:
+            "Filter by user type: All, Admin, Seller, or User to focus on specific groups",
         },
         {
           title: "Status Filters",
-          content: "Toggle to show deleted or blocked users for comprehensive management"
-        }
-      ]
+          content:
+            "Toggle to show deleted or blocked users for comprehensive management",
+        },
+      ],
     },
     {
       title: "User Actions",
@@ -92,21 +88,25 @@ const UsersPage = () => {
       subsections: [
         {
           title: "View Details",
-          content: "Click the eye icon to view complete user profile, activity history, and statistics"
+          content:
+            "Click the eye icon to view complete user profile, activity history, and statistics",
         },
         {
           title: "Edit Information",
-          content: "Modify user details including name, email, role, and contact information"
+          content:
+            "Modify user details including name, email, role, and contact information",
         },
         {
           title: "Block/Unblock",
-          content: "Temporarily restrict user access while preserving account data"
+          content:
+            "Temporarily restrict user access while preserving account data",
         },
         {
           title: "Delete Account",
-          content: "Permanently remove user accounts (use with caution - this action cannot be undone)"
-        }
-      ]
+          content:
+            "Permanently remove user accounts (use with caution - this action cannot be undone)",
+        },
+      ],
     },
     {
       title: "User Details View",
@@ -114,17 +114,20 @@ const UsersPage = () => {
       subsections: [
         {
           title: "Profile Information",
-          content: "View personal details, contact information, and account creation date"
+          content:
+            "View personal details, contact information, and account creation date",
         },
         {
           title: "Activity Metrics",
-          content: "For sellers: view shop sales, unique buyers, product value, and purchase analytics"
+          content:
+            "For sellers: view shop sales, unique buyers, product value, and purchase analytics",
         },
         {
           title: "Account Status",
-          content: "Monitor verification status, account restrictions, and recent activity"
-        }
-      ]
+          content:
+            "Monitor verification status, account restrictions, and recent activity",
+        },
+      ],
     },
     {
       title: "Best Practices",
@@ -132,18 +135,21 @@ const UsersPage = () => {
       subsections: [
         {
           title: "Security",
-          content: "Regularly review admin permissions, monitor suspicious activity, use blocking before deletion"
+          content:
+            "Regularly review admin permissions, monitor suspicious activity, use blocking before deletion",
         },
         {
           title: "Communication",
-          content: "Notify users of account changes, provide clear reasons for restrictions"
+          content:
+            "Notify users of account changes, provide clear reasons for restrictions",
         },
         {
           title: "Data Protection",
-          content: "Handle user data responsibly, respect privacy settings, maintain audit trails"
-        }
-      ]
-    }
+          content:
+            "Handle user data responsibly, respect privacy settings, maintain audit trails",
+        },
+      ],
+    },
   ];
 
   const [page, setPage] = useState(1);

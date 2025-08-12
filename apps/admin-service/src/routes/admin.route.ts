@@ -33,6 +33,11 @@ import {
   reorderCategories,
   reorderSubcategories,
   moveSubcategory,
+  getPendingVerifications,
+  getVerificationDetails,
+  reviewVerification,
+  getVerificationStats,
+  getVerificationHistory,
 } from "../controllers/admin.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isAdmin } from "@packages/middleware/authorizeRoles";
@@ -102,10 +107,67 @@ router.get(
 router.get("/config", isAuthenticated, isAdmin, getConfig);
 router.post("/config/category", isAuthenticated, isAdmin, addCategory);
 router.post("/config/subcategory", isAuthenticated, isAdmin, addSubcategory);
-router.delete("/config/category/:name", isAuthenticated, isAdmin, deleteCategory);
-router.delete("/config/subcategory/:category/:name", isAuthenticated, isAdmin, deleteSubcategory);
-router.put("/config/categories/reorder", isAuthenticated, isAdmin, reorderCategories);
-router.put("/config/subcategories/reorder", isAuthenticated, isAdmin, reorderSubcategories);
-router.put("/config/subcategories/move", isAuthenticated, isAdmin, moveSubcategory);
+router.delete(
+  "/config/category/:name",
+  isAuthenticated,
+  isAdmin,
+  deleteCategory
+);
+router.delete(
+  "/config/subcategory/:category/:name",
+  isAuthenticated,
+  isAdmin,
+  deleteSubcategory
+);
+router.put(
+  "/config/categories/reorder",
+  isAuthenticated,
+  isAdmin,
+  reorderCategories
+);
+router.put(
+  "/config/subcategories/reorder",
+  isAuthenticated,
+  isAdmin,
+  reorderSubcategories
+);
+router.put(
+  "/config/subcategories/move",
+  isAuthenticated,
+  isAdmin,
+  moveSubcategory
+);
+
+// Verification Management Routes
+router.get(
+  "/verifications/pending",
+  isAuthenticated,
+  isAdmin,
+  getPendingVerifications
+);
+router.get(
+  "/verifications/:sellerId",
+  isAuthenticated,
+  isAdmin,
+  getVerificationDetails
+);
+router.post(
+  "/verifications/:sellerId/review",
+  isAuthenticated,
+  isAdmin,
+  reviewVerification
+);
+router.get(
+  "/verifications/stats",
+  isAuthenticated,
+  isAdmin,
+  getVerificationStats
+);
+router.get(
+  "/verifications/history",
+  isAuthenticated,
+  isAdmin,
+  getVerificationHistory
+);
 
 export default router;
