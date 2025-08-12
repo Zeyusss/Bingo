@@ -1,6 +1,5 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./Card";
-import { Badge } from "./Badge";
 import { Skeleton } from "./Skeleton";
 import { cn } from "../../../../utils/cn";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";

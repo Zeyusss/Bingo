@@ -10,7 +10,9 @@ import {
   Calendar,
   Globe,
   ArrowLeft,
-  LogOut,
+  Shield,
+  CheckCircle,
+  Layout,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -34,7 +36,7 @@ const fetchEvents = async () => {
 };
 
 const Page = () => {
-  const { seller, isLoading, refetch, logout } = useSeller();
+  const { seller, isLoading, refetch } = useSeller();
   const [activeTab, setActiveTab] = useState("Products");
   const [editType, setEditType] = useState<"cover" | "avatar" | null>(null);
   const router = useRouter();
@@ -74,14 +76,10 @@ const Page = () => {
     imageUrl: string,
     type: "cover" | "avatar"
   ) => {
-
-
     queryClient.invalidateQueries({ queryKey: ["seller"] });
 
     refetch().then((result: any) => {
-
       if (type === "avatar") {
-
       }
     });
   };
@@ -93,11 +91,14 @@ const Page = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       ) : (
-        <div className="w-full min-h-screen bg-[#F4F2EF]" style={{
-          backgroundImage: "url('/assets/wd-furniture-background.webp')",
-          backgroundRepeat: "repeat",
-          backgroundSize: "auto", 
-        }}>
+        <div
+          className="w-full min-h-screen bg-[#F4F2EF]"
+          style={{
+            backgroundImage: "url('/assets/wd-furniture-background.webp')",
+            backgroundRepeat: "repeat",
+            backgroundSize: "auto",
+          }}
+        >
           <ImageUploadModal
             isOpen={!!editType}
             onClose={() => setEditType(null)}
@@ -107,19 +108,23 @@ const Page = () => {
 
           <div className="w-full px-4 py-4 flex justify-between items-center bg-white border-b border-gray-200">
             <button
-              onClick={() => router.push("/dashboard")}
-              className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors font-medium text-black"
+              onClick={() =>
+                router.push(
+                  seller?.isVerified &&
+                    seller?.verificationStatus === "Approved"
+                    ? "/dashboard"
+                    : "/settings"
+                )
+              }
+              className="flex items-center gap-2 text-gray-300 hover:text-white transition"
             >
               <ArrowLeft size={20} />
-              <span>Back to Dashboard</span>
-            </button>
-            
-            <button
-              onClick={logout}
-              className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors font-medium"
-            >
-              <LogOut size={16} />
-              <span>Logout</span>
+              <span className="font-medium">
+                Back to{" "}
+                {seller?.isVerified && seller?.verificationStatus === "Approved"
+                  ? "Dashboard"
+                  : "Settings"}
+              </span>
             </button>
           </div>
 
@@ -183,17 +188,22 @@ const Page = () => {
                       <div className="flex item-center gap-4 mt-4">
                         <div className="flex items-center text-yellow-500 gap-1">
                           <Star fill="#eab308" size={18} />{" "}
-                          <span className="text-gray-700 font-medium">{seller?.shop?.ratings || "N/A"}</span>
+                          <span className="text-gray-700 font-medium">
+                            {seller?.shop?.ratings || "N/A"}
+                          </span>
                         </div>
                         <div className="flex items-center gap-1 text-gray-700">
                           <Users size={18} />{" "}
-                          <span className="font-medium">{seller?.followers || 0} Followers</span>
+                          <span className="font-medium">
+                            {seller?.followers || 0} Followers
+                          </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 mt-4 text-gray-700">
                         <Clock size={18} />
                         <span className="font-medium">
-                          {seller?.shop?.opening_hours || "Mon - Sat: 9 AM - 6 PM"}
+                          {seller?.shop?.opening_hours ||
+                            "Mon - Sat: 9 AM - 6 PM"}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mt-4 text-gray-700">
@@ -203,23 +213,37 @@ const Page = () => {
                         </span>
                       </div>
                     </div>
-                    
+
                     <div className="lg:w-64 bg-gray-50 rounded-lg p-4 border border-gray-200">
-                      <h3 className="text-sm font-bold text-gray-800 font-[Poppins] mb-3">Shop Info</h3>
+                      <h3 className="text-sm font-bold text-gray-800 font-[Poppins] mb-3">
+                        Shop Info
+                      </h3>
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-gray-600">
                           <Calendar size={14} />
                           <span className="text-xs font-medium">
-                            Joined {seller?.shop?.createdAt
-                              ? new Date(seller.shop.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                            Joined{" "}
+                            {seller?.shop?.createdAt
+                              ? new Date(
+                                  seller.shop.createdAt
+                                ).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  year: "numeric",
+                                })
                               : "N/A"}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 text-gray-600">
                           <Globe size={14} />
                           <span className="text-xs font-medium">
-                            Updated {seller?.shop?.updatedAt
-                              ? new Date(seller.shop.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                            Updated{" "}
+                            {seller?.shop?.updatedAt
+                              ? new Date(
+                                  seller.shop.updatedAt
+                                ).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                })
                               : "N/A"}
                           </span>
                         </div>
@@ -227,15 +251,64 @@ const Page = () => {
                     </div>
                   </div>
                 </div>
-                
-                {seller?.id && (
-                  <button
-                    className="text-black px-6 py-3 bg-gray-100 rounded-full font-semibold flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors border border-gray-200"
-                    onClick={() => router.push("/edit-profile")}
-                  >
-                    <Pencil size={18} />
-                    Edit Profile
-                  </button>
+                {seller?.id ? (
+                  <div className="flex flex-col gap-3">
+                    {/* Verification Status */}
+                    {(!seller?.isVerified ||
+                      seller?.verificationStatus === "None" ||
+                      seller?.verificationStatus === "Pending" ||
+                      seller?.verificationStatus === "Rejected" ||
+                      seller?.verificationStatus ===
+                        "RequiresResubmission") && (
+                      <button
+                        className="px-6 py-2 h-[40px] bg-yellow-600 rounded-lg font-semibold flex items-center justify-center hover:bg-yellow-700 transition"
+                        onClick={() => router.push("/settings/verification")}
+                      >
+                        <Shield size={18} className="mr-2" />
+                        {seller?.verificationStatus === "None"
+                          ? "Verify Identity"
+                          : seller?.verificationStatus === "Pending"
+                          ? "View Verification Status"
+                          : seller?.verificationStatus === "Rejected" ||
+                            seller?.verificationStatus ===
+                              "RequiresResubmission"
+                          ? "Update Verification"
+                          : "Verify Identity"}
+                      </button>
+                    )}
+
+                    {seller?.isVerified &&
+                      seller?.verificationStatus === "Approved" && (
+                        <div className="flex items-center gap-2 px-4 py-2 bg-green-600 rounded-lg">
+                          <CheckCircle size={18} className="text-white" />
+                          <span className="text-white font-medium">
+                            Verified Seller
+                          </span>
+                        </div>
+                      )}
+
+                    {/* Dashboard Button - Only show for verified sellers */}
+                    {seller?.isVerified &&
+                      seller?.verificationStatus === "Approved" && (
+                        <button
+                          className="px-6 py-2 h-[40px] bg-blue-600 rounded-lg font-semibold flex items-center justify-center hover:bg-blue-700 transition"
+                          onClick={() => router.push("/dashboard")}
+                        >
+                          <Layout size={18} className="mr-2" />
+                          Dashboard
+                        </button>
+                      )}
+
+                    <button
+                      className="px-6 py-2 h-[40px] bg-gray-600 rounded-lg font-semibold flex items-center justify-center hover:bg-gray-700 transition"
+                      onClick={() => router.push("/edit-profile")}
+                    >
+                      <Pencil size={18} className="mr-2" />
+                      Edit Profile
+                    </button>
+                  </div>
+                ) : (
+                  <div></div>
                 )}
               </div>
             </div>
@@ -318,7 +391,9 @@ const Page = () => {
                           />
                         ))}
                       </div>
-                      <p className="text-gray-700 text-base font-[Work Sans] leading-relaxed mb-4">{review.reviews}</p>
+                      <p className="text-gray-700 text-base font-[Work Sans] leading-relaxed mb-4">
+                        {review.reviews}
+                      </p>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm">
@@ -344,7 +419,9 @@ const Page = () => {
                   ))}
                   {reviews?.length === 0 && (
                     <div className="text-center py-12">
-                      <p className="text-gray-500 text-lg font-[Work Sans]">No reviews yet!</p>
+                      <p className="text-gray-500 text-lg font-[Work Sans]">
+                        No reviews yet!
+                      </p>
                     </div>
                   )}
                 </div>

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import "react-quill-new/dist/quill.snow.css";
 import ReactQuill from "react-quill-new";
-import { Save, FileText, Hash, AlertCircle, CheckCircle} from "lucide-react";
+import { Save, FileText, Hash, AlertCircle, CheckCircle } from "lucide-react";
 
 interface RichTextEditorProps {
   value: string;
@@ -22,7 +22,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   value,
   onChange,
   placeholder = "Write a detailed product description here...",
-  minHeight = 250, 
+  minHeight = 250,
   maxWords,
   autoSave = false,
   autoSaveInterval = 30000,
@@ -37,16 +37,18 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const [charCount, setCharCount] = useState(0);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveStatus, setSaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
   const quillRef = useRef<ReactQuill>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Calculate word and character count
   const calculateCounts = useCallback((content: string) => {
-    const textContent = content.replace(/<[^>]*>/g, '').trim();
-    const words = textContent.split(/\s+/).filter(word => word.length > 0);
+    const textContent = content.replace(/<[^>]*>/g, "").trim();
+    const words = textContent.split(/\s+/).filter((word) => word.length > 0);
     const chars = textContent.length;
-    
+
     setWordCount(words.length);
     setCharCount(chars);
   }, []);
@@ -54,19 +56,19 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   // Auto-save functionality
   const handleAutoSave = useCallback(async () => {
     if (!autoSave || !onSave) return;
-    
+
     setIsSaving(true);
-    setSaveStatus('saving');
-    
+    setSaveStatus("saving");
+
     try {
       await onSave(editorValue);
       setLastSaved(new Date());
-      setSaveStatus('saved');
-      
-      setTimeout(() => setSaveStatus('idle'), 3000);
+      setSaveStatus("saved");
+
+      setTimeout(() => setSaveStatus("idle"), 3000);
     } catch (error) {
-      setSaveStatus('error');
-      console.error('Auto-save failed:', error);
+      setSaveStatus("error");
+      console.error("Auto-save failed:", error);
     } finally {
       setIsSaving(false);
     }
@@ -75,14 +77,19 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   // Setup auto-save interval
   useEffect(() => {
     if (autoSave && onSave) {
-      autoSaveTimeoutRef.current = setInterval(handleAutoSave, autoSaveInterval);
-      
+      autoSaveTimeoutRef.current = setInterval(
+        handleAutoSave,
+        autoSaveInterval
+      );
+
       return () => {
         if (autoSaveTimeoutRef.current) {
           clearInterval(autoSaveTimeoutRef.current);
         }
       };
     }
+
+    return () => {}; // Empty cleanup function for when condition is false
   }, [autoSave, onSave, autoSaveInterval, handleAutoSave]);
 
   // Calculate counts when value changes
@@ -147,36 +154,36 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
             </div>
           )}
         </div>
-        
+
         <div className="flex items-center gap-3">
           {autoSave && onSave && (
             <div className="flex items-center gap-2">
-              {saveStatus === 'saving' && (
+              {saveStatus === "saving" && (
                 <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-lg border border-blue-200">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                   <span className="text-sm font-medium">Saving...</span>
                 </div>
               )}
-              {saveStatus === 'saved' && (
+              {saveStatus === "saved" && (
                 <div className="flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 rounded-lg border border-green-200">
                   <CheckCircle size={16} />
                   <span className="text-sm font-medium">Saved</span>
                 </div>
               )}
-              {saveStatus === 'error' && (
+              {saveStatus === "error" && (
                 <div className="flex items-center gap-2 px-3 py-1 bg-red-50 text-red-700 rounded-lg border border-red-200">
                   <AlertCircle size={16} />
                   <span className="text-sm font-medium">Save failed</span>
                 </div>
               )}
-              {lastSaved && saveStatus === 'idle' && (
+              {lastSaved && saveStatus === "idle" && (
                 <span className="text-xs text-gray-500 px-2 py-1 bg-gray-50 rounded">
                   Last saved: {lastSaved.toLocaleTimeString()}
                 </span>
               )}
             </div>
           )}
-          
+
           {onSave && (
             <button
               onClick={handleManualSave}
@@ -195,7 +202,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <div className="flex items-center gap-2">
             <AlertCircle size={18} />
             <span className="text-sm font-medium">
-              Approaching word limit ({Math.round((wordCount / maxWords!) * 100)}%)
+              Approaching word limit (
+              {Math.round((wordCount / maxWords!) * 100)}%)
             </span>
           </div>
         </div>
@@ -242,7 +250,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           placeholder={placeholder}
           style={{
             minHeight: `${minHeight}px`,
-            height: `${minHeight}px`
+            height: `${minHeight}px`,
           }}
         />
       </div>
@@ -254,7 +262,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           border-radius: 0;
           padding: 16px;
           border-bottom: 2px solid #e2e8f0;
-          box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+          box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
+            0 1px 2px 0 rgba(0, 0, 0, 0.06);
         }
 
         .rich-text-editor-container .ql-container {
@@ -262,10 +271,12 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           border-color: #e2e8f0;
           border-radius: 0 0 0.75rem 0.75rem;
           color: #1e293b;
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+            Roboto, sans-serif;
           font-size: 15px;
           line-height: 1.7;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+            0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
 
         .rich-text-editor-container .ql-editor {
@@ -291,7 +302,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           background: white !important;
           border: 1px solid #e2e8f0 !important;
           border-radius: 0.5rem !important;
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+            0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
           padding: 8px 0 !important;
         }
 
@@ -312,7 +324,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           color: #1e293b;
           border: 1px solid #e2e8f0;
           border-radius: 0.5rem;
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+            0 10px 10px -5px rgba(0, 0, 0, 0.04);
           padding: 12px 16px;
           font-size: 14px;
         }
@@ -343,34 +356,68 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         }
 
         .rich-text-editor-container .ql-snow .ql-toolbar button:hover,
-        .rich-text-editor-container .ql-snow .ql-toolbar .ql-picker-label:hover {
+        .rich-text-editor-container
+          .ql-snow
+          .ql-toolbar
+          .ql-picker-label:hover {
           color: #3b82f6 !important;
           background: #eff6ff !important;
         }
 
-        .rich-text-editor-container .ql-snow .ql-toolbar button:hover .ql-stroke,
-        .rich-text-editor-container .ql-snow .ql-toolbar .ql-picker-label:hover .ql-stroke {
+        .rich-text-editor-container
+          .ql-snow
+          .ql-toolbar
+          button:hover
+          .ql-stroke,
+        .rich-text-editor-container
+          .ql-snow
+          .ql-toolbar
+          .ql-picker-label:hover
+          .ql-stroke {
           stroke: #3b82f6 !important;
         }
 
         .rich-text-editor-container .ql-snow .ql-toolbar button:hover .ql-fill,
-        .rich-text-editor-container .ql-snow .ql-toolbar .ql-picker-label:hover .ql-fill {
+        .rich-text-editor-container
+          .ql-snow
+          .ql-toolbar
+          .ql-picker-label:hover
+          .ql-fill {
           fill: #3b82f6 !important;
         }
 
         .rich-text-editor-container .ql-snow .ql-toolbar button.ql-active,
-        .rich-text-editor-container .ql-snow .ql-toolbar .ql-picker-label.ql-active {
+        .rich-text-editor-container
+          .ql-snow
+          .ql-toolbar
+          .ql-picker-label.ql-active {
           color: #3b82f6 !important;
           background: #dbeafe !important;
         }
 
-        .rich-text-editor-container .ql-snow .ql-toolbar button.ql-active .ql-stroke,
-        .rich-text-editor-container .ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-stroke {
+        .rich-text-editor-container
+          .ql-snow
+          .ql-toolbar
+          button.ql-active
+          .ql-stroke,
+        .rich-text-editor-container
+          .ql-snow
+          .ql-toolbar
+          .ql-picker-label.ql-active
+          .ql-stroke {
           stroke: #3b82f6 !important;
         }
 
-        .rich-text-editor-container .ql-snow .ql-toolbar button.ql-active .ql-fill,
-        .rich-text-editor-container .ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-fill {
+        .rich-text-editor-container
+          .ql-snow
+          .ql-toolbar
+          button.ql-active
+          .ql-fill,
+        .rich-text-editor-container
+          .ql-snow
+          .ql-toolbar
+          .ql-picker-label.ql-active
+          .ql-fill {
           fill: #3b82f6 !important;
         }
 
@@ -380,7 +427,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           transition: all 0.2s ease !important;
         }
 
-        .rich-text-editor-container .ql-snow .ql-toolbar .ql-picker-label:hover {
+        .rich-text-editor-container
+          .ql-snow
+          .ql-toolbar
+          .ql-picker-label:hover {
           background: #eff6ff !important;
         }
 
@@ -428,7 +478,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           padding: 0.125rem 0.25rem !important;
           border-radius: 0.25rem !important;
           font-size: 0.875rem !important;
-          font-family: 'Fira Code', 'Monaco', 'Consolas', monospace !important;
+          font-family: "Fira Code", "Monaco", "Consolas", monospace !important;
         }
 
         .rich-text-editor-container .ql-editor pre {

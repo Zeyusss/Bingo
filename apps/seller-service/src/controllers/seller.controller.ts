@@ -8,9 +8,10 @@ import {
 import { imagekit } from "@packages/libs/imagekit";
 import prisma from "@packages/libs/prisma";
 
-
-const DEFAULT_PROFILE_IMAGE = "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756";
-const DEFAULT_COVER_IMAGE = "https://ik.imagekit.io/w7lwh7wre/cover-handmade.webp?updatedAt=175424311149";
+const DEFAULT_PROFILE_IMAGE =
+  "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756";
+const DEFAULT_COVER_IMAGE =
+  "https://ik.imagekit.io/w7lwh7wre/cover-handmade.webp?updatedAt=175424311149";
 import {
   fetchShopRevenueData,
   fetchShopStats,
@@ -217,7 +218,7 @@ export const updateProfilePictures = async (
       });
     } else {
       let imageRecord;
-      
+
       if (shop.avatar) {
         imageRecord = await prisma.images.update({
           where: { id: shop.avatar.id },
@@ -240,7 +241,6 @@ export const updateProfilePictures = async (
           data: { avatarId: imageRecord.id },
         });
       }
-
 
       const updatedShop = await prisma.shops.findUnique({
         where: { id: shop.id },
@@ -310,7 +310,7 @@ export const editSellerProfile = async (
         },
       },
     });
-    
+
     res.status(200).json({
       success: true,
       message: "Shop profile updated successfully!",
@@ -335,7 +335,7 @@ export const getSellerInfo = async (
     const shop = await prisma.shops.findUnique({
       where: { id: req.params.id },
       include: {
-        avatar: true, 
+        avatar: true,
         reviews: {
           include: {
             user: {
@@ -379,18 +379,18 @@ export const getSellerInfo = async (
       },
     });
 
-
     const shopWithDefaults = {
       ...shop,
-      avatar: shop?.avatar?.url || DEFAULT_PROFILE_IMAGE, 
+      avatar: shop?.avatar?.url || DEFAULT_PROFILE_IMAGE,
       coverBanner: shop?.coverBanner || DEFAULT_COVER_IMAGE,
-      reviews: shop?.reviews?.map((review: any) => ({
-        ...review,
-        user: {
-          ...review.user,
-          avatar: review.user?.avatar?.url || DEFAULT_PROFILE_IMAGE, 
-        },
-      })) || [],
+      reviews:
+        shop?.reviews?.map((review: any) => ({
+          ...review,
+          user: {
+            ...review.user,
+            avatar: review.user?.avatar?.url || DEFAULT_PROFILE_IMAGE,
+          },
+        })) || [],
     };
 
     res.status(201).json({
@@ -435,10 +435,10 @@ export const getSellerProducts = async (
               sellers: {
                 select: {
                   id: true,
-                  name: true
-                }
-              }
-            }
+                  name: true,
+                },
+              },
+            },
           },
         },
       }),
@@ -455,7 +455,7 @@ export const getSellerProducts = async (
       Shop: {
         ...product.Shop,
         avatar: {
-          url: product.Shop?.avatar?.url || DEFAULT_PROFILE_IMAGE
+          url: product.Shop?.avatar?.url || DEFAULT_PROFILE_IMAGE,
         },
         coverBanner: product.Shop?.coverBanner || DEFAULT_COVER_IMAGE,
       },
@@ -1448,6 +1448,271 @@ export const trackShopVisitor = async (
     });
 
     res.status(200).json({ message: "Visitor tracked successfully" });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Identity Verification Controllers
+
+// Get verification status
+export const getVerificationStatus = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const sellerId = req.seller?.id;
+
+    const seller = await prisma.sellers.findUnique({
+      where: { id: sellerId },
+      select: {
+        id: true,
+        isVerified: true,
+        verificationStatus: true,
+        idFrontImage: true,
+        idBackImage: true,
+        personalImage: true,
+        termsAccepted: true,
+        termsAcceptedAt: true,
+        verificationSubmittedAt: true,
+        verificationReviewedAt: true,
+        verificationNotes: true,
+      },
+    });
+
+    if (!seller) {
+      return next(new NotFoundError("Seller not found"));
+    }
+
+    res.status(200).json({
+      success: true,
+      verification: seller,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Upload verification document
+export const uploadVerificationDocument = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { documentType, imageData } = req.body;
+    const sellerId = req.seller?.id;
+
+    if (!documentType || !imageData) {
+      return next(
+        new ValidationError("Document type and image data are required")
+      );
+    }
+
+    const validDocumentTypes = ["idFront", "idBack", "contract", "personal"];
+    if (!validDocumentTypes.includes(documentType)) {
+      return next(new ValidationError("Invalid document type"));
+    }
+
+    // Upload to ImageKit
+    const uploadResponse = await imagekit.upload({
+      file: imageData,
+      fileName: `verification_${documentType}_${sellerId}_${Date.now()}`,
+      folder: "/seller_verification",
+    });
+
+    // Update seller record with the uploaded image URL
+    const updateData: any = {};
+    switch (documentType) {
+      case "idFront":
+        updateData.idFrontImage = uploadResponse.url;
+        break;
+      case "idBack":
+        updateData.idBackImage = uploadResponse.url;
+        break;
+      case "contract":
+        updateData.contractSignedImage = uploadResponse.url;
+        break;
+      case "personal":
+        updateData.personalImage = uploadResponse.url;
+        break;
+    }
+
+    await prisma.sellers.update({
+      where: { id: sellerId },
+      data: updateData,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Document uploaded successfully",
+      imageUrl: uploadResponse.url,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Accept terms and conditions
+export const acceptTerms = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const sellerId = req.seller?.id;
+    const { confirmed } = req.body;
+
+    if (!confirmed) {
+      return next(new ValidationError("Terms confirmation is required"));
+    }
+
+    const seller = await prisma.sellers.findUnique({
+      where: { id: sellerId },
+    });
+
+    if (!seller) {
+      return next(new NotFoundError("Seller not found"));
+    }
+
+    await prisma.sellers.update({
+      where: { id: sellerId },
+      data: {
+        termsAccepted: true,
+        termsAcceptedAt: new Date(),
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Terms and conditions accepted successfully",
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Submit verification for review
+export const submitVerification = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const sellerId = req.seller?.id;
+
+    const seller = await prisma.sellers.findUnique({
+      where: { id: sellerId },
+      select: {
+        idFrontImage: true,
+        idBackImage: true,
+        personalImage: true,
+        termsAccepted: true,
+        verificationStatus: true,
+      },
+    });
+
+    if (!seller) {
+      return next(new NotFoundError("Seller not found"));
+    }
+
+    // Check if all required documents are uploaded and terms are accepted
+    if (!seller.idFrontImage || !seller.idBackImage || !seller.personalImage) {
+      return next(
+        new ValidationError(
+          "All verification documents (ID front, ID back, and personal photo) must be uploaded before submission"
+        )
+      );
+    }
+
+    if (!seller.termsAccepted) {
+      return next(
+        new ValidationError(
+          "You must accept the terms and conditions before submitting verification"
+        )
+      );
+    }
+
+    // Check if already submitted and pending or approved
+    if (seller.verificationStatus === "Pending") {
+      return next(
+        new ValidationError("Verification already submitted and pending review")
+      );
+    }
+
+    if (seller.verificationStatus === "Approved") {
+      return next(new ValidationError("Verification already approved"));
+    }
+
+    // Only allow submission if status is None or RequiresResubmission
+    if (
+      seller.verificationStatus !== "None" &&
+      seller.verificationStatus !== "RequiresResubmission"
+    ) {
+      return next(
+        new ValidationError(
+          "Verification can only be submitted when status is None or RequiresResubmission"
+        )
+      );
+    }
+
+    await prisma.sellers.update({
+      where: { id: sellerId },
+      data: {
+        verificationStatus: "Pending",
+        verificationSubmittedAt: new Date(),
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Verification submitted successfully for review",
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Download contract template
+export const downloadContract = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    // Generate a simple contract template
+    const contractContent = `
+SELLER VERIFICATION CONTRACT
+
+This contract serves as a verification document for seller identity on the Bingo-The-Awaken platform.
+
+Seller Information:
+- Email: ${req.seller?.email || "[EMAIL]"}
+- Name: ${req.seller?.name || "[NAME]"}
+- Country: ${req.seller?.country || "[COUNTRY]"}
+
+By signing this document, I confirm that:
+1. All information provided is accurate and truthful
+2. I am authorized to sell products on this platform
+3. I will comply with all platform terms and conditions
+4. I understand that providing false information may result in account suspension
+
+Signature: _____________________     Date: _____________________
+
+Please sign this document, take a clear photo of the signed contract, and upload it as part of your verification process.
+
+---
+Bingo-The-Awaken Platform
+Generated on: ${new Date().toLocaleDateString()}
+    `;
+
+    res.setHeader("Content-Type", "text/plain");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="seller_verification_contract.txt"'
+    );
+    res.status(200).send(contractContent);
   } catch (error) {
     return next(error);
   }
