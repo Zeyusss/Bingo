@@ -62,10 +62,10 @@ function NotificationsPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () 
       <div className="bg-white w-96 h-full shadow-2xl transform transition-transform duration-300">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900 font-inter">Notifications</h2>
+            <h2 className="text-xl font-semibold text-gray-900 font-[Poppins]">Notifications</h2>
             <button 
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             >
               <X className="h-5 w-5 text-gray-500" />
             </button>
@@ -90,9 +90,9 @@ function NotificationsPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                 <div className="flex items-start space-x-3">
                   <IconComponent className={`h-5 w-5 ${iconColor} mt-0.5`} />
                   <div className="flex-1">
-                    <h3 className="font-medium text-gray-900 font-inter">{notification.title}</h3>
-                    <p className="text-sm text-gray-600 mt-1 font-inter">{notification.message}</p>
-                    <p className="text-xs text-gray-500 mt-2 font-inter">{notification.time}</p>
+                    <h3 className="font-medium text-gray-900 font-[Poppins]">{notification.title}</h3>
+                    <p className="text-sm text-gray-600 mt-1 font-[Work Sans]">{notification.message}</p>
+                    <p className="text-xs text-gray-500 mt-2 font-[Work Sans]">{notification.time}</p>
                   </div>
                 </div>
               </div>
@@ -137,98 +137,68 @@ function DashboardContent() {
   return (
     <>
       <NotificationsPanel isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white shadow-sm border-b border-gray-200">
-          <div className="w-full px-6">
-            <div className="py-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                      <Activity className="h-6 w-6 text-white" />
-                    </div>
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-semibold text-gray-900 font-inter">
-                      {getGreeting()}, {seller?.name || 'Welcome back'}! 👋
-                    </h1>
-                    <p className="text-base text-gray-600 mt-1 font-inter">
-                      Here's what's happening with your shop today
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2 px-4 py-2 bg-green-50 rounded-lg border border-green-200">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <span className="text-sm font-medium text-green-700 font-inter">Shop Active</span>
-                  </div>
-                  <div className="flex items-center space-x-2 px-4 py-2 bg-blue-50 rounded-lg border border-blue-200">
-                    <Clock className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium text-blue-700 font-inter">
-                      {new Date().toLocaleDateString('en-US', { 
-                        weekday: 'short', 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="w-full px-6 py-8">
+      <div className="min-h-screen bg-[#F4F2EF]" style={{ backgroundImage: 'url("https://ik.imagekit.io/w7lwh7wre/wood-texture.jpg?updatedAt=1754240423756")', backgroundSize: 'cover', backgroundAttachment: 'fixed' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header */}
           <div className="mb-8">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2 font-inter">
-                  <Activity className="h-5 w-5 text-gray-600" />
-                  Quick Actions
-                </h3>
-                <button 
-                  onClick={() => setShowNotifications(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors font-inter font-medium"
-                >
-                  <Bell className="h-4 w-4" />
-                  Notifications
-                  <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">3</span>
-                </button>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 font-[Poppins]">
+                  {getGreeting()}, {seller?.shop?.name || 'Seller'}! 👋
+                </h1>
+                <p className="text-lg text-gray-600 mt-2 font-[Work Sans]">
+                  Here's what's happening with your shop today
+                </p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <button 
+                onClick={() => setShowNotifications(true)}
+                className="relative p-3 bg-white rounded-full shadow-sm border border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                <Bell className="h-6 w-6 text-gray-600" />
+                <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  3
+                </span>
+              </button>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4 font-[Poppins]">Quick Actions</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <button 
                   onClick={handleAddProduct}
-                  className="flex items-center space-x-3 p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 group"
+                  className="flex items-center space-x-3 p-4 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50 transition-all duration-200 group"
                 >
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                    <Plus className="h-5 w-5 text-blue-600" />
+                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                    <Plus className="h-5 w-5 text-orange-600" />
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-gray-900 font-inter">Add Product</p>
-                    <p className="text-sm text-gray-500 font-inter">Create new listing</p>
+                    <p className="font-medium text-gray-900 font-[Poppins]">Add Product</p>
+                    <p className="text-sm text-gray-500 font-[Work Sans]">Create new listing</p>
                   </div>
                 </button>
                 <button 
                   onClick={handleViewOrders}
-                  className="flex items-center space-x-3 p-4 rounded-lg border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all duration-200 group"
+                  className="flex items-center space-x-3 p-4 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50 transition-all duration-200 group"
                 >
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
-                    <ShoppingCart className="h-5 w-5 text-green-600" />
+                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                    <ShoppingCart className="h-5 w-5 text-orange-600" />
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-gray-900 font-inter">View Orders</p>
-                    <p className="text-sm text-gray-500 font-inter">Manage orders</p>
+                    <p className="font-medium text-gray-900 font-[Poppins]">View Orders</p>
+                    <p className="text-sm text-gray-500 font-[Work Sans]">Manage orders</p>
                   </div>
                 </button>
                 <button 
                   onClick={handleViewAnalytics}
-                  className="flex items-center space-x-3 p-4 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all duration-200 group"
+                  className="flex items-center space-x-3 p-4 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50 transition-all duration-200 group"
                 >
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-                    <BarChart className="h-5 w-5 text-purple-600" />
+                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                    <BarChart className="h-5 w-5 text-orange-600" />
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-gray-900 font-inter">Analytics</p>
-                    <p className="text-sm text-gray-500 font-inter">View insights</p>
+                    <p className="font-medium text-gray-900 font-[Poppins]">Analytics</p>
+                    <p className="text-sm text-gray-500 font-[Work Sans]">View insights</p>
                   </div>
                 </button>
                 <button 
@@ -239,56 +209,64 @@ function DashboardContent() {
                     <CreditCard className="h-5 w-5 text-orange-600" />
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-gray-900 font-inter">Payments</p>
-                    <p className="text-sm text-gray-500 font-inter">Track earnings</p>
+                    <p className="font-medium text-gray-900 font-[Poppins]">Payments</p>
+                    <p className="text-sm text-gray-500 font-[Work Sans]">Track earnings</p>
                   </div>
                 </button>
               </div>
             </div>
           </div>
+
+          {/* Performance Overview */}
           <div className="mb-8">
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2 font-inter">
-                <BarChart3 className="h-6 w-6 text-purple-600" />
+              <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2 font-[Poppins]">
+                <BarChart3 className="h-6 w-6 text-orange-600" />
                 Performance Overview
               </h2>
-              <p className="text-base text-gray-600 mt-1 font-inter">
+              <p className="text-base text-gray-600 mt-1 font-[Work Sans]">
                 Your shop's key metrics at a glance
               </p>
             </div>
             <MetricsOverview />
           </div>
+
+          {/* Revenue Trends */}
           <div className="mb-8">
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2 font-inter">
-                <DollarSign className="h-6 w-6 text-green-600" />
+              <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2 font-[Poppins]">
+                <DollarSign className="h-6 w-6 text-orange-600" />
                 Revenue Trends
               </h2>
-              <p className="text-base text-gray-600 mt-1 font-inter">
+              <p className="text-base text-gray-600 mt-1 font-[Work Sans]">
                 Track your earnings and growth over time
               </p>
             </div>
             <RevenueChart />
           </div>
+
+          {/* Recent Orders */}
           <div className="mb-8">
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2 font-inter">
-                <ShoppingCart className="h-6 w-6 text-purple-600" />
+              <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2 font-[Poppins]">
+                <ShoppingCart className="h-6 w-6 text-orange-600" />
                 Recent Orders
               </h2>
-              <p className="text-base text-gray-600 mt-1 font-inter">
+              <p className="text-base text-gray-600 mt-1 font-[Work Sans]">
                 Orders that need your attention
               </p>
             </div>
             <RecentOrdersTable />
           </div>
+
+          {/* Top Performing Products */}
           <div className="mb-8">
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2 font-inter">
+              <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2 font-[Poppins]">
                 <Star className="h-6 w-6 text-yellow-500" />
                 Top Performing Products
               </h2>
-              <p className="text-base text-gray-600 mt-1 font-inter">
+              <p className="text-base text-gray-600 mt-1 font-[Work Sans]">
                 Your best-selling items
               </p>
             </div>

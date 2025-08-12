@@ -519,6 +519,214 @@ export const getSellerEvents = async (
   }
 };
 
+// Create event by updating product with starting_date and ending_date
+export const createEvent = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { productId, starting_date, ending_date, discount_percentage } = req.body;
+
+
+    if (!productId || !starting_date || !ending_date) {
+      return next(new ValidationError("Product ID, start date, and end date are required!"));
+    }
+
+    const startDate = new Date(starting_date);
+    const endDate = new Date(ending_date);
+    const now = new Date();
+
+    if (startDate < now) {
+      return next(new ValidationError("Start date cannot be in the past"));
+    }
+
+    if (endDate <= startDate) {
+      return next(new ValidationError("End date must be after start date"));
+    }
+
+
+    const existingProduct = await prisma.products.findFirst({
+      where: {
+        id: productId,
+        shopId: req.params.id,
+      },
+    });
+
+    if (!existingProduct) {
+      return next(new ValidationError("Product not found or doesn't belong to this seller"));
+    }
+
+    if (existingProduct.starting_date) {
+      return next(new ValidationError("Product is already set as an event"));
+    }
+
+
+    const updateData: any = {
+      starting_date: startDate,
+      ending_date: endDate,
+    };
+
+    
+    if (discount_percentage && discount_percentage > 0 && discount_percentage <= 100) {
+      const discountedPrice = existingProduct.regular_price * (1 - discount_percentage / 100);
+      updateData.sale_price = Math.round(discountedPrice * 100) / 100;
+    }
+
+
+    const updatedProduct = await prisma.products.update({
+      where: {
+        id: productId,
+      },
+      data: updateData,
+      include: {
+        images: true,
+        Shop: true,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Event created successfully",
+      product: updatedProduct,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Update event by modifying product dates and discount
+export const updateEvent = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { productId, starting_date, ending_date, discount_percentage } = req.body;
+
+
+    if (!productId || !starting_date || !ending_date) {
+      return next(new ValidationError("Product ID, start date, and end date are required!"));
+    }
+
+
+    const startDate = new Date(starting_date);
+    const endDate = new Date(ending_date);
+
+    if (endDate <= startDate) {
+      return next(new ValidationError("End date must be after start date"));
+    }
+
+
+    const existingProduct = await prisma.products.findFirst({
+      where: {
+        id: productId,
+        shopId: req.params.id, 
+      },
+    });
+
+    if (!existingProduct) {
+      return next(new ValidationError("Product not found or doesn't belong to this seller"));
+    }
+
+
+    if (!existingProduct.starting_date) {
+      return next(new ValidationError("Product is not set as an event"));
+    }
+
+
+    const updateData: any = {
+      starting_date: startDate,
+      ending_date: endDate,
+    };
+
+
+    if (discount_percentage && discount_percentage > 0 && discount_percentage <= 100) {
+      const originalPrice = existingProduct.regular_price;
+      const discountedPrice = originalPrice * (1 - discount_percentage / 100);
+      updateData.sale_price = Math.round(discountedPrice * 100) / 100;
+    } else if (discount_percentage === 0) {
+      updateData.sale_price = existingProduct.regular_price;
+    }
+
+
+    const updatedProduct = await prisma.products.update({
+      where: {
+        id: productId,
+      },
+      data: updateData,
+      include: {
+        images: true,
+        Shop: true,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Event updated successfully",
+      product: updatedProduct,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Remove event by clearing product dates (convert back to regular product)
+export const removeEvent = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { productId } = req.body;
+
+    if (!productId) {
+      return next(new ValidationError("Product ID is required!"));
+    }
+
+
+    const existingProduct = await prisma.products.findFirst({
+      where: {
+        id: productId,
+        shopId: req.params.id, 
+      },
+    });
+
+    if (!existingProduct) {
+      return next(new ValidationError("Product not found or doesn't belong to this seller"));
+    }
+
+
+    if (!existingProduct.starting_date) {
+      return next(new ValidationError("Product is not set as an event"));
+    }
+
+
+    const updatedProduct = await prisma.products.update({
+      where: {
+        id: productId,
+      },
+      data: {
+        starting_date: null,
+        ending_date: null,
+        sale_price: existingProduct.regular_price,
+      },
+      include: {
+        images: true,
+        Shop: true,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Event removed successfully. Product converted back to regular product.",
+      product: updatedProduct,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 //follow a shop
 export const followShop = async (
   req: any,

@@ -220,7 +220,7 @@ const CartPage = () => {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr className="text-left text-sm font-medium text-gray-700">
-                    <th className="px-6 py-4 w-12"></th> {/* Remove button */}
+                    <th className="px-6 py-4 w-12"></th>
                     <th className="px-6 py-4">PRODUCT</th>
                     <th className="px-6 py-4 text-center">PRICE</th>
                     <th className="px-6 py-4 text-center">QUANTITY</th>

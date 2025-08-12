@@ -26,7 +26,8 @@ interface ShippingAddress {
   city: string;
   zip: string;
   country: string;
-  name:string;
+  name: string;
+  phone?: string;
 }
 
 interface Order {
@@ -61,8 +62,8 @@ const Toast = ({
   onClose: () => void;
 }) => (
   <div
-    className={`fixed top-6 right-6 z-50 px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 text-white ${
-      type === "success" ? "bg-green-600" : "bg-red-600"
+    className={`fixed top-6 right-6 z-50 px-6 py-3 rounded-2xl shadow-lg flex items-center gap-2 text-white border ${
+      type === "success" ? "bg-green-600 border-green-500" : "bg-red-600 border-red-500"
     }`}
     role="alert"
   >
@@ -71,9 +72,9 @@ const Toast = ({
     ) : (
       <XCircle className="w-5 h-5" />
     )}
-    <span>{message}</span>
+    <span className="font-[Work Sans]">{message}</span>
     <button
-      className="ml-4 text-white/80 hover:text-white"
+      className="ml-4 text-white/80 hover:text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-white/20 transition-colors"
       onClick={onClose}
       aria-label="Close notification"
     >
@@ -92,24 +93,24 @@ const Stepper = ({ current }: { current: number }) => (
         <React.Fragment key={step}>
           <div className="flex flex-col items-center flex-1">
             <div
-              className={`w-8 h-8 flex items-center justify-center rounded-full border-2 transition-all duration-200
+              className={`w-10 h-10 flex items-center justify-center rounded-full border-2 transition-all duration-200 font-[Work Sans] font-semibold
               ${
                 isCompleted
-                  ? "bg-green-500 border-green-500 text-white"
+                  ? "bg-green-600 border-green-600 text-white"
                   : isActive
-                  ? "bg-blue-600 border-blue-600 text-white"
-                  : "bg-gray-200 border-gray-300 text-gray-500"
+                  ? "bg-orange-500 border-orange-500 text-white"
+                  : "bg-gray-100 border-gray-300 text-gray-500"
               }`}
             >
               {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : idx + 1}
             </div>
             <span
-              className={`mt-2 text-xs font-semibold ${
+              className={`mt-2 text-xs font-semibold font-[Work Sans] text-center ${
                 isCompleted
                   ? "text-green-600"
                   : isActive
-                  ? "text-blue-600"
-                  : "text-gray-400"
+                  ? "text-orange-600"
+                  : "text-gray-500"
               }`}
             >
               {step}
@@ -117,12 +118,12 @@ const Stepper = ({ current }: { current: number }) => (
           </div>
           {idx !== statuses.length - 1 && (
             <div
-              className={`hidden sm:block flex-1 h-1 mx-1 rounded-full transition-all duration-200
+              className={`hidden sm:block flex-1 h-2 mx-2 rounded-full transition-all duration-200
               ${
                 idx < current
                   ? "bg-green-500"
                   : idx === current
-                  ? "bg-blue-400"
+                  ? "bg-orange-400"
                   : "bg-gray-200"
               }`}
             />
@@ -189,24 +190,33 @@ const Page = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
-        <Loader2 className="animate-spin w-8 h-8 text-blue-500" />
+      <div className="flex justify-center items-center min-h-screen bg-[#F4F2EF] bg-[url('/wood-texture.jpg')] bg-cover bg-center bg-fixed">
+        <div className="bg-white rounded-2xl p-8 shadow-lg">
+          <Loader2 className="animate-spin w-8 h-8 text-orange-500 mx-auto" />
+          <p className="text-gray-700 mt-4 font-[Work Sans]">Loading order details...</p>
+        </div>
       </div>
     );
   }
   if (error) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
-        <p className="text-center text-lg text-red-500 py-10">{error}</p>
+      <div className="flex justify-center items-center min-h-screen bg-[#F4F2EF] bg-[url('/wood-texture.jpg')] bg-cover bg-center bg-fixed">
+        <div className="bg-white rounded-2xl p-8 shadow-lg text-center">
+          <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <p className="text-lg text-red-600 font-[Work Sans]">{error}</p>
+        </div>
       </div>
     );
   }
   if (!order) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
-        <p className="text-center text-lg text-red-500 py-10">
-          Order not found.
-        </p>
+      <div className="flex justify-center items-center min-h-screen bg-[#F4F2EF] bg-[url('/wood-texture.jpg')] bg-cover bg-center bg-fixed">
+        <div className="bg-white rounded-2xl p-8 shadow-lg text-center">
+          <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <p className="text-lg text-red-600 font-[Work Sans]">
+            Order not found.
+          </p>
+        </div>
       </div>
     );
   }
@@ -214,7 +224,7 @@ const Page = () => {
   const currentStatusIdx = statuses.indexOf(order.deliveryStatus);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 to-gray-900 pb-10">
+    <div className="min-h-screen bg-[#F4F2EF] bg-[url('/wood-texture.jpg')] bg-cover bg-center bg-fixed pb-10">
       {toast && (
         <Toast
           message={toast.message}
@@ -222,19 +232,19 @@ const Page = () => {
           onClose={() => setToast(null)}
         />
       )}
-      <div className="sticky top-0 z-30 bg-gradient-to-r from-gray-950/95 to-gray-900/95 backdrop-blur-md border-b border-gray-800 py-4 px-4 sm:px-8 flex items-center justify-between shadow-md">
+      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-orange-200 py-4 px-4 sm:px-8 flex items-center justify-between shadow-md">
         <button
-          className="text-white flex items-center gap-2 font-semibold hover:underline focus:outline-none"
+          className="text-gray-800 flex items-center gap-2 font-semibold hover:text-orange-600 transition-colors focus:outline-none font-[Work Sans]"
           onClick={() => router.push("/dashboard/orders")}
           aria-label="Go back to dashboard"
         >
-          <ArrowLeft />
+          <ArrowLeft className="text-orange-600" />
           <span className="hidden sm:inline">Back to Orders</span>
         </button>
-        <span className="text-gray-200 font-bold text-lg">
+        <span className="text-gray-800 font-bold text-lg font-[Poppins]">
           Order #{order.id.slice(-6)}
         </span>
-        <span className="text-xs text-gray-400">
+        <span className="text-xs text-gray-600 font-[Work Sans]">
           {new Date(order.createdAt).toLocaleString()}
         </span>
       </div>
@@ -242,14 +252,14 @@ const Page = () => {
       <main className="max-w-5xl mx-auto px-4 sm:px-8 mt-8">
         {/* Stepper */}
         <section className="mb-10">
-          <div className="bg-gray-800/80 rounded-xl shadow-lg p-6">
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-orange-100">
             <div className="mb-6">
               <Stepper current={currentStatusIdx} />
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-4">
               <label
                 htmlFor="status-select"
-                className="text-sm font-semibold text-gray-300"
+                className="text-sm font-semibold text-gray-700 font-[Work Sans]"
               >
                 Update Delivery Status:
               </label>
@@ -258,7 +268,7 @@ const Page = () => {
                 value={order.deliveryStatus}
                 onChange={handleStatusChange}
                 disabled={updating}
-                className="border border-gray-700 bg-gray-900 text-gray-200 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 min-w-[180px]"
+                className="border border-gray-300 bg-white text-gray-800 px-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition duration-150 min-w-[180px] font-[Work Sans]"
               >
                 {statuses.map((status, idx) => (
                   <option
@@ -276,7 +286,7 @@ const Page = () => {
                 ))}
               </select>
               {updating && (
-                <Loader2 className="animate-spin w-4 h-4 text-blue-500 ml-2" />
+                <Loader2 className="animate-spin w-4 h-4 text-orange-500 ml-2" />
               )}
             </div>
           </div>
@@ -284,32 +294,32 @@ const Page = () => {
 
         {/* Order Summary Card */}
         <section className="mb-10">
-          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-lg p-6 flex flex-col sm:flex-row gap-8">
+          <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col sm:flex-row gap-8 border border-orange-100">
             <div className="flex-1 space-y-3">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-gray-300">
+                <span className="font-semibold text-gray-700 font-[Work Sans]">
                   Payment Status:
                 </span>
                 <span
-                  className={`font-bold ${
+                  className={`font-bold font-[Work Sans] ${
                     order.status === "Paid"
-                      ? "text-green-500"
-                      : "text-yellow-400"
+                      ? "text-green-600"
+                      : "text-yellow-600"
                   }`}
                 >
                   {order.status}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-gray-300">Total Paid:</span>
-                <span className="font-bold text-blue-400">
+                <span className="font-semibold text-gray-700 font-[Work Sans]">Total Paid:</span>
+                <span className="font-bold text-orange-600 font-[Work Sans]">
                   ${order.total.toFixed(2)}
                 </span>
               </div>
               {order.discountAmount > 0 && (
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-gray-300">Discount:</span>
-                  <span className="text-green-400 font-semibold">
+                  <span className="font-semibold text-gray-700 font-[Work Sans]">Discount:</span>
+                  <span className="text-green-600 font-semibold font-[Work Sans]">
                     -${order.discountAmount.toFixed(2)} (
                     {order.couponCode?.discountType === "percentage"
                       ? `${order.couponCode.discountValue}%`
@@ -320,10 +330,10 @@ const Page = () => {
               )}
               {order.couponCode && (
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-gray-300">
+                  <span className="font-semibold text-gray-700 font-[Work Sans]">
                     Coupon Used:
                   </span>
-                  <span className="text-blue-400 font-semibold">
+                  <span className="text-orange-600 font-semibold font-[Work Sans]">
                     {order.couponCode.public_name}
                   </span>
                 </div>
@@ -331,10 +341,10 @@ const Page = () => {
             </div>
             {order.shippingAddress && (
               <div className="flex-1">
-                <h2 className="text-md font-semibold text-gray-200 mb-2">
+                <h2 className="text-md font-semibold text-gray-800 mb-2 font-[Poppins]">
                   Shipping Address
                 </h2>
-                <div className="text-gray-300 text-sm space-y-1">
+                <div className="text-gray-700 text-sm space-y-1 font-[Work Sans]">
                   {order.shippingAddress.name && (
                     <div>
                       <span className="font-semibold">Name:</span>{" "}
@@ -371,42 +381,42 @@ const Page = () => {
           </div>
         </section>
 
-        <div className="border-t border-gray-800 my-10" />
+        <div className="border-t border-orange-200 my-10" />
         <section>
-          <h2 className="text-xl font-bold text-gray-200 mb-6">Order Items</h2>
+          <h2 className="text-xl font-bold text-gray-800 mb-6 font-[Poppins]">Order Items</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {order.items.map((item) => (
               <div
                 key={item.productId}
-                className="bg-gray-900 rounded-xl shadow-md p-5 flex gap-5 items-center hover:shadow-lg transition-shadow duration-200"
+                className="bg-white rounded-2xl shadow-md p-5 flex gap-5 items-center hover:shadow-lg transition-shadow duration-200 border border-orange-100"
               >
                 <img
                   src={item.product?.images?.[0]?.url || fallbackImg}
                   alt={item.product?.title || "Product image"}
-                  className="w-20 h-20 object-cover rounded-lg border border-gray-800 bg-gray-700 flex-shrink-0"
+                  className="w-20 h-20 object-cover rounded-xl border border-orange-200 bg-gray-50 flex-shrink-0"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = fallbackImg;
                   }}
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-100 truncate">
+                  <p className="font-semibold text-gray-800 truncate font-[Work Sans]">
                     {item.product?.title || "Unnamed Product"}
                   </p>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-gray-600 font-[Work Sans]">
                     Quantity:{" "}
-                    <span className="text-gray-200 font-medium">
+                    <span className="text-gray-800 font-medium">
                       {item.quantity}
                     </span>
                   </p>
                   {item.selectedOptions &&
                     Object.keys(item.selectedOptions).length > 0 && (
-                      <div className="text-xs text-gray-400 mt-1 flex flex-wrap gap-2">
+                      <div className="text-xs text-gray-600 mt-1 flex flex-wrap gap-2 font-[Work Sans]">
                         {Object.entries(item.selectedOptions).map(
                           ([key, value]) =>
                             value && (
                               <span
                                 key={key}
-                                className="bg-gray-800 px-2 py-1 rounded font-medium capitalize"
+                                className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-medium capitalize"
                               >
                                 {key}: {value}
                               </span>
@@ -416,7 +426,7 @@ const Page = () => {
                     )}
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold text-blue-400">
+                  <p className="text-lg font-bold text-orange-600 font-[Work Sans]">
                     ${item.price.toFixed(2)}
                   </p>
                 </div>

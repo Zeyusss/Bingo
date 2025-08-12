@@ -6,6 +6,7 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import SideCartWrapper from "../shared/components/cart/SideCartWrapper";
 import LoginPromptWrapper from "../shared/components/auth/LoginPromptWrapper";
+import PersonalizationModal from "../shared/components/modals/PersonalizationModal";
 export const metadata = {
   title: "Bingo",
   description: "Bingo",
@@ -43,6 +44,7 @@ export default function RootLayout({
           {children}
           <SideCartWrapper />
           <LoginPromptWrapper />
+          <PersonalizationModal />
         </AppProviders>
         </body>
     </html>

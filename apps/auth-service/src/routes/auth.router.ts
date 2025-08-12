@@ -26,6 +26,7 @@ import {
   loginAdmin,
   getLoggedInAdmin,
   logoutUser,
+  logoutSeller,
   uploadUserImage,
   getProfilePictureEligibility,
   updateUserProfilePicture,
@@ -64,6 +65,7 @@ router.post("/change-password",isAuthenticated,updateUserPassword)
 router.post("/login-admin", loginAdmin);
 router.get("/logged-in-admin", isAuthenticated, getLoggedInAdmin);
 router.get("/logout-user", logoutUser);
+router.get("/logout-seller", logoutSeller);
 router.post("/upload-user-image", isAuthenticated, uploadUserImage);
 router.get("/profile-picture-eligibility", isAuthenticated, getProfilePictureEligibility);
 router.put("/update-profile-picture", isAuthenticated, updateUserProfilePicture);

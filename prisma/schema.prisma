@@ -104,8 +104,6 @@ model sellers {
   password     String
   stripeId     String?
   shop         shops?
-  
-  // Identity Verification Fields
   isVerified              Boolean             @default(false)
   verificationStatus      VerificationStatus  @default(None)
   idFrontImage            String?
@@ -178,6 +176,9 @@ model products {
   discount_codes        String[]      @db.ObjectId
   status                productStatus @default(Active)
   deletedAt             DateTime?
+  personalizationEnabled      Boolean? @default(false)
+  personalizationInstructions String?
+  personalizationRequired      Boolean? @default(false)
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
   shopId                String        @db.ObjectId
@@ -219,6 +220,7 @@ model order_items {
   quantity        Int
   price           Float
   selectedOptions Json?
+  personalizationData Json?
   order           orders   @relation(fields: [orderId], references: [id])
   createdAt       DateTime @default(now())
 }

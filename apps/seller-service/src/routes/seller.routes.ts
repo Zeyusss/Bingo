@@ -24,6 +24,9 @@ import {
   getShopVisitorAnalytics,
   getShopTopSellingProducts,
   trackShopVisitor,
+  createEvent,
+  updateEvent,
+  removeEvent,
 } from "../controllers/seller.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isSeller } from "@packages/middleware/authorizeRoles";
@@ -38,6 +41,9 @@ router.put("/edit-profile", isAuthenticated, editSellerProfile);
 router.get("/get-seller/:id", getSellerInfo);
 router.get("/get-seller-products/:id", getSellerProducts);
 router.get("/get-seller-events/:id", getSellerEvents);
+router.post("/create-event/:id", isAuthenticated, isSeller, createEvent);
+router.put("/update-event/:id", isAuthenticated, isSeller, updateEvent);
+router.delete("/remove-event/:id", isAuthenticated, isSeller, removeEvent);
 router.post("/follow-shop", isAuthenticated, followShop);
 router.post("/unfollow-shop", isAuthenticated, unfollowShop);
 router.get("/is-following/:id", isAuthenticated, isFollowing);

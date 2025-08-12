@@ -28,7 +28,7 @@ import PaymentIcon from "apps/seller-ui/src/app/assets/icons/payment";
 const SidebarBarWrapper = () => {
   const { activeSidebar, setActiveSidebar } = useSidebar();
   const pathName = usePathname();
-  const { seller } = useSeller({ enabled: true });
+  const { seller, logout } = useSeller({ enabled: true });
 
   useEffect(() => {
     setActiveSidebar(pathName);
@@ -211,9 +211,9 @@ const SidebarBarWrapper = () => {
               />
 
               <SidebarItem
-                isActive={activeSidebar === "/dashboard/logout"}
+                isActive={false}
                 title="Logout"
-                href="/"
+                onClick={logout}
                 icon={<LogOut size={20} color={getIconColor("/logout")} />}
               />
             </SidebarMenu>
