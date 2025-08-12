@@ -378,7 +378,6 @@ export const refreshToken = async (
 //get logged in user info
 export const getUser = async (req: any, res: Response, next: NextFunction) => {
   try {
-    // Fetch fresh user data with avatar relation
     const user = await prisma.users.findUnique({
       where: { id: req.user.id },
       include: {
@@ -721,8 +720,18 @@ export const getSeller = async (
   try {
     const seller = req.seller;
     
+    let followersCount = 0;
+    if (seller.shop?.id) {
+      followersCount = await prisma.followers.count({
+        where: {
+          shopId: seller.shop.id,
+        },
+      });
+    }
+    
     const formattedSeller = {
       ...seller,
+      followers: followersCount,
       shop: seller.shop ? {
         ...seller.shop,
         avatar: seller.shop.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756",
@@ -1199,6 +1208,57 @@ export const logoutUser = async (
   }
 };
 
+// seller logout
+export const logoutSeller = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    res.clearCookie("seller-access-token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("seller-refresh-token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("access_Token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("refresh_Token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("access_token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("refresh_token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    return res
+      .status(200)
+      .json({ success: true, message: "Seller logged out successfully" });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 // Upload image to ImageKit
 export const uploadUserImage = async (
   req: any,
@@ -1212,10 +1272,11 @@ export const uploadUserImage = async (
   });
 
   try {
-    const { file, fileName, folder = "user_profiles" } = req.body;
+    const { image, file, fileName, folder = "chat-images" } = req.body;
+    const imageData = image || file;
 
-    if (!file || !fileName) {
-      throw new ValidationError("File and fileName are required");
+    if (!imageData || !fileName) {
+      throw new ValidationError("Image and fileName are required");
     }
 
     await requestLogger.info('User image upload attempt started', {
@@ -1230,7 +1291,7 @@ export const uploadUserImage = async (
     });
 
     const uploadResponse = await imagekit.upload({
-      file: file,
+      file: imageData,
       fileName: fileName,
       folder: folder,
     });
@@ -1248,6 +1309,7 @@ export const uploadUserImage = async (
     return res.status(200).json({
       success: true,
       message: "Image uploaded successfully",
+      imageUrl: uploadResponse.url,
       url: uploadResponse.url,
       file_id: uploadResponse.fileId,
     });

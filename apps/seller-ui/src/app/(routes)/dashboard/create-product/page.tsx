@@ -71,10 +71,63 @@ const Page = () => {
   const onSubmit = async (data: any) => {
     try {
       setLoading(true);
-      await axiosInstance.post("/product/api/create-product", data);
+      
+      const hasImages = images.some(img => img !== null && img?.file_url);
+      if (!hasImages) {
+        toast.error("Please upload at least one product image");
+        setLoading(false);
+        return;
+      }
+      
+      const productData = { ...data };
+      
+      if (data.createEvent && data.event_starting_date && data.event_ending_date) {
+
+        const startDate = new Date(data.event_starting_date);
+        const endDate = new Date(data.event_ending_date);
+        const now = new Date();
+        
+        if (startDate <= now) {
+          toast.error("Event start date must be in the future");
+          setLoading(false);
+          return;
+        }
+        
+        if (endDate <= startDate) {
+          toast.error("Event end date must be after start date");
+          setLoading(false);
+          return;
+        }
+        
+        productData.starting_date = startDate.toISOString();
+        productData.ending_date = endDate.toISOString();
+        
+        if (data.event_discount_percentage && data.event_discount_percentage > 0) {
+          const regularPrice = parseFloat(data.regular_price);
+          const discountedPrice = regularPrice * (1 - data.event_discount_percentage / 100);
+          productData.sale_price = Math.round(discountedPrice * 100) / 100;
+        }
+        
+        console.log("Creating product with event dates:", {
+          starting_date: productData.starting_date,
+          ending_date: productData.ending_date,
+          discount_percentage: data.event_discount_percentage,
+          sale_price: productData.sale_price
+        });
+      }
+      
+      const productResponse = await axiosInstance.post("/product/api/create-product", productData);
+      const createdProduct = productResponse.data.newProduct;
+      
+      if (data.createEvent && data.event_starting_date && data.event_ending_date) {
+        toast.success("Product and limited event created successfully!");
+      } else {
+        toast.success("Product created successfully!");
+      }
+      
       router.push("/dashboard/all-products");
     } catch (error: any) {
-      toast.error(error?.data?.message);
+      toast.error(error?.response?.data?.message || "Failed to create product");
     } finally {
       setLoading(false);
     }
@@ -158,51 +211,60 @@ const Page = () => {
   };
 
   return (
-    <div className="px-6 md:px-12 py-8">
-      <h1 className="text-3xl font-bold text-gray-800 mb-1">Create Product</h1>
-      <div className="h-1 w-16 bg-blue-600 mb-4 rounded"></div>
+    <div className="min-h-screen bg-[#F4F2EF]" style={{ backgroundImage: 'url("https://ik.imagekit.io/w7lwh7wre/wood-texture.jpg?updatedAt=1754240423756")', backgroundSize: 'cover', backgroundAttachment: 'fixed' }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 font-[Poppins] mb-2">Create Product</h1>
+          <div className="h-1 w-16 bg-orange-500 mb-4 rounded"></div>
+          <p className="text-lg text-gray-600 font-[Work Sans]">Add a new product to your shop</p>
 
-      <div className="flex items-center text-sm text-gray-500 mb-6">
-        <Link href="/dashboard" className="text-blue-500 hover:underline">Dashboard</Link>
-        <ChevronRight className="mx-1" size={18} />
-        <span>Create Product</span>
-      </div>
+          <div className="flex items-center text-sm text-gray-600 mt-4 font-[Work Sans]">
+            <Link href="/dashboard" className="text-orange-600 hover:text-orange-800 font-medium">Dashboard</Link>
+            <ChevronRight className="mx-2 text-gray-400" size={16} />
+            <span>Create Product</span>
+          </div>
+        </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-12 gap-8">
         {/* Left Column - Images */}
         <div className="md:col-span-4">
-          {images?.length > 0 && (
-            <ImagePlaceHolder
-              setOpenImageModal={setOpenImageModal}
-              size="765 * 850"
-              pictureUploadingLoader={pictureUploadingLoader}
-              small={false}
-              index={0}
-              images={images}
-              setSelectedImage={setSelectedImage}
-              onImageChange={handleImageChange}
-              onRemove={handleRemoveImage}
-            />
-          )}
-          <div className="grid grid-cols-2 gap-3 mt-4">
-            {images.slice(1).map((_, index) => (
+          <div className="bg-white rounded-2xl border border-orange-100 p-6 shadow-lg">
+            <h2 className="text-xl font-semibold text-gray-900 font-[Poppins] mb-4">Product Images *</h2>
+            <p className="text-sm text-gray-600 mb-3">Upload at least one product image (required)</p>
+            {images?.length > 0 && (
               <ImagePlaceHolder
-                key={index}
                 setOpenImageModal={setOpenImageModal}
                 size="765 * 850"
-                small
-                index={index + 1}
                 pictureUploadingLoader={pictureUploadingLoader}
+                small={false}
+                index={0}
                 images={images}
                 setSelectedImage={setSelectedImage}
                 onImageChange={handleImageChange}
                 onRemove={handleRemoveImage}
               />
-            ))}
+            )}
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              {images.slice(1).map((_, index) => (
+                <ImagePlaceHolder
+                  key={index}
+                  setOpenImageModal={setOpenImageModal}
+                  size="765 * 850"
+                  small
+                  index={index + 1}
+                  pictureUploadingLoader={pictureUploadingLoader}
+                  images={images}
+                  setSelectedImage={setSelectedImage}
+                  onImageChange={handleImageChange}
+                  onRemove={handleRemoveImage}
+                />
+              ))}
+            </div>
           </div>
         </div>
         {/* Right Column - Product Form */}
-        <div className="md:col-span-8 space-y-6">
+        <div className="md:col-span-8">
+          <div className="bg-white rounded-2xl border border-orange-100 p-6 shadow-lg space-y-6">
 
           {/* Product Title */}
           <Input
@@ -365,26 +427,28 @@ const Page = () => {
               {...register("regular_price", {
                 valueAsNumber: true,
                 validate: (value) => {
-                  if (value === undefined || value === null || value === "") return true;
-                  if (isNaN(value)) return "Must be a number";
-                  if (value < 1) return "Must be at least $1";
-                  return true;
+                  if (value === undefined || value === null || value === "" || Number.isNaN(value)) return true;
+                  if (typeof value === 'number' && !isNaN(value) && value >= 1) return true;
+                  if (typeof value === 'number' && !isNaN(value) && value < 1) return "Must be at least $1";
+                  return "Must be a valid number";
                 },
               })}
             />
             <Input
-              label="Sale Price *"
+              label="Sale Price (Optional)"
               type="number"
               placeholder="e.g., 15"
               {...register("sale_price", {
-                required: "Sale price is required",
                 valueAsNumber: true,
                 validate: (value) => {
-                  if (isNaN(value)) return "Must be a number";
-                  if (regularPrice && value >= regularPrice) {
-                    return "Must be less than regular price";
+                  if (value === undefined || value === null || value === "" || Number.isNaN(value)) return true;
+                  if (typeof value === 'number' && !isNaN(value) && value > 0) {
+                    if (regularPrice && value >= regularPrice) {
+                      return "Must be less than regular price";
+                    }
+                    return true;
                   }
-                  return true;
+                  return "Must be a valid number";
                 },
               })}
             />
@@ -406,96 +470,266 @@ const Page = () => {
           />
           {errors.stock && <p className="text-red-500 text-sm">{errors.stock.message as string}</p>}
 
+          {/* Limited Event Option */}
+          {watch("stock") > 0 && watch("stock") < 100 && Number.isInteger(watch("stock")) && (
+            <div className="p-4 bg-orange-50 border border-orange-200 rounded-md">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold">LIMITED</span>
+                <h3 className="font-medium text-gray-900">Create Limited Event</h3>
+              </div>
+              <p className="text-sm text-orange-800 mb-3">
+                This product qualifies for limited events (stock &lt; 100). You can create an event directly during product creation.
+              </p>
+              <div className="flex items-center gap-2 mb-3">
+                <input
+                  type="checkbox"
+                  id="createEvent"
+                  {...register("createEvent")}
+                  className="rounded border-gray-300"
+                />
+                <label htmlFor="createEvent" className="text-sm font-medium text-gray-700">
+                  Create limited event for this product
+                </label>
+              </div>
+
+              {watch("createEvent") && (
+                <div className="space-y-3 mt-3 p-3 bg-white rounded border">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Event Start Date & Time *
+                      </label>
+                      <input
+                        type="datetime-local"
+                        {...register("event_starting_date", {
+                          required: watch("createEvent") ? "Start date is required for events" : false
+                        })}
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                      />
+                      {errors.event_starting_date && (
+                        <p className="text-red-500 text-xs mt-1">{errors.event_starting_date.message as string}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Event End Date & Time *
+                      </label>
+                      <input
+                        type="datetime-local"
+                        {...register("event_ending_date", {
+                          required: watch("createEvent") ? "End date is required for events" : false
+                        })}
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                      />
+                      {errors.event_ending_date && (
+                        <p className="text-red-500 text-xs mt-1">{errors.event_ending_date.message as string}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Event Discount % (Optional)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      placeholder="e.g., 20 for 20% off"
+                      {...register("event_discount_percentage", {
+                        valueAsNumber: true,
+                        validate: (value) => {
+                          if (value === undefined || value === null || value === "") return true;
+                          if (value < 0 || value > 100) return "Discount must be between 0-100%";
+                          return true;
+                        }
+                      })}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    />
+                    {errors.event_discount_percentage && (
+                      <p className="text-red-500 text-xs mt-1">{errors.event_discount_percentage.message as string}</p>
+                    )}
+                    
+                    {/* Discount Preview */}
+                    {watch("event_discount_percentage") && 
+                     watch("event_discount_percentage") > 0 && 
+                     regularPrice && 
+                     typeof regularPrice === 'number' && 
+                     !isNaN(regularPrice) && 
+                     regularPrice > 0 ? (
+                      <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+                        <div className="flex justify-between">
+                          <span>Regular Price:</span>
+                          <span className="line-through">${regularPrice.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Discount ({watch("event_discount_percentage")}%):</span>
+                          <span className="text-red-600">-${((regularPrice * watch("event_discount_percentage")) / 100).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between font-semibold text-green-700 border-t border-green-300 pt-1">
+                          <span>Event Price:</span>
+                          <span>${(regularPrice - ((regularPrice * watch("event_discount_percentage")) / 100)).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    ) : watch("event_discount_percentage") && watch("event_discount_percentage") > 0 ? (
+                      <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                        <p className="text-yellow-800">
+                          💡 Enter a regular price above to see the discount preview
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Selectors */}
           <ColorSelector control={control} errors={errors} />
           <SizeSelector control={control} errors={errors} />
           <CustomSpecifications control={control} errors={errors} />
           <CustomProperties control={control} errors={errors} />
-        </div>
-        {/* Discount Codes */}
-        <div className="md:col-span-12">
-          <label className="block font-medium mb-2">Select Discount Codes (optional)</label>
-          {discountLoading ? (
-            <p className="text-gray-500">Loading discount codes...</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {discountCodes.map((code: any) => (
-                <button
-                  key={code.id}
-                  type="button"
-                  className={`px-3 py-1 rounded-md text-sm font-semibold border ${
-                    watch("discountCodes")?.includes(code.id)
-                      ? "bg-blue-600 text-white border-blue-600"
-                      : "bg-gray-100 text-gray-800 border-gray-300 hover:bg-gray-200"
-                  }`}
-                  onClick={() => {
-                    const current = watch("discountCodes") || [];
-                    const updated = current.includes(code.id)
-                      ? current.filter((id: string) => id !== code.id)
-                      : [...current, code.id];
-                    setValue("discountCodes", updated);
-                  }}
-                >
-                  {code.public_name} ({code.discountValue}
-                  {code.discountType === "percentage" ? "%" : "$"})
-                </button>
-              ))}
+
+          {/* Product Personalization Section */}
+          <div className="space-y-4 p-4 border border-orange-200 rounded-lg bg-orange-50">
+            <h3 className="text-lg font-semibold text-gray-900 font-[Poppins]">Product Personalization</h3>
+            <p className="text-sm text-gray-600 font-[Work Sans]">Allow customers to personalize this product with custom text, names, or special requests.</p>
+            
+            {/* Enable Personalization Toggle */}
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                id="personalizationEnabled"
+                {...register("personalizationEnabled")}
+                className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+              />
+              <label htmlFor="personalizationEnabled" className="text-sm font-medium text-gray-700 font-[Work Sans]">
+                Enable product personalization
+              </label>
             </div>
-          )}
-        </div>
 
-        {/* Cash on Delivery */}
-        <div className="md:col-span-6">
-          <label className="block font-medium mb-1">Cash On Delivery *</label>
-          <select
-            defaultValue="yes"
-            {...register("cash_on_delivery", { required: "Required" })}
-            className="w-full p-2 border border-gray-300 rounded-md bg-white text-black"
-          >
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
-          </select>
-          {errors.cash_on_delivery && (
-            <p className="text-red-500 text-sm">{errors.cash_on_delivery.message as string}</p>
-          )}
-        </div>
+            {/* Personalization Instructions - Only show if personalization is enabled */}
+            {watch("personalizationEnabled") && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block font-medium mb-2 font-[Work Sans]">
+                    Personalization Instructions
+                    <span className="text-sm text-gray-500 font-normal ml-1">(Help customers understand what they can personalize)</span>
+                  </label>
+                  <textarea
+                    {...register("personalizationInstructions")}
+                    rows={3}
+                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 font-[Work Sans]"
+                    placeholder="Example: Please provide the name you'd like engraved (up to 15 characters). You can also specify font preference: Script, Block, or Cursive."
+                  />
+                  {errors.personalizationInstructions && (
+                    <p className="text-red-500 text-sm mt-1">{errors.personalizationInstructions.message as string}</p>
+                  )}
+                </div>
 
-        {/* Action Buttons */}
-        <div className="md:col-span-12 flex justify-end gap-4 pt-6">
-          {isChanged && (
+                {/* Personalization Required Checkbox */}
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id="personalizationRequired"
+                    {...register("personalizationRequired")}
+                    className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                  />
+                  <label htmlFor="personalizationRequired" className="text-sm font-medium text-gray-700 font-[Work Sans]">
+                    Personalization is required (customers must provide personalization details before adding to cart)
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Discount Codes and Cash on Delivery */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-medium mb-1 font-[Work Sans]">Discount Codes (Optional)</label>
+              {discountLoading ? (
+                <p className="text-gray-500">Loading discount codes...</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {discountCodes.map((code: any) => (
+                    <button
+                      key={code.id}
+                      type="button"
+                      className={`px-3 py-1 rounded-md text-sm font-[Work Sans] ${
+                        watch("discountCodes")?.includes(code.id)
+                          ? "bg-orange-600 text-white border-orange-600"
+                          : "bg-gray-100 text-gray-800 border-gray-300 hover:bg-orange-50"
+                      }`}
+                      onClick={() => {
+                        const current = watch("discountCodes") || [];
+                        const updated = current.includes(code.id)
+                          ? current.filter((id: string) => id !== code.id)
+                          : [...current, code.id];
+                        setValue("discountCodes", updated);
+                      }}
+                    >
+                      {code.public_name} ({code.discountValue}
+                      {code.discountType === "percentage" ? "%" : "$"})
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block font-medium mb-1 font-[Work Sans]">Cash On Delivery *</label>
+              <select
+                defaultValue="yes"
+                {...register("cash_on_delivery", { required: "Required" })}
+                className="w-full p-2 border border-gray-300 rounded-md bg-white text-black"
+              >
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+              {errors.cash_on_delivery && (
+                <p className="text-red-500 text-sm">{errors.cash_on_delivery.message as string}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-4 pt-6">
+            {isChanged && (
+              <button
+                type="button"
+                onClick={handleSaveDraft}
+                className="px-5 py-2 rounded-md bg-gray-500 hover:bg-gray-600 text-white font-[Work Sans] transition"
+              >
+                Save Draft
+              </button>
+            )}
             <button
-              type="button"
-              onClick={handleSaveDraft}
-              className="px-5 py-2 rounded-md bg-gray-500 hover:bg-gray-600 text-white transition"
+              type="submit"
+              disabled={loading}
+              className="px-5 py-2 rounded-md bg-orange-600 hover:bg-orange-700 text-white font-[Work Sans] transition"
             >
-              Save Draft
+              {loading ? "Creating..." : "Create Product"}
             </button>
-          )}
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-5 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition"
-          >
-            {loading ? "Creating..." : "Create Product"}
-          </button>
+          </div>
+        </div>
         </div>
       </form>
 
       {/* Image Enhancement Modal */}
       {openImageModal && (
         <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-60 z-50 flex items-center justify-center px-4">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-lg">
+          <div className="bg-white rounded-2xl border border-orange-100 p-6 shadow-lg w-full max-w-lg">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
+              <h2 className="text-lg font-semibold text-gray-900 font-[Poppins]">
                 Enhance Product Image
               </h2>
               <X
                 size={20}
-                className="cursor-pointer text-gray-600 hover:text-black"
+                className="cursor-pointer text-gray-600 hover:text-orange-600"
                 onClick={() => setOpenImageModal(false)}
               />
             </div>
-            <div className="relative w-full h-[250px] border border-gray-300 rounded overflow-hidden mb-4">
+            <div className="relative w-full h-[250px] border border-orange-200 rounded-lg overflow-hidden mb-4">
               <Image
                 src={selectedImage}
                 alt="product-preview"
@@ -503,17 +737,17 @@ const Page = () => {
                 className="object-cover"
               />
             </div>
-            <h3 className="text-sm font-medium text-gray-700 mb-2">AI Enhancements</h3>
+            <h3 className="text-sm font-medium text-gray-700 font-[Work Sans] mb-2">AI Enhancements</h3>
             <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto">
               {enhancements.map(({ label, effect }) => (
                 <button
                   key={effect}
                   onClick={() => applyTransformation(effect)}
                   disabled={processing}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm ${
+                  className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-[Work Sans] ${
                     activeEffect === effect
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                      ? 'bg-orange-600 text-white'
+                      : 'bg-gray-100 text-gray-800 hover:bg-orange-50'
                   }`}
                 >
                   <Wand size={16} />
@@ -524,6 +758,7 @@ const Page = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

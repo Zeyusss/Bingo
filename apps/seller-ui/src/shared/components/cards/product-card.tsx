@@ -42,14 +42,13 @@ const ProductCard = ({ product, isEvent }: { product: any; isEvent?: boolean }) 
 
       return () => clearInterval(interval);
     }
-    // Ensure we clear any existing interval when component unmounts or dependencies change
     return () => {};
   }, [isEvent, product?.ending_date]);
 
   return (
-    <div className="w-full min-h-[350px] bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group border border-gray-700 hover:border-blue-500">
+    <div className="w-full min-h-[350px] bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group border border-gray-700 hover:border-blue-500">
       {isEvent && (
-        <div className="absolute top-3 left-3 bg-gradient-to-r from-red-500 to-orange-400 text-white text-xs font-bold py-1 px-3 rounded-full shadow-lg z-20">
+        <div className="absolute top-3 left-3 bg-gradient-to-r from-red-500 to-orange-400  text-xs font-bold py-1 px-3 rounded-full shadow-lg z-20">
           OFFER
         </div>
       )}
@@ -61,7 +60,7 @@ const ProductCard = ({ product, isEvent }: { product: any; isEvent?: boolean }) 
       )}
       
       {product?.stock === 0 && (
-        <div className="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold py-1 px-3 rounded-full shadow z-20">
+        <div className="absolute top-3 right-3 bg-red-500 text-xs font-bold py-1 px-3 rounded-full shadow z-20">
           Out of Stock
         </div>
       )}
@@ -82,14 +81,14 @@ const ProductCard = ({ product, isEvent }: { product: any; isEvent?: boolean }) 
       </Link>
 
       <div className="p-4 flex flex-col gap-2">
-        <Link href={`/shop/${product?.Shop?.id}`} className="block">
+        <Link href={`/shop/${product?.Shop?.name}`} className="block">
           <span className="text-blue-400 text-xs font-semibold hover:underline">
             {product?.Shop?.name || "Unknown Shop"}
           </span>
         </Link>
 
         <Link href={`/product/${product?.slug}`}>
-          <h3 className="text-white font-bold text-base line-clamp-2 hover:text-blue-400 transition">
+          <h3 className="font-bold text-base line-clamp-2 hover:text-blue-400 transition">
             {product?.title || "Untitled Product"}
           </h3>
         </Link>
@@ -114,7 +113,7 @@ const ProductCard = ({ product, isEvent }: { product: any; isEvent?: boolean }) 
             </span>
           )}
           {!product?.sale_price && product?.regular_price && (
-            <span className="text-white font-bold text-lg">
+            <span className="font-bold text-lg">
               {formatPrice(product.regular_price)}
             </span>
           )}
@@ -122,7 +121,7 @@ const ProductCard = ({ product, isEvent }: { product: any; isEvent?: boolean }) 
       </div>
 
       {isEvent && timeleft && (
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-4 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-medium shadow z-20">
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-4 bg-orange-500  px-3 py-1 rounded-full text-xs font-medium shadow z-20">
           {timeleft}
         </div>
       )}

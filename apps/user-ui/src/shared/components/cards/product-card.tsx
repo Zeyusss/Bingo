@@ -112,6 +112,7 @@ const ProductCard = ({
   const addToWishlist = useStore((state: any) => state.addToWishlist);
   const removeFromWishlist = useStore((state: any) => state.removeFromWishlist);
   const wishlist = useStore((state: any) => state.wishlist);
+  const showPersonalizationPrompt = useStore((state: any) => state.showPersonalizationPrompt);
   const isWishlisted = wishlist.some((item: any) => item.id === product.id);
   
 
@@ -122,6 +123,9 @@ const ProductCard = ({
   
   const [isNew, setIsNew] = useState(false);
   
+  // Auto-detect if this is a limited event based on event dates and stock
+  const isLimitedEvent = product?.ending_date && product?.starting_date && product?.stock < 100;
+  
   useEffect(() => {
     if (product?.createdAt) {
       const isProductNew = Date.now() - new Date(product.createdAt).getTime() < 1 * 24 * 60 * 60 * 1000;
@@ -130,7 +134,7 @@ const ProductCard = ({
   }, [product?.createdAt]);
 
   useEffect(() => {
-    if (isEvent && product?.ending_date) {
+    if ((isEvent || isLimitedEvent) && product?.ending_date) {
       const updateTimeLeft = (): boolean => {
         const endTime = new Date(product.ending_date).getTime();
         const now = Date.now();
@@ -262,8 +266,13 @@ const ProductCard = ({
           </div>
         </div>
 
-        {isEvent && timeleft && (
+        {(isEvent || isLimitedEvent) && timeleft && (
           <div className="mt-2 flex items-center gap-1 text-xs text-orange-600 font-medium">
+            {isLimitedEvent && (
+              <span className="bg-red-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold mr-1">
+                LIMITED
+              </span>
+            )}
             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
             </svg>
@@ -317,6 +326,18 @@ const ProductCard = ({
         <div className="flex items-center justify-between">
           <button
             onClick={() => {
+              // Check if product requires personalization
+              if (product.personalizationEnabled && product.personalizationRequired) {
+                showPersonalizationPrompt('required', product);
+                return;
+              }
+              
+              // Check if product has personalization enabled (optional)
+              if (product.personalizationEnabled && !product.personalizationRequired) {
+                showPersonalizationPrompt('optional', product);
+                return;
+              }
+              
               const cartProduct = { ...product, quantity: 1, price: product.sale_price || product.regular_price };
               addToCart(cartProduct, user, location, deviceInfo);
             }}
@@ -357,6 +378,9 @@ const ProductCard = ({
                     tags: product.tags || [],
                     specifications: product.specifications || {},
                     customProperties: product.customProperties || {},
+                    personalizationEnabled: product.personalizationEnabled || false,
+                    personalizationRequired: product.personalizationRequired || false,
+                    personalizationInstructions: product.personalizationInstructions || '',
                     addedAt: Date.now(),
                     lastViewed: Date.now(),
                     source

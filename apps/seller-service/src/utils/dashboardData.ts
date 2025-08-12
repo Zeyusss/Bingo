@@ -223,9 +223,9 @@ export async function fetchShopStats(sellerId: string) {
 
 
   let conversionRate = 0;
-  if (analytics?.totalVisitors) {
-    const rawConversionRate = (totalOrders / analytics.totalVisitors) * 100;
-    conversionRate = Math.round(Math.min(rawConversionRate, 100) * 100) / 100;
+  if (totalVisitors?.totalVisitors && totalOrders) {
+    const rawConversionRate = (totalOrders / totalVisitors.totalVisitors) * 100;
+    conversionRate = Math.round(Math.min(rawConversionRate, 100));
   }
 
   const shopWithRating = await prisma.shops.findUnique({
@@ -393,6 +393,10 @@ export async function fetchShopVisitorAnalytics(sellerId: string) {
     (shopAnalytics.countryStats as Record<string, number>) || {};
   const cityStats = (shopAnalytics.cityStats as Record<string, number>) || {};
 
+
+  const actualCountryTotal = Object.values(countryStats).reduce((sum, count) => sum + count, 0);
+  const actualCityTotal = Object.values(cityStats).reduce((sum, count) => sum + count, 0);
+
   const countries = Object.entries(countryStats)
     .map(([country, visitors]) => ({
       country,
@@ -400,8 +404,8 @@ export async function fetchShopVisitorAnalytics(sellerId: string) {
       states: 1, 
       cities: Object.keys(cityStats), 
       percentage:
-        totalVisitors > 0
-          ? Math.round((visitors / totalVisitors) * 100 * 100) / 100
+        actualCountryTotal > 0
+          ? Math.round((visitors / actualCountryTotal) * 100)
           : 0,
     }))
     .sort((a, b) => b.visitors - a.visitors);
@@ -414,8 +418,8 @@ export async function fetchShopVisitorAnalytics(sellerId: string) {
         visitors,
         cities: [city],
         percentage:
-          totalVisitors > 0
-            ? Math.round((visitors / totalVisitors) * 100 * 100) / 100
+          actualCityTotal > 0
+            ? Math.round((visitors / actualCityTotal) * 100)
             : 0,
       };
     })

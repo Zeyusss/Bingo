@@ -50,6 +50,7 @@ export default function OrderActivity() {
     data: shopStats,
     isLoading: statsLoading,
     error: statsError,
+    refetch: refetchStats,
   } = useShopStats();
 
   if (worldLoading || deviceLoading || statsLoading) {
@@ -273,11 +274,21 @@ export default function OrderActivity() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="h-4 w-4 text-gray-600" />
-                <span className="font-semibold text-gray-900">
-                  Global Conversion
-                </span>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-gray-600" />
+                  <span className="font-semibold text-gray-900">
+                    Global Conversion
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => refetchStats()}
+                  className="h-6 w-6 p-0"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                </Button>
               </div>
               <div className="text-xl font-bold text-gray-900 mb-1">
                 {shopStats?.conversionRate || 0}%

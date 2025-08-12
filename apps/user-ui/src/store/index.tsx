@@ -20,6 +20,11 @@ type Store = {
     show: boolean;
     action: "cart" | "wishlist" | "chat" | null;
   };
+  showPersonalizationModal: {
+    show: boolean;
+    type: "required" | "optional" | null;
+    product: any;
+  };
   addToCart: (
     product: Product,
     user: any,
@@ -57,6 +62,8 @@ type Store = {
   closeSideCart: () => void;
   closeLoginPrompt: () => void;
   showChatLoginPrompt: () => void;
+  showPersonalizationPrompt: (type: "required" | "optional", product: any) => void;
+  closePersonalizationModal: () => void;
 };
 
 export const useStore = create<Store>()(
@@ -67,6 +74,7 @@ export const useStore = create<Store>()(
       compare: [],
       showSideCart: false,
       showLoginPrompt: { show: false, action: null },
+      showPersonalizationModal: { show: false, type: null, product: null },
 
       addToCart: (product, user, location, deviceInfo) => {
         if (!user?.id) {
@@ -79,7 +87,6 @@ export const useStore = create<Store>()(
           const requestedQuantity = product.quantity ?? 1;
           const productStock = product.stock ?? 0;
           
-          // If no stock available, don't add anything
           if (productStock === 0) {
             return state;
           }
@@ -298,6 +305,12 @@ export const useStore = create<Store>()(
       },
       showChatLoginPrompt: () => {
         set({ showLoginPrompt: { show: true, action: "chat" } });
+      },
+      showPersonalizationPrompt: (type: "required" | "optional", product: any) => {
+        set({ showPersonalizationModal: { show: true, type, product } });
+      },
+      closePersonalizationModal: () => {
+        set({ showPersonalizationModal: { show: false, type: null, product: null } });
       },
     }),
     { name: "store-storage" }

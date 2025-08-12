@@ -101,6 +101,16 @@ axiosInstance.interceptors.response.use(
         handleLogout();
         return Promise.reject(error);
       }
+      
+      if (error.response?.data?.message?.includes("suspended") || 
+          error.response?.data?.message?.includes("deleted")) {
+        console.log("🔥 AXIOS: Account suspended/deleted, logging out immediately");
+        if (showToast) {
+          showToast('Your account has been suspended or deleted by an administrator.', 'error');
+        }
+        handleLogout();
+        return Promise.reject(error);
+      }
 
       if (isRefreshing) {
         return new Promise((resolve) => {

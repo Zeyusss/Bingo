@@ -77,6 +77,7 @@ export const createPaymentSession = async (
           sale_price: item.sale_price,
           shopId: item.shopId,
           selectedOptions: item.selectedOptions || {},
+          personalizationData: item.personalizationData || null,
         }))
         .sort((a, b) => a.id.localeCompare(b.id))
     );
@@ -95,6 +96,7 @@ export const createPaymentSession = async (
                 sale_price: item.sale_price,
                 shopId: item.shopId,
                 selectedOptions: item.selectedOptions || {},
+                personalizationData: item.personalizationData || null,
               }))
               .sort((a: any, b: any) => a.id.localeCompare(b.id))
           );
@@ -288,6 +290,7 @@ export const createOrder = async (
             shopId,
             total: orderTotal,
             status: "Paid",
+            deliveryStatus: "Ordered",
             shippingAddressId: shippingAddressId || null,
             shippingAddressSnapshot,
             couponCode: coupon?.code || null,
@@ -298,10 +301,14 @@ export const createOrder = async (
                 quantity: item.quantity,
                 price: item.sale_price,
                 selectedOptions: item.selectedOptions,
+                // Include personalization data if provided by customer
+                personalizationData: item.personalizationData || null,
               })),
             },
           },
         });
+
+        logger.info(`Order created successfully: ${order.id} for shop: ${shopId} with delivery status: ${order.deliveryStatus}`);
 
         for (const item of orderItems) {
           const { id: productId, quantity } = item;
@@ -463,28 +470,178 @@ export const getSellerOrders = async (
       },
     });
 
-    const orders = await prisma.orders.findMany({
-      where: {
-        shopId: shop?.id,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatar: true,
+    if (!shop) {
+      return next(new NotFoundError("Shop not found"));
+    }
+
+
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 10));
+    const search = (req.query.search as string || "").trim();
+    const status = req.query.status as string || "all";
+    const deliveryStatus = req.query.deliveryStatus as string || "all";
+    const sortBy = req.query.sortBy as string || "createdAt";
+    const sortOrder = req.query.sortOrder as string || "desc";
+    const dateFrom = req.query.dateFrom as string || "";
+    const dateTo = req.query.dateTo as string || "";
+
+    const skip = (page - 1) * limit;
+
+
+    const whereClause: any = {
+      shopId: shop.id,
+    };
+
+    if (search) {
+      const searchConditions: any[] = [];
+      
+     
+      if (search.length >= 6 && /^[0-9a-fA-F]+$/.test(search)) {
+        try {
+          if (search.length <= 24) {
+            searchConditions.push({
+              id: {
+                contains: search,
+                mode: 'insensitive'
+              }
+            });
+          }
+        } catch (error) {
+        }
+      }
+      
+      searchConditions.push(
+        {
+          user: {
+            name: {
+              contains: search,
+              mode: 'insensitive'
+            }
+          }
+        },
+        {
+          user: {
+            email: {
+              contains: search,
+              mode: 'insensitive'
+            }
+          }
+        }
+      );
+      
+      if (searchConditions.length > 0) {
+        whereClause.OR = searchConditions;
+      }
+    }
+
+    if (status !== "all" && status) {
+      const validStatuses = ["Paid", "Pending", "Cancelled"];
+      if (validStatuses.includes(status)) {
+        whereClause.status = status;
+      }
+    }
+
+    if (deliveryStatus !== "all" && deliveryStatus) {
+      const validDeliveryStatuses = ["Processing", "Packed", "Shipped", "Out for Delivery", "Delivered"];
+      if (validDeliveryStatuses.includes(deliveryStatus)) {
+        whereClause.deliveryStatus = deliveryStatus;
+      }
+    }
+
+    if (dateFrom || dateTo) {
+      whereClause.createdAt = {};
+      
+      if (dateFrom) {
+        try {
+          const fromDate = new Date(dateFrom);
+          fromDate.setHours(0, 0, 0, 0); 
+          if (!isNaN(fromDate.getTime())) {
+            whereClause.createdAt.gte = fromDate;
+          }
+        } catch (error) {
+        }
+      }
+      
+      if (dateTo) {
+        try {
+          const toDate = new Date(dateTo);
+          toDate.setHours(23, 59, 59, 999); 
+          if (!isNaN(toDate.getTime())) {
+            whereClause.createdAt.lte = toDate;
+          }
+        } catch (error) {
+        }
+      }
+    }
+
+    const orderBy: any = {};
+    const validSortBy = ["createdAt", "total", "status", "deliveryStatus"];
+    const validSortOrder = ["asc", "desc"];
+    
+    const safeSortBy = validSortBy.includes(sortBy) ? sortBy : "createdAt";
+    const safeSortOrder = validSortOrder.includes(sortOrder) ? sortOrder : "desc";
+    
+    if (safeSortBy === "total") {
+      orderBy.total = safeSortOrder;
+    } else if (safeSortBy === "status") {
+      orderBy.status = safeSortOrder;
+    } else if (safeSortBy === "deliveryStatus") {
+      orderBy.deliveryStatus = safeSortOrder;
+    } else {
+      orderBy.createdAt = safeSortOrder;
+    }
+
+    const [orders, total] = await Promise.all([
+      prisma.orders.findMany({
+        where: whereClause,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              avatar: {
+                select: {
+                  url: true
+                }
+              },
+            },
+          },
+          items: {
+            select: {
+              id: true,
+              productId: true,
+              quantity: true,
+              price: true,
+              selectedOptions: true,
+              personalizationData: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      prisma.orders.count({
+        where: whereClause,
+      }),
+    ]);
 
-    res.status(201).json({
+    const totalPages = Math.ceil(total / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
+    res.status(200).json({
       success: true,
       orders,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext,
+        hasPrev,
+      },
     });
   } catch (error) {
     return next(error);

@@ -151,11 +151,21 @@ export const updateShopAnalytics = async (event: any) => {
 
     
     if (event.action === "shop_visit") {
-      updateFields.totalVisitors = { increment: 1 };
-
+      let isNewVisitor = false;
       
       if (event.userId) {
         try {
+          const existingVisitor = await prisma.uniqueShopVisitors.findUnique({
+            where: {
+              shopId_userId: {
+                shopId: event.shopId,
+                userId: event.userId,
+              },
+            },
+          });
+
+          isNewVisitor = !existingVisitor;
+
           await prisma.uniqueShopVisitors.upsert({
             where: {
               shopId_userId: {
@@ -175,6 +185,11 @@ export const updateShopAnalytics = async (event: any) => {
         } catch (error) {
           console.log("Error tracking unique visitor:", error);
         }
+      }
+
+
+      if (isNewVisitor) {
+        updateFields.totalVisitors = { increment: 1 };
       }
     }
 

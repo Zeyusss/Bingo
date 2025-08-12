@@ -19,10 +19,10 @@ app.use(cors({
 credentials: true ,
 }),
 );
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 
-// Add logging middleware
+
 app.use(createLoggingMiddleware('auth-service'));
 
 app.get('/', (req, res) => {

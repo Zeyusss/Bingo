@@ -68,6 +68,20 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
         .json({ message: "Forbidden ! User/Seller not found." });
     }
 
+
+    if (decoded.role === "seller" && account.isDeleted) {
+      return res
+        .status(401)
+        .json({ message: "Account has been suspended or deleted." });
+    }
+
+
+    if (decoded.role === "seller" && account.deletedAt && new Date() > new Date(account.deletedAt)) {
+      return res
+        .status(401)
+        .json({ message: "Account deletion date has passed. Your account is no longer accessible." });
+    }
+
     req.role = decoded.role;
     return next();
   } catch (error) {

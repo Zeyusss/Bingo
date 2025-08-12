@@ -9,6 +9,8 @@ import Providers from "../shared/providers/ToastProvider";
 import ClientRestrictionWrapper from "../shared/components/ClientRestrictionWrapper";
 import ComparisonTray from "../shared/components/comparison/ComparisonTray";
 import ComparisonNotifications from "../shared/components/comparison/ComparisonNotifications";
+import useUser from "../hooks/useUser";
+import { WebSocketProvider } from "../context/web-socket-context";
 
 const AppProviders = ({ children }: { children: React.ReactNode }) => {
   const [queryClient] = React.useState(() => createOptimizedQueryClient());
@@ -17,7 +19,7 @@ const AppProviders = ({ children }: { children: React.ReactNode }) => {
     <QueryClientProvider client={queryClient}>
       <Providers>
         <ClientRestrictionWrapper>
-          {children}
+          <ProvidersWithWebSocket>{children}</ProvidersWithWebSocket>
         </ClientRestrictionWrapper>
         <ComparisonTray />
         <ComparisonNotifications />
@@ -25,6 +27,21 @@ const AppProviders = ({ children }: { children: React.ReactNode }) => {
         <ReactQueryDevtools initialIsOpen={false} />
       </Providers>
     </QueryClientProvider>
+  );
+};
+
+const ProvidersWithWebSocket = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  const { user, isLoading } = useUser();
+  if (isLoading) return null;
+  return (
+    <>
+      {user && <WebSocketProvider user={user}>{children}</WebSocketProvider>}
+      {!user && children}
+    </>
   );
 };
 

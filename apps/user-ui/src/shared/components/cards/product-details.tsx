@@ -33,6 +33,7 @@ const ProductDetailsCard = ({
   const location = useLocationTracking()
   const deviceInfo = useDeviceTracking();
   const addToCart = useStore((state: any) => state.addToCart);
+  const showPersonalizationPrompt = useStore((state: any) => state.showPersonalizationPrompt);
   const { showChatLoginPrompt } = useStore();
 
   useEffect(() => {
@@ -79,7 +80,7 @@ const ProductDetailsCard = ({
     }
     
     try {
-      const res = await axiosInstance.post("/chatting/api/create-user-conversationGroup",{sellerId},isProtected)
+      const res = await axiosInstance.post("/chatting/api/create-user-conversationGroup",{sellerId: data?.Shop?.sellerId},isProtected)
       router.push(`/inbox?conversationId=${res.data.conversation.id}`);
     } catch (error) {
       console.error("Failed to create conversation:", error);
@@ -263,20 +264,33 @@ const ProductDetailsCard = ({
               {isLoading ? "Loading..." : "Chat With Seller"}
             </button>
             <button
-             onClick={ ()=> addToCart({
-              ...data,
-              quantity,
-              selectedOptions:{
-              color:isSelected,
-                size: isSizeSelected
-              },
-              price: data.sale_price || data.regular_price
-             },
-            user,
-            location,
-            deviceInfo
-            )
-             }
+             onClick={ ()=> {
+              // Check if product requires personalization
+              if (data.personalizationEnabled && data.personalizationRequired) {
+                showPersonalizationPrompt('required', data);
+                return;
+              }
+              
+              // Check if product has personalization enabled (optional)
+              if (data.personalizationEnabled && !data.personalizationRequired) {
+                showPersonalizationPrompt('optional', data);
+                return;
+              }
+
+              addToCart({
+                ...data,
+                quantity,
+                selectedOptions:{
+                color:isSelected,
+                  size: isSizeSelected
+                },
+                price: data.sale_price || data.regular_price
+               },
+              user,
+              location,
+              deviceInfo
+              )
+             }}
             className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[#FF8A00] hover:bg-[#E17800] text-white font-semibold shadow-md transition-colors flex-1">
               <ShoppingBag size={18} /> Add to Cart
             </button>

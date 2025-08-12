@@ -20,7 +20,7 @@ interface ProductAttribute {
 
 const ComparePage: React.FC = () => {
   const { products, removeProduct } = useComparisonStore();
-  const { addToCart, addToWishlist } = useStore();
+  const { addToCart, addToWishlist, showPersonalizationPrompt } = useStore();
   const { user } = useUser();
   const location = useLocationTracking();
   const deviceInfo = useDeviceTracking();
@@ -115,8 +115,20 @@ const ComparePage: React.FC = () => {
   };
 
   const handleAddToCart = (product: ComparisonProduct) => {
+    if (product.personalizationEnabled && product.personalizationRequired) {
+      showPersonalizationPrompt('required', product);
+      return;
+    }
+    
+    if (product.personalizationEnabled && !product.personalizationRequired) {
+      showPersonalizationPrompt('optional', product);
+      return;
+    }
+    
     const cartProduct = {
+      ...product,
       id: product.id,
+      slug: product.slug,
       title: product.title,
       price: product.sale_price || product.regular_price,
       image: product.images?.[0]?.url || '/assets/categories/default.jpg',

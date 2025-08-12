@@ -20,27 +20,25 @@ let flushTimer:NodeJS.Timeout | null = null;
 
 export async function startConsumer(){
     const consumer:Consumer = kafka.consumer({groupId:GROUP_ID});
-    await consumer.connect()
+    await consumer.connect();
     await consumer.subscribe({topic:TOPIC,fromBeginning : false});
-    console.log(`Kafka consumer connected and subscribed to "${TOPIC}."`)
-// start consumer
-await consumer.run({
-    eachMessage: async({message} : EachMessagePayload)=>{
-        if(!message.value) return;
+    console.log(`Kafka consumer connected and subscribed to "${TOPIC}."`);
+    
+    await consumer.run({
+        eachMessage: async({message} : EachMessagePayload)=>{
+            if(!message.value) return;
+            try {
+                const parsed : BufferedMessage = JSON.parse(message.value.toString());
+                buffer.push(parsed);
 
-        try {
-            const parsed : BufferedMessage = JSON.parse(message.value.toString());
-            buffer.push(parsed);
-
-            if(buffer.length === 1 && !flushTimer){
-                flushTimer = setTimeout(flushBufferToDb,BATCH_INTERVAL_MS);
+                if(buffer.length === 1 && !flushTimer){
+                    flushTimer = setTimeout(flushBufferToDb,BATCH_INTERVAL_MS);
+                }
+            } catch (error) {
+                console.error("Failed to parse kafka message:", error);
             }
-        } catch (error) {
-            console.log("Failed to parse kafka message :" , error)
         }
-    }
-})
-
+    });
 }
 
 async function flushBufferToDb() {
@@ -59,6 +57,7 @@ async function flushBufferToDb() {
             content : msg.content,
             createdAt : new Date(msg.createdAt),
         }));
+        
         await prisma.message.createMany({
             data:prismaPayload,
         });

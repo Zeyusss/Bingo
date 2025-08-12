@@ -31,6 +31,7 @@ import {
   getPopularSearches,
   getSearchFilters,
   getTrendingProducts,
+  getSellerProductCategories,
 } from "../controllers/product.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isVerifiedSeller } from "@packages/middleware/authorizeRoles";
@@ -75,6 +76,7 @@ router.post(
   createProduct
 );
 router.get("/get-shop-products", isAuthenticated, getShopProducts);
+
 router.delete(
   "/delete-product/:productId",
   isAuthenticated,
@@ -93,6 +95,7 @@ router.put(
   isVerifiedSeller,
   restoreProduct
 );
+
 router.get("/get-all-products", getAllProducts);
 router.get("/get-all-events", getAllEvents);
 router.get("/get-product/:slug", getProductDetails);
