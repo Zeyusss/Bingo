@@ -346,7 +346,7 @@ const SellerEvents = () => {
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-gray-50">
+            <TableRow>
               {table.getHeaderGroups()[0].headers.map((header) => (
                 <TableHead key={header.id} className="text-center font-semibold text-slate-700">
                   {flexRender(header.column.columnDef.header, header.getContext())}

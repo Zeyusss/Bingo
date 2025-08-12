@@ -67,7 +67,7 @@ const RevenueChart: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-green-600" />
+              <DollarSign className="h-6 w-6 text-orange-600" />
               Revenue Trends
             </CardTitle>
             <CardDescription>
@@ -76,10 +76,6 @@ const RevenueChart: React.FC = () => {
           </div>
           <div className="flex items-center gap-1 text-sm text-green-600">
             <TrendingUp className="h-4 w-4" />
-            <span className="font-medium">
-              {growth > 0 ? "+" : ""}
-              {growth.toFixed(1)}%
-            </span>
           </div>
         </div>
       </CardHeader>

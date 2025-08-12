@@ -1,45 +1,46 @@
 import Link from 'next/link';
 import React from 'react'
+
 interface Props{
-    title:string;
+    title: string;
     icon: React.ReactNode;
-    isActive?:boolean;
-    href?:string;
+    isActive?: boolean;
+    href?: string;
     onClick?: () => void;
 }
 
-const SidebarItem = ({icon,title,isActive,href,onClick}:Props) => {
+const SidebarItem = ({ icon, title, isActive, href, onClick }: Props) => {
   const itemContent = (
     <div
-      className={`flex items-center gap-3 w-full min-h-12 px-6   py-3 rounded-[var(--sidebar-radius)] cursor-pointer transition
+      className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 group
         ${isActive
-          ? "bg-[var(--sidebar-active-bg)] text-[var(--sidebar-active-text)] shadow-sm"
-          : "hover:bg-[var(--sidebar-hover)] text-[var(--heading)]"}
+          ? "bg-blue-50 text-blue-700 border-r-2 border-blue-600"
+          : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"}
       `}
-      style={{
-        marginBottom: 6,
-        borderRadius: 'var(--sidebar-radius)',
-      }}
     >
-      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22 }}>
+      <span className={`flex items-center justify-center w-5 h-5 transition-colors duration-200
+        ${isActive ? "text-blue-600" : "text-gray-500 group-hover:text-gray-700"}
+      `}>
         {icon}
       </span>
-      <h5 className={`text-lg font-semibold ${isActive ? "text-[var(--sidebar-active-text)]" : "text-[var(--heading)]"}`}>
+      <span className={`text-sm font-medium transition-colors duration-200
+        ${isActive ? "text-blue-700" : "text-gray-700 group-hover:text-gray-900"}
+      `}>
         {title}
-      </h5>
+      </span>
     </div>
   );
 
   if (onClick) {
     return (
-      <div className='my-2 block' onClick={onClick}>
+      <div className="mb-1" onClick={onClick}>
         {itemContent}
       </div>
     );
   }
 
   return (
-    <Link href={href || '#'} className='my-2 block'>
+    <Link href={href || '#'} className="mb-1 block">
       {itemContent}
     </Link>
   );

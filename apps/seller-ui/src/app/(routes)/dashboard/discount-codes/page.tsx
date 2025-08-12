@@ -83,14 +83,14 @@ const Page = () => {
   const { totalCodes, percentageCodes, flatCodes } = getDiscountStats();
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-[#F3F1EE] p-6">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header Section */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="space-y-1">
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                <Tag className="w-8 h-8 text-blue-600" />
+              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                
                 Discount Codes
               </h1>
               <p className="text-gray-600">Create and manage promotional discount codes for your shop</p>
