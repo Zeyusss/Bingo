@@ -35,15 +35,7 @@ const NewProducts = () => {
         }`
       );
 
-      const now = Date.now();
-      const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
-
-      const filteredProducts = (data.products || []).filter((product: any) => {
-        const createdAt = new Date(product.createdAt).getTime();
-        return createdAt >= sevenDaysAgo;
-      });
-
-      setProducts(filteredProducts);
+      setProducts(data.products || []);
     } catch (error) {
       console.error("Failed to fetch new products:", error);
     } finally {

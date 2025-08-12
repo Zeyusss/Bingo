@@ -169,9 +169,16 @@ const Login = () => {
             <button
               type="submit"
               disabled={loginMutation.isPending}
-              className="w-full bg-[#F59A57] text-white p-2 rounded "
+              className="w-full bg-[#F59A57] text-white p-2 rounded disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
-              {loginMutation.isPending ? "Logging in..." : "Login"}
+              {loginMutation.isPending ? (
+                <>
+                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Logging in...
+                </>
+              ) : (
+                "Login"
+              )}
             </button>
 
             {serverError && (

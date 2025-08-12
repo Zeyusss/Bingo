@@ -38,6 +38,9 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
   );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [activeTab, setActiveTab] = useState("details");
+  const [specsPage, setSpecsPage] = useState(1);
+  const [propsPage, setPropsPage] = useState(1);
+  const itemsPerPage = 5;
 
   const [isSelected, setIsSelected] = useState(
     productDetails?.colors?.[0] || ""
@@ -46,10 +49,8 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
     productDetails?.sizes?.[0] || ""
   );
   const [quantity, setQuantity] = useState(1);
-  const [priceRange, setPriceRange] = useState([
-    productDetails?.sale_price,
-    1199,
-  ]);
+
+  const [personalizationText, setPersonalizationText] = useState("");
 
   const [recommendedProducts, setRecommendedProducts] = useState([]);
 
@@ -92,10 +93,46 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
       100
   );
 
+
+  const hasCustomSpecs = productDetails?.custom_specifications && 
+    Array.isArray(productDetails.custom_specifications) && 
+    productDetails.custom_specifications.length > 0;
+  
+  const hasCustomProps = productDetails?.custom_properties && 
+    Array.isArray(productDetails.custom_properties) && 
+    productDetails.custom_properties.length > 0;
+
+  const getSpecsEntries = () => {
+    if (!hasCustomSpecs) return [];
+    return productDetails.custom_specifications.map((spec: any) => [spec.name, spec.value]);
+  };
+
+  const getPropsEntries = () => {
+    if (!hasCustomProps) return [];
+    return productDetails.custom_properties.map((prop: any) => [
+      prop.label, 
+      Array.isArray(prop.values) ? prop.values.join(', ') : prop.values
+    ]);
+  };
+
+  const getPaginatedSpecs = () => {
+    const specs = getSpecsEntries();
+    const startIndex = (specsPage - 1) * itemsPerPage;
+    return specs.slice(startIndex, startIndex + itemsPerPage);
+  };
+
+  const getPaginatedProps = () => {
+    const props = getPropsEntries();
+    const startIndex = (propsPage - 1) * itemsPerPage;
+    return props.slice(startIndex, startIndex + itemsPerPage);
+  };
+
+  const getSpecsTotalPages = () => Math.ceil(getSpecsEntries().length / itemsPerPage);
+  const getPropsTotalPages = () => Math.ceil(getPropsEntries().length / itemsPerPage);
+
   const fetchFilteredProducts = async () => {
     try {
       const query = new URLSearchParams();
-      query.set("priceRange", priceRange.join(","));
       query.set("page", "1");
       query.set("limit", "5");
 
@@ -109,7 +146,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
   };
   useEffect(() => {
     fetchFilteredProducts();
-  }, [priceRange]);
+  }, []);
 
   const { showChatLoginPrompt } = useStore();
 
@@ -383,11 +420,48 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
               )}
             </div>
 
+            {/* Product Personalization Section - Show if personalization is enabled */}
+            {productDetails?.personalizationEnabled && (
+              <div className="space-y-3 p-4 border border-orange-200 rounded-lg bg-orange-50">
+                <h4 className="font-semibold text-gray-900">Personalize Your Product</h4>
+                
+                {/* Display seller's personalization instructions */}
+                {productDetails.personalizationInstructions && (
+                  <div className="text-sm text-gray-600 bg-white p-3 rounded border-l-4 border-orange-400">
+                    <strong>Instructions:</strong> {productDetails.personalizationInstructions}
+                  </div>
+                )}
+                
+                {/* Personalization input textarea */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Your Personalization Details
+                    {productDetails.personalizationRequired && <span className="text-red-500 ml-1">*</span>}
+                  </label>
+                  <textarea
+                    value={personalizationText}
+                    onChange={(e) => setPersonalizationText(e.target.value)}
+                    rows={3}
+                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="Enter your personalization details here..."
+                  />
+                  {productDetails.personalizationRequired && !personalizationText.trim() && (
+                    <p className="text-red-500 text-sm mt-1">Personalization is required for this product</p>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="space-y-3">
               <div className="flex space-x-3">
                 <button
-                  onClick={() =>
+                  onClick={() => {
+                    if (productDetails?.personalizationRequired && !personalizationText.trim()) {
+                      alert('Please provide personalization details before adding to cart.');
+                      return;
+                    }
+                    
                     addToCart(
                       {
                         ...productDetails,
@@ -396,13 +470,17 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
                           color: isSelected,
                           size: isSizeSelected,
                         },
+                        personalizationData: productDetails?.personalizationEnabled ? {
+                          text: personalizationText.trim(),
+                          instructions: productDetails.personalizationInstructions
+                        } : null,
                       },
                       user,
                       location,
                       deviceInfo
                     )
-                  }
-                  disabled={productDetails?.stock === 0}
+                  }}
+                  disabled={productDetails?.stock === 0 || (productDetails?.personalizationRequired && !personalizationText.trim())}
                   className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                 >
                   <CartBagIcon />
@@ -456,6 +534,9 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
                         tags: productDetails.tags || [],
                         specifications: productDetails.specifications || {},
                         customProperties: productDetails.customProperties || {},
+                        personalizationEnabled: productDetails.personalizationEnabled || false,
+                        personalizationRequired: productDetails.personalizationRequired || false,
+                        personalizationInstructions: productDetails.personalizationInstructions || '',
                         addedAt: Date.now(),
                         lastViewed: Date.now(),
                         source: 'product_page'
@@ -600,6 +681,30 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
             >
               Description
             </button>
+            {hasCustomSpecs && (
+              <button
+                onClick={() => setActiveTab("specifications")}
+                className={`px-6 py-4 font-medium text-sm transition-colors ${
+                  activeTab === "specifications"
+                    ? "border-b-2 border-orange-500 text-orange-600"
+                    : "text-gray-600 hover:text-gray-800"
+                }`}
+              >
+                Specifications
+              </button>
+            )}
+            {hasCustomProps && (
+              <button
+                onClick={() => setActiveTab("properties")}
+                className={`px-6 py-4 font-medium text-sm transition-colors ${
+                  activeTab === "properties"
+                    ? "border-b-2 border-orange-500 text-orange-600"
+                    : "text-gray-600 hover:text-gray-800"
+                }`}
+              >
+                Properties
+              </button>
+            )}
           </div>
 
           {/* Tab Content */}
@@ -676,6 +781,126 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
                       "No detailed description available.",
                   }}
                 />
+              </div>
+            )}
+
+            {activeTab === "specifications" && hasCustomSpecs && (
+              <div>
+                <h3 className="text-xl font-semibold mb-6">Custom Specifications</h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full bg-white border border-gray-200 rounded-lg">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Value
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {getPaginatedSpecs().map(([key, value]: [string, any], index: number) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {key.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                            {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {/* Pagination for Specifications */}
+                {getSpecsTotalPages() > 1 && (
+                  <div className="flex justify-between items-center mt-6">
+                    <div className="text-sm text-gray-700">
+                      Showing {((specsPage - 1) * itemsPerPage) + 1} to {Math.min(specsPage * itemsPerPage, getSpecsEntries().length)} of {getSpecsEntries().length} specifications
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => setSpecsPage(Math.max(1, specsPage - 1))}
+                        disabled={specsPage === 1}
+                        className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300"
+                      >
+                        Previous
+                      </button>
+                      <span className="px-3 py-1 text-sm bg-orange-500 text-white rounded">
+                        {specsPage} of {getSpecsTotalPages()}
+                      </span>
+                      <button
+                        onClick={() => setSpecsPage(Math.min(getSpecsTotalPages(), specsPage + 1))}
+                        disabled={specsPage === getSpecsTotalPages()}
+                        className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === "properties" && hasCustomProps && (
+              <div>
+                <h3 className="text-xl font-semibold mb-6">Custom Properties</h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full bg-white border border-gray-200 rounded-lg">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Label
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Value
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {getPaginatedProps().map(([key, value]: [string, any], index: number) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {key.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                            {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {/* Pagination for Properties */}
+                {getPropsTotalPages() > 1 && (
+                  <div className="flex justify-between items-center mt-6">
+                    <div className="text-sm text-gray-700">
+                      Showing {((propsPage - 1) * itemsPerPage) + 1} to {Math.min(propsPage * itemsPerPage, getPropsEntries().length)} of {getPropsEntries().length} properties
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => setPropsPage(Math.max(1, propsPage - 1))}
+                        disabled={propsPage === 1}
+                        className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300"
+                      >
+                        Previous
+                      </button>
+                      <span className="px-3 py-1 text-sm bg-orange-500 text-white rounded">
+                        {propsPage} of {getPropsTotalPages()}
+                      </span>
+                      <button
+                        onClick={() => setPropsPage(Math.min(getPropsTotalPages(), propsPage + 1))}
+                        disabled={propsPage === getPropsTotalPages()}
+                        className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

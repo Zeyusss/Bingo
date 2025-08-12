@@ -2,7 +2,7 @@ import {Kafka} from "kafkajs";
 
 export const kafka = new Kafka({
     clientId : "kafka-service",
-    brokers : ["d23tfdgfqp6cec0qfak0.any.eu-central-1.mpx.prd.cloud.redpanda.com:9092"],
+    brokers : ["d2d8t4d6crocq0g2oco0.any.eu-central-1.mpx.prd.cloud.redpanda.com:9092"],
     ssl:true,
     sasl:{
         mechanism:"scram-sha-256",

@@ -198,6 +198,9 @@ export const createProduct = async (
       images = [],
       starting_date = null,
       ending_date = null,
+      personalizationEnabled = false,
+      personalizationInstructions = "",
+      personalizationRequired = false,
     } = req.body;
 
     if (
@@ -254,6 +257,10 @@ export const createProduct = async (
         regular_price: parseFloat(regular_price),
         custom_properties: customProperties || {},
         custom_specifications: custom_specifications || {},
+        deletedAt: null, 
+        personalizationEnabled: Boolean(personalizationEnabled),
+        personalizationInstructions: personalizationInstructions || "",
+        personalizationRequired: Boolean(personalizationRequired),
         images: {
           create: images
             .filter((img: any) => img && img.fileId && img.file_url)
@@ -281,17 +288,177 @@ export const getShopProducts = async (
   next: NextFunction
 ) => {
   try {
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      sortBy = "createdAt",
+      sortOrder = "desc",
+      status = "all",
+      category = "all",
+      stockStatus = "all",
+    } = req.query;
+
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const skip = (pageNum - 1) * limitNum;
+
+    const whereClause: any = {
+      shopId: req?.seller?.shop?.id,
+    };
+
+    if (search) {
+      const searchConditions: any[] = [
+        { title: { contains: search, mode: "insensitive" } },
+        { short_description: { contains: search, mode: "insensitive" } },
+        { detailed_description: { contains: search, mode: "insensitive" } },
+        { category: { contains: search, mode: "insensitive" } },
+        { tags: { has: search } },
+        { brand: { contains: search, mode: "insensitive" } },
+      ];
+      
+      whereClause.OR = searchConditions;
+    }
+
+    const statusMapping: { [key: string]: string } = {
+      active: "Active",
+      pending: "Pending", 
+      draft: "Draft",
+      Active: "Active",
+      Pending: "Pending",
+      Draft: "Draft"
+    };
+    
+    if (status !== "all" && statusMapping[status as string]) {
+      whereClause.status = statusMapping[status as string];
+    }
+
+    if (category !== "all") {
+      whereClause.category = { contains: category, mode: "insensitive" };
+    }
+
+    if (stockStatus === "inStock") {
+      whereClause.stock = { gt: 0 };
+    } else if (stockStatus === "outOfStock") {
+      whereClause.stock = { lte: 0 };
+    }
+
+    const sortFieldMapping: { [key: string]: string } = {
+      name: "title", 
+      title: "title",
+      createdAt: "createdAt",
+      updatedAt: "updatedAt",
+      price: "regular_price",
+      stock: "stock",
+      category: "category",
+      status: "status",
+      ratings: "ratings"
+    };
+
+    const actualSortField = sortFieldMapping[sortBy as string] || "createdAt";
+    const orderBy: any = {};
+    orderBy[actualSortField] = sortOrder;
+
+
+    const totalProducts = await prisma.products.count({
+      where: whereClause,
+    });
+
     const products = await prisma.products.findMany({
+      where: whereClause,
+      include: {
+        images: true,
+        Shop: {
+          select: {
+            id: true,
+            name: true,
+            avatar: {
+              select: {
+                url: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy,
+      skip,
+      take: limitNum,
+    });
+
+    const allProducts = await prisma.products.findMany({
       where: {
         shopId: req?.seller?.shop?.id,
       },
-      include: {
-        images: true,
+      select: {
+        stock: true,
       },
     });
+
+    const inStockCount = allProducts.filter(p => p.stock > 0).length;
+    const outOfStockCount = allProducts.filter(p => p.stock <= 0).length;
+
+    const totalPages = Math.ceil(totalProducts / limitNum);
+    const hasNext = pageNum < totalPages;
+    const hasPrev = pageNum > 1;
+
+    const pagination = {
+      total: totalProducts,
+      page: pageNum,
+      limit: limitNum,
+      totalPages,
+      hasNext,
+      hasPrev,
+    };
+
+    const summary = {
+      totalProducts: allProducts.length,
+      inStockCount,
+      outOfStockCount,
+    };
+
     res.status(201).json({
       success: true,
       products,
+      pagination,
+      summary,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// get seller's product categories for filter dropdown
+export const getSellerProductCategories = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const sellerId = req?.seller?.shop?.id;
+    
+    if (!sellerId) {
+      return next(new AuthError("Seller not authenticated"));
+    }
+
+    const categories = await prisma.products.findMany({
+      where: {
+        shopId: sellerId,
+        isDeleted: { not: true },
+      },
+      select: {
+        category: true,
+      },
+      distinct: ['category'],
+    });
+
+    const uniqueCategories = categories
+      .map(p => p.category)
+      .filter(category => category && category.trim() !== '')
+      .sort();
+
+    res.status(200).json({
+      success: true,
+      categories: uniqueCategories,
     });
   } catch (error) {
     return next(error);
@@ -355,6 +522,8 @@ export const updateProduct = async (
       subCategory,
       stock,
       tags,
+      starting_date,
+      ending_date,
     } = req.body;
 
     let whereCondition: any = { id: productId };
@@ -399,6 +568,12 @@ export const updateProduct = async (
             ? tags
             : tags.split(",").map((tag: string) => tag.trim())
           : existingProduct.tags,
+        starting_date: starting_date !== undefined 
+          ? (starting_date ? new Date(starting_date) : null)
+          : existingProduct.starting_date,
+        ending_date: ending_date !== undefined 
+          ? (ending_date ? new Date(ending_date) : null)
+          : existingProduct.ending_date,
         updatedAt: new Date(),
       },
     });
@@ -1214,12 +1389,12 @@ export const getBestSellersByCategory = async (
       },
       take: limit,
       include: {
+        images: true,
         Shop: {
           include: {
             avatar: true,
           },
         },
-        images: true,
       },
     });
 

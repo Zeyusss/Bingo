@@ -26,11 +26,10 @@ export async function createWebSocketServer(server: HttpServer) {
     ws.on("message", async (rawMessage) => {
       try {
         const messageStr = rawMessage.toString();
-        if (!registeredUserId && !messageStr.startsWith("register")) {
+        if (!registeredUserId && !messageStr.startsWith("{")) {
           registeredUserId = messageStr;
           connectedUsers.set(registeredUserId, ws);
-          console.log(`User ${registeredUserId} registered`);
-
+          console.log(`registered websocket for userId:${registeredUserId}`);
           const isSeller = registeredUserId.startsWith("seller_");
           const redisKey = isSeller
             ? `online:seller:${registeredUserId.replace("seller_", "")}`
@@ -40,12 +39,10 @@ export async function createWebSocketServer(server: HttpServer) {
           return;
         }
         const data: IncomingMessage = JSON.parse(messageStr);
-        console.log(`Processing message from ${registeredUserId}:`, data);
         
         if (data.type === "MARK_AS_SEEN" && registeredUserId) {
           const seenKey = `${registeredUserId}_${data.conversationId}`;
           unseenCounts.set(seenKey, 0);
-          console.log(`Marked as seen: ${seenKey}`);
           return;
         }
 
@@ -79,9 +76,6 @@ export async function createWebSocketServer(server: HttpServer) {
         const senderKey =
           senderType === "user" ? `user_${fromUserId}` : `seller_${fromUserId}`;
         
-        console.log(`Message routing: ${senderKey} -> ${receiverKey}`);
-        console.log(`Connected users:`, Array.from(connectedUsers.keys()));
-
         const unseenKey = `${receiverKey}_${conversationId}`;
         const prevCount = unseenCounts.get(unseenKey) || 0;
         unseenCounts.set(unseenKey, prevCount + 1);

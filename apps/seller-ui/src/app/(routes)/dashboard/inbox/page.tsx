@@ -12,7 +12,7 @@ const ChatPage = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const messageContainerRef = useRef<HTMLDivElement | null>(null);
-  const { seller, isLoading: userLoading } = useSeller({ enabled: true });
+  const { seller } = useSeller({ enabled: true });
   const conversationId = searchParams.get("conversationId");
   const { ws } = useWebSocket();
   const queryClient = useQueryClient();
@@ -75,28 +75,44 @@ const ChatPage = () => {
 
   useEffect(() => {
     if (!ws) return;
-    
+
     const handleMessage = (event: any) => {
       const data = JSON.parse(event.data);
-
-
       if (data.type === "NEW_MESSAGE") {
         const newMsg = data?.payload;
-
-
         if (newMsg.conversationId === conversationId) {
-
           queryClient.setQueryData(
             ["messages", conversationId],
-            (old: any = []) => [
-              ...old,
-              {
-                content: newMsg.messageBody || newMsg.content || "",
-                senderType: newMsg.senderType,
-                seen: false,
-                createdAt: newMsg.createdAt || new Date().toISOString(),
-              },
-            ]
+            (old: any = []) => {
+              const isOwnMessage =
+                newMsg.senderType === "seller" &&
+                newMsg.senderId === seller?.id;
+
+              if (isOwnMessage) {
+                const filteredMessages = old.filter(
+                  (msg: any) => !msg.isOptimistic
+                );
+                return [
+                  ...filteredMessages,
+                  {
+                    content: newMsg.messageBody || newMsg.content || "",
+                    senderType: newMsg.senderType,
+                    seen: false,
+                    createdAt: newMsg.createdAt || new Date().toISOString(),
+                  },
+                ];
+              } else {
+                return [
+                  ...old,
+                  {
+                    content: newMsg.messageBody || newMsg.content || "",
+                    senderType: newMsg.senderType,
+                    seen: false,
+                    createdAt: newMsg.createdAt || new Date().toISOString(),
+                  },
+                ];
+              }
+            }
           );
           scrollToBottom();
         }
@@ -120,9 +136,9 @@ const ChatPage = () => {
         );
       }
     };
-    
+
     ws.onmessage = handleMessage;
-    
+
     return () => {
       ws.onmessage = null;
     };
@@ -153,6 +169,7 @@ const ChatPage = () => {
       !message.trim() ||
       !selectedChat ||
       !ws ||
+      !seller ||
       ws.readyState !== WebSocket.OPEN
     )
       return;
@@ -165,29 +182,103 @@ const ChatPage = () => {
       senderType: "seller",
     };
 
+    const tempMessageId = `temp_${Date.now()}_${Math.random()}`;
+    const optimisticMessage = {
+      id: tempMessageId,
+      content: message,
+      senderType: "seller",
+      seen: false,
+      createdAt: new Date().toISOString(),
+      isOptimistic: true,
+    };
+
+    queryClient.setQueryData(
+      ["messages", selectedChat.conversationId],
+      (old: any = []) => [...old, optimisticMessage]
+    );
+
     ws.send(JSON.stringify(payload));
+
+    setChats((prevChats) =>
+      prevChats.map((chat) =>
+        chat.conversationId === selectedChat.conversationId
+          ? { ...chat, lastMessage: message }
+          : chat
+      )
+    );
 
     setMessage("");
     scrollToBottom();
   };
 
+  const handleSendImage = (imageUrl: string) => {
+    if (!selectedChat || !ws || !seller) return;
+
+    const payload = {
+      fromUserId: seller.id,
+      toUserId: selectedChat.user.id,
+      messageBody: imageUrl,
+      conversationId: selectedChat.conversationId,
+      senderType: "seller",
+    };
+
+    const tempMessageId = `temp_${Date.now()}_${Math.random()}`;
+    const optimisticMessage = {
+      id: tempMessageId,
+      content: imageUrl,
+      senderType: "seller",
+      seen: false,
+      createdAt: new Date().toISOString(),
+      isOptimistic: true,
+    };
+
+    queryClient.setQueryData(
+      ["messages", selectedChat.conversationId],
+      (old: any = []) => [...old, optimisticMessage]
+    );
+
+    ws.send(JSON.stringify(payload));
+
+    setChats((prevChats) =>
+      prevChats.map((chat) =>
+        chat.conversationId === selectedChat.conversationId
+          ? { ...chat, lastMessage: "📷 Image" }
+          : chat
+      )
+    );
+
+    scrollToBottom();
+  };
+
   return (
-    <div className="w-full bg-gray-50">
-      <div className="md:w-[90%] mx-auto pt-5">
-        <div className="flex flex-col md:flex-row h-[80vh] rounded-lg shadow border overflow-hidden">
-          {/* Chat Sidebar */}
-          <div className="w-full md:w-[320px] border-r bg-white shadow-inner">
-            <div className="p-4 border-b text-lg font-semibold text-gray-800">
-              Messages
+    <div className="min-h-screen bg-slate-50">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Page Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">Messages</h1>
+          <p className="text-slate-600">Manage your customer conversations</p>
+        </div>
+        
+        <div className="flex flex-col lg:flex-row h-[calc(100vh-200px)] bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="w-full lg:w-80 border-r border-slate-200 bg-white">
+            <div className="p-4 border-b border-slate-200 bg-slate-50">
+              <h2 className="text-lg font-semibold text-slate-900">Conversations</h2>
             </div>
-            <div className="divide-y">
+            <div className="divide-y divide-slate-100">
               {isLoading ? (
-                <div className="py-5 text-sm text-center text-gray-500">
-                  Loading...
+                <div className="py-8 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
+                  <p className="text-slate-500 text-sm">Loading conversations...</p>
                 </div>
               ) : chats.length === 0 ? (
-                <div className="py-5 text-sm text-center text-gray-500">
-                  No Conversation
+                <div className="py-12 text-center">
+                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  </div>
+                  <p className="text-slate-500 text-sm">No conversations yet</p>
+                  <p className="text-slate-400 text-xs mt-1">Customer messages will appear here</p>
                 </div>
               ) : (
                 chats.map((chat) => {
@@ -197,37 +288,44 @@ const ChatPage = () => {
                     <button
                       key={chat.conversationId}
                       onClick={() => handleChatSelect(chat)}
-                      className={`w-full text-left px-4 py-3 transition hover:bg-gray-50 ${
-                        isActive ? "bg-gray-100" : ""
+                      className={`w-full text-left p-4 transition-colors duration-200 hover:bg-slate-50 ${
+                        isActive ? "bg-blue-50 border-r-2 border-blue-600" : ""
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <Image
-                          src={chat.user?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"}
-                          alt={chat.user?.name}
-                          width={36}
-                          height={36}
-                          className="rounded-full object-cover border w-10 h-10"
-                        />
-                        <div className="flex-1">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-gray-800">
+                        <div className="relative">
+                          <Image
+                            src={
+                              chat.user?.avatar ||
+                              "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"
+                            }
+                            alt={chat.user?.name}
+                            width={44}
+                            height={44}
+                            className="rounded-full object-cover border-2 border-white shadow-sm w-11 h-11"
+                          />
+                          {chat.user?.isOnline && (
+                            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-white" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start mb-1">
+                            <h3 className={`text-sm font-semibold truncate ${
+                              isActive ? "text-blue-900" : "text-slate-900"
+                            }`}>
                               {chat.user?.name}
-                            </span>
-                            {chat.user?.isOnline && (
-                              <span className="w-2 h-2 rounded-full bg-green-500" />
-                            )}
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <p className="text-xs text-gray-500 truncate max-w-[170px]">
-                              {chat.lastMessage || ""}
-                            </p>
+                            </h3>
                             {chat?.unreadCount > 0 && (
-                              <span className="ml-2 inline-flex items-center justify-center min-w-[16px] h-[16px] px-[6px] rounded-full text-[10px] font-semibold bg-blue-600 text-white">
+                              <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full text-xs font-medium bg-blue-600 text-white">
                                 {chat?.unreadCount}
                               </span>
                             )}
                           </div>
+                          <p className={`text-xs truncate ${
+                            isActive ? "text-blue-700" : "text-slate-500"
+                          }`}>
+                            {chat.lastMessage || "No messages yet"}
+                          </p>
                         </div>
                       </div>
                     </button>
@@ -237,53 +335,92 @@ const ChatPage = () => {
             </div>
           </div>
 
-          {/* Chat Window */}
-          <div className="flex-1 flex flex-col bg-gray-100">
+          <div className="flex-1 flex flex-col bg-slate-50">
             {selectedChat ? (
               <>
-                <div className="p-4 border-b bg-white flex items-center gap-3 shadow-sm">
-                  <Image
-                    src={selectedChat.user?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"}
-                    alt={selectedChat.user.name}
-                    width={40}
-                    height={40}
-                    className="rounded-full border object-cover w-10 h-10"
-                  />
+                {/* Chat Header */}
+                <div className="p-4 border-b border-slate-200 bg-white flex items-center gap-4">
+                  <div className="relative">
+                    <Image
+                      src={
+                        selectedChat.user?.avatar ||
+                        "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756"
+                      }
+                      alt={selectedChat.user.name}
+                      width={48}
+                      height={48}
+                      className="rounded-full border-2 border-white shadow-sm object-cover w-12 h-12"
+                    />
+                    {selectedChat.user?.isOnline && (
+                      <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-green-500 border-2 border-white" />
+                    )}
+                  </div>
                   <div>
-                    <h2 className="text-gray-800 font-semibold text-base">
+                    <h2 className="text-slate-900 font-semibold text-lg">
                       {selectedChat.user?.name}
                     </h2>
-                    <p className="text-xs text-gray-500">
+                    <p className={`text-sm flex items-center gap-1 ${
+                      selectedChat.user?.isOnline ? "text-green-600" : "text-slate-500"
+                    }`}>
+                      <span className={`w-2 h-2 rounded-full ${
+                        selectedChat.user?.isOnline ? "bg-green-500" : "bg-slate-400"
+                      }`} />
                       {selectedChat.user?.isOnline ? "Online" : "Offline"}
                     </p>
                   </div>
                 </div>
 
+                {/* Messages Container */}
                 <div
                   ref={messageContainerRef}
-                  className="flex-1 overflow-y-auto px-6 py-6 space-y-4 text-sm bg-gray-50"
+                  className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50"
                 >
                   {messages.map((msg: any, index: number) => (
                     <div
                       key={index}
                       className={`flex flex-col ${
                         msg.senderType === "seller"
-                          ? "items-end ml-auto"
+                          ? "items-end"
                           : "items-start"
-                      } max-w-[75%]`}
+                      } max-w-[80%] ${
+                        msg.senderType === "seller" ? "ml-auto" : "mr-auto"
+                      }`}
                     >
                       <div
                         className={`${
                           msg.senderType === "seller"
-                            ? "bg-blue-600 text-white"
-                            : "bg-white text-gray-800 border border-gray-200"
-                        } px-4 py-2 rounded-xl shadow-sm`}
+                            ? "bg-blue-600 text-white shadow-md"
+                            : "bg-white text-slate-900 border border-slate-200 shadow-sm"
+                        } ${msg.messageType === "image" ? "p-2" : "px-4 py-3"} rounded-2xl max-w-full break-words`}
                       >
-                        {msg.text || msg.content}
+                        {msg.messageType === "image" || (msg.content && msg.content.match(/\.(jpeg|jpg|gif|png|webp)$/i)) ? (
+                          <div className="relative">
+                            <img
+                              src={msg.text || msg.content}
+                              alt="Shared image"
+                              className="max-w-full max-h-64 rounded-xl object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => window.open(msg.text || msg.content, '_blank')}
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  parent.innerHTML = `<p class="text-sm text-slate-500 p-2">📷 Image failed to load</p>`;
+                                }
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <p className="text-sm leading-relaxed">
+                            {msg.text || msg.content}
+                          </p>
+                        )}
                       </div>
                       <div
-                        className={`text-[11px] text-gray-400 mt-1 ${
-                          msg.senderType === "seller" ? "text-right" : "text-left"
+                        className={`text-xs text-slate-400 mt-2 px-1 ${
+                          msg.senderType === "seller"
+                            ? "text-right"
+                            : "text-left"
                         }`}
                       >
                         {msg.time ||
@@ -300,11 +437,20 @@ const ChatPage = () => {
                   message={message}
                   setMessage={setMessage}
                   onSendMessage={handleSend}
+                  onSendImage={handleSendImage}
                 />
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-                Select a conversation to start chatting
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-10 h-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-slate-900 font-medium text-lg mb-2">Welcome to Messages</h3>
+                  <p className="text-slate-500 text-sm">Select a conversation from the sidebar to start chatting with your customers</p>
+                </div>
               </div>
             )}
           </div>
