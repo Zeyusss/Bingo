@@ -22,6 +22,7 @@ import {
   PackageSearch,
   PencilRuler,
   Settings,
+  ShieldCheck,
   Store,
   Users,
 } from "lucide-react";
@@ -35,12 +36,12 @@ const SidebarWrapper = () => {
 
   const handleLogout = async () => {
     try {
-      await axiosInstance.get('http://localhost:6001/api/logout-user');
-      toast.success('Logged out successfully!');
-      router.push('/');
+      await axiosInstance.get("http://localhost:6001/api/logout-user");
+      toast.success("Logged out successfully!");
+      router.push("/");
     } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('Logout failed. Please try again.');
+      console.error("Logout error:", error);
+      toast.error("Logout failed. Please try again.");
     }
   };
 
@@ -132,6 +133,17 @@ const SidebarWrapper = () => {
                 href="/dashboard/users"
                 icon={
                   <Users size={24} color={getIconColor("/dashboard/users")} />
+                }
+              />
+              <SidebarItem
+                isActive={activeSidebar === "/dashboard/verifications"}
+                title="Verifications"
+                href="/dashboard/verifications"
+                icon={
+                  <ShieldCheck
+                    size={24}
+                    color={getIconColor("/dashboard/verifications")}
+                  />
                 }
               />
               <SidebarItem
