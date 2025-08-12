@@ -26,7 +26,9 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
     category: '',
     subCategory: '',
     stock: '',
-    tags: ''
+    tags: '',
+    starting_date: '',
+    ending_date: ''
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -37,7 +39,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        // Use the same endpoint as the all products page
         const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/product/api/get-seller-categories`, {
           credentials: 'include'
         });
@@ -67,7 +68,9 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
         category: product.category || '',
         subCategory: product.subCategory || product.subcategory || '', 
         stock: product.stock ? product.stock.toString() : '0',
-        tags: Array.isArray(product.tags) ? product.tags.join(', ') : (typeof product.tags === 'string' ? product.tags : '')
+        tags: Array.isArray(product.tags) ? product.tags.join(', ') : (typeof product.tags === 'string' ? product.tags : ''),
+        starting_date: product.starting_date ? new Date(product.starting_date).toISOString().split('T')[0] : '',
+        ending_date: product.ending_date ? new Date(product.ending_date).toISOString().split('T')[0] : ''
       };
       
       setOriginalData(original);
@@ -103,6 +106,17 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
     
     if (editFormData.stock && parseInt(editFormData.stock) < 0) {
       newErrors.stock = 'Stock cannot be negative';
+    }
+    
+    if ((product?.starting_date || product?.ending_date)) {
+      if (editFormData.starting_date && editFormData.ending_date) {
+        const startDate = new Date(editFormData.starting_date);
+        const endDate = new Date(editFormData.ending_date);
+        
+        if (startDate >= endDate) {
+          newErrors.ending_date = 'End date must be after start date';
+        }
+      }
     }
     
     setErrors(newErrors);
@@ -320,6 +334,54 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                   </div>
                 </div>
               </div>
+              
+              {/* Event Dates Section - Only show if product has event dates */}
+              {(product?.starting_date || product?.ending_date) && (
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
+                    <Package className="h-5 w-5 mr-2" />Event Dates
+                  </h4>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Event Start Date
+                      </label>
+                      <Input
+                        type="date"
+                        value={editFormData.starting_date}
+                        onChange={(e) =>
+                          setEditFormData((prev: any) => ({ ...prev, starting_date: e.target.value }))
+                        }
+                        className={errors.starting_date ? 'border-red-300 focus:border-red-500' : ''}
+                      />
+                      {errors.starting_date && (
+                        <p className="text-red-500 text-xs mt-1 flex items-center">
+                          <AlertCircle className="h-3 w-3 mr-1" />{errors.starting_date}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Event End Date
+                      </label>
+                      <Input
+                        type="date"
+                        value={editFormData.ending_date}
+                        onChange={(e) =>
+                          setEditFormData((prev: any) => ({ ...prev, ending_date: e.target.value }))
+                        }
+                        className={errors.ending_date ? 'border-red-300 focus:border-red-500' : ''}
+                      />
+                      {errors.ending_date && (
+                        <p className="text-red-500 text-xs mt-1 flex items-center">
+                          <AlertCircle className="h-3 w-3 mr-1" />{errors.ending_date}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

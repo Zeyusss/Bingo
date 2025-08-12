@@ -14,15 +14,16 @@ import {
   TableHeader,
   TableRow
 } from "apps/seller-ui/src/shared/components/ui/table"
-import { Skeleton } from "apps/seller-ui/src/shared/components/ui/skeleton"
 import axiosInstance from 'apps/seller-ui/src/utils/axiosInstance';
-import { Edit, Trash2, Eye, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Button } from "apps/seller-ui/src/shared/components/ui/button";
 import Link from 'next/link';
 import Pagination from 'apps/seller-ui/src/shared/components/pagination/Pagination'
 import FilterControls from 'apps/seller-ui/src/shared/components/filters/FilterControls'
 import { usePaginationAndFilters } from 'apps/seller-ui/src/hooks/usePaginationAndFilters'
 import useSeller from 'apps/seller-ui/src/hooks/useSeller'
+import EditProductModal from 'apps/seller-ui/src/shared/components/modals/EditProductModal'
+import DeleteConfirmationModal from 'apps/seller-ui/src/shared/components/modals/delete.confirmation.modal'
 
 const fetchEvents = async (queryString: string, shopId: string) => {
   if (!shopId) throw new Error('Shop ID is required');
@@ -31,10 +32,11 @@ const fetchEvents = async (queryString: string, shopId: string) => {
   return {
     events: res.data.products || [],
     pagination: res.data.pagination || { total: 0, page: 1, limit: 10, totalPages: 1, hasNext: false, hasPrev: false },
-    summary: {
-      totalEvents: res.data.pagination?.total || 0,
-      activeEvents: res.data.products?.filter((p: any) => new Date(p.starting_date) <= new Date() && new Date(p.ending_date) >= new Date()).length || 0,
-      upcomingEvents: res.data.products?.filter((p: any) => new Date(p.starting_date) > new Date()).length || 0
+    summary: res.data.summary || {
+      totalEvents: 0,
+      activeEvents: 0,
+      upcomingEvents: 0,
+      endedEvents: 0
     }
   };
 };
@@ -42,9 +44,11 @@ const fetchEvents = async (queryString: string, shopId: string) => {
 const SellerEvents = () => {
   const queryClient = useQueryClient();
   const { seller } = useSeller();
+  const [selectedProduct, setSelectedProduct] = React.useState<any>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
   
   const {
-    page,
     limit,
     search,
     sortBy,
@@ -70,20 +74,51 @@ const SellerEvents = () => {
   })
 
 
-  const removeEventMutation = useMutation({
+
+  const deleteProductMutation = useMutation({
     mutationFn: async (productId: string) => {
-      if (!seller?.shop?.id) throw new Error('Shop not found for seller');
-      const res = await axiosInstance.delete(`/seller/api/remove-event/${seller.shop.id}`, {
-        data: { productId }
-      });
+      const res = await axiosInstance.delete(`/product/api/delete-product/${productId}`);
       return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['seller-events'] });
+      setIsDeleteModalOpen(false);
+      setSelectedProduct(null);
     },
     onError: (error: any) => {
-      console.error('Error removing event:', error);
-      alert(error.response?.data?.message || 'Failed to remove event');
+      console.error('Error deleting product:', error);
+    },
+  });
+
+
+  const restoreProductMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      const res = await axiosInstance.put(`/product/api/restore-product/${productId}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['seller-events'] });
+      setIsDeleteModalOpen(false);
+      setSelectedProduct(null);
+    },
+    onError: (error: any) => {
+      console.error('Error restoring product:', error);
+    },
+  });
+
+
+  const updateProductMutation = useMutation({
+    mutationFn: async ({ productId, formData }: { productId: string; formData: any }) => {
+      const res = await axiosInstance.put(`/product/api/update-product/${productId}`, formData);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['seller-events'] });
+      setIsEditModalOpen(false);
+      setSelectedProduct(null);
+    },
+    onError: (error: any) => {
+      console.error('Error updating product:', error);
     },
   });
 
@@ -99,34 +134,61 @@ const SellerEvents = () => {
   const summary = data?.summary || { totalEvents: 0, activeEvents: 0, upcomingEvents: 0 }
 
 
+  const handleViewClick = (product: any) => {
+    window.open(`${process.env.NEXT_PUBLIC_USER_UI_LINK}/product/${product.slug}`, '_blank');
+  };
+
+  const handleEditClick = (product: any) => {
+    setSelectedProduct(product);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeleteClick = (product: any) => {
+    setSelectedProduct(product);
+    setIsDeleteModalOpen(true);
+  };
+
+
   const columns = useMemo(
     () => [
       {
-        accessorKey: 'title',
-        header: 'Product',
+        accessorKey: 'image',
+        header: 'Image',
         cell: ({ row }: any) => (
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <img
-                src={row.original.images?.[0]?.url || '/placeholder-image.jpg'}
-                alt={row.original.title}
-                className="w-12 h-12 rounded-lg object-cover"
-              />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="font-medium text-gray-900">{row.original.title}</p>
-              </div>
-              <p className="text-sm text-gray-500">SKU: {row.original.sku || 'N/A'}</p>
-            </div>
+          <div className='flex justify-center'>
+            <img
+              src={row.original.images?.[0]?.url || '/placeholder-image.jpg'}
+              alt={row.original.title}
+              className='w-12 h-12 rounded-lg object-cover'
+            />
           </div>
-        ),
+        )
+      },
+      {
+        accessorKey: 'title',
+        header: 'Product Name',
+        cell: ({ row }: any) => {
+          const truncatedTitle = row.original.title.length > 25 ? `${row.original.title.substring(0, 25)}...` : row.original.title;
+          return (
+            <div className='flex flex-col items-center justify-center text-center'>
+              <a
+                href={`${process.env.NEXT_PUBLIC_USER_UI_LINK}/product/${row.original.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className='text-blue-600 hover:underline font-medium'
+              >
+                {truncatedTitle}
+              </a>
+              <p className="text-sm text-slate-500 mt-1">SKU: {row.original.sku || 'N/A'}</p>
+            </div>
+          )
+        },
       },
       {
         accessorKey: 'sale_price',
         header: 'Price',
         cell: ({ row }: any) => (
-          <span className="text-gray-900 font-semibold">
+          <span className="block text-center text-slate-700 font-semibold">
             ${row.original.sale_price || row.original.regular_price}
           </span>
         ),
@@ -135,7 +197,7 @@ const SellerEvents = () => {
         accessorKey: 'stock',
         header: 'Stock',
         cell: ({ row }: any) => (
-          <span className={row.original.stock < 10 ? "text-red-500" : "text-gray-900"}>
+          <span className={row.original.stock < 10 ? "text-red-500 block text-center" : "text-slate-700 block text-center"}>
             {row.original.stock} left
           </span>
         ),
@@ -145,7 +207,7 @@ const SellerEvents = () => {
         header: 'Start Date',
         cell: ({ row }: any) => {
           const date = new Date(row.original.starting_date).toLocaleDateString();
-          return <span className="text-gray-700 text-sm">{date}</span>;
+          return <span className="block text-center text-slate-600 text-sm">{date}</span>;
         },
       },
       {
@@ -153,48 +215,68 @@ const SellerEvents = () => {
         header: 'End Date',
         cell: ({ row }: any) => {
           const date = new Date(row.original.ending_date).toLocaleDateString();
-          return <span className="text-gray-700 text-sm">{date}</span>;
+          return <span className="block text-center text-slate-600 text-sm">{date}</span>;
         },
       },
       {
-        accessorKey: 'Shop',
-        header: 'Shop Name',
-        cell: ({ row }: any) => (
-          <span className="text-gray-700 text-sm">
-            {row.original.Shop?.name || 'N/A'}
-          </span>
-        ),
+        accessorKey: 'status',
+        header: 'Event Status',
+        cell: ({ row }: any) => {
+          const now = new Date();
+          const startDate = new Date(row.original.starting_date);
+          const endDate = new Date(row.original.ending_date);
+          
+          let status = 'ended';
+          let statusClass = 'bg-gray-100 text-gray-700';
+          
+          if (startDate > now) {
+            status = 'upcoming';
+            statusClass = 'bg-blue-100 text-blue-700';
+          } else if (startDate <= now && endDate >= now) {
+            status = 'active';
+            statusClass = 'bg-green-100 text-green-700';
+          } else {
+            status = 'ended';
+            statusClass = 'bg-gray-100 text-gray-700';
+          }
+          
+          return (
+            <div className="flex justify-center">
+              <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusClass}`}>
+                {status}
+              </span>
+            </div>
+          );
+        },
       },
       {
         header: 'Actions',
         cell: ({ row }: any) => (
-          <div className='flex gap-3 justify-center'>
-            <button
-              className='text-blue-400 hover:text-blue-300 transition'
-              title="View Product"
-              onClick={() => window.open(`${process.env.NEXT_PUBLIC_USER_UI_LINK}/product/${row.original.slug}`, '_blank')}
+          <div className='flex items-center space-x-2 justify-center'>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-blue-600 hover:text-blue-800 border-blue-200 hover:bg-blue-50"
+              onClick={() => handleViewClick(row.original)}
             >
-              <Eye size={18} />
-            </button>
-            <button
-              className='text-yellow-400 hover:text-yellow-300 transition'
-              title="Edit Event"
-              onClick={() => console.log('Edit event:', row.original.id)}
+              View
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-yellow-600 hover:text-yellow-800 border-yellow-200 hover:bg-yellow-50"
+              onClick={() => handleEditClick(row.original)}
             >
-              <Edit size={18} />
-            </button>
-            <button
-              className='text-red-400 hover:text-red-300 transition'
-              title="Remove from Event"
-              onClick={() => {
-                if (window.confirm('Are you sure you want to remove this product from events? It will become a regular product again.')) {
-                  removeEventMutation.mutate(row.original.id);
-                }
-              }}
-              disabled={removeEventMutation.isPending}
+              Edit
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-red-600 hover:text-red-800 border-red-200 hover:bg-red-50"
+              onClick={() => handleDeleteClick(row.original)}
             >
-              <Trash2 size={18} />
-            </button>
+              Delete
+            </Button>
           </div>
         )
       }
@@ -209,22 +291,22 @@ const SellerEvents = () => {
   });
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="w-full min-h-screen bg-[#F3F1EE] p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">All Events</h1>
-          <p className="text-gray-600 mt-1">Manage your event products and limited offers</p>
+          <h1 className="text-2xl font-bold text-slate-800">All Events</h1>
+          <p className="text-slate-600 mt-1">Manage your event products and limited offers</p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-500">{pagination.total} event products</div>
-          <div className="text-sm text-purple-600 font-semibold">
+          <div className="text-sm text-slate-500">{pagination.total} event products</div>
+          <div className="text-sm text-blue-600 font-semibold">
             Active: {summary.activeEvents} | Upcoming: {summary.upcomingEvents}
           </div>
           <Link href="/dashboard/create-event">
-            <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
+            <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors">
               <Plus className="w-4 h-4" />
               Create Event
-            </Button>
+            </button>
           </Link>
         </div>
       </div>
@@ -261,12 +343,12 @@ const SellerEvents = () => {
         placeholder="Search events by title or description..."
       />
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="bg-gray-50">
               {table.getHeaderGroups()[0].headers.map((header) => (
-                <TableHead key={header.id} className="text-center">
+                <TableHead key={header.id} className="text-center font-semibold text-slate-700">
                   {flexRender(header.column.columnDef.header, header.getContext())}
                 </TableHead>
               ))}
@@ -278,19 +360,19 @@ const SellerEvents = () => {
                 <TableCell colSpan={7} className="text-center py-8">
                   <div className="flex items-center justify-center space-x-2">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
-                    <span>Loading events...</span>
+                    <span className="text-slate-600">Loading events...</span>
                   </div>
                 </TableCell>
               </TableRow>
             ) : table.getRowModel().rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={7} className="text-center py-8 text-slate-500">
                   No events found
                 </TableCell>
               </TableRow>
             ) : (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow key={row.id} className="hover:bg-gray-50 transition-colors">
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="text-center">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -313,6 +395,42 @@ const SellerEvents = () => {
         hasNext={pagination.hasNext}
         hasPrev={pagination.hasPrev}
       />
+
+      {/* Edit Product Modal */}
+      {isEditModalOpen && selectedProduct && (
+        <EditProductModal
+          product={selectedProduct}
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedProduct(null);
+          }}
+          onSave={(formData) => {
+            updateProductMutation.mutate({
+              productId: selectedProduct.id,
+              formData
+            });
+          }}
+          isSaving={updateProductMutation.isPending}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && selectedProduct && (
+        <DeleteConfirmationModal
+          product={selectedProduct}
+          onClose={() => {
+            setIsDeleteModalOpen(false);
+            setSelectedProduct(null);
+          }}
+          onConfirm={() => {
+            deleteProductMutation.mutate(selectedProduct.id);
+          }}
+          onRestore={() => {
+            restoreProductMutation.mutate(selectedProduct.id);
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -522,6 +522,8 @@ export const updateProduct = async (
       subCategory,
       stock,
       tags,
+      starting_date,
+      ending_date,
     } = req.body;
 
     let whereCondition: any = { id: productId };
@@ -566,6 +568,12 @@ export const updateProduct = async (
             ? tags
             : tags.split(",").map((tag: string) => tag.trim())
           : existingProduct.tags,
+        starting_date: starting_date !== undefined 
+          ? (starting_date ? new Date(starting_date) : null)
+          : existingProduct.starting_date,
+        ending_date: ending_date !== undefined 
+          ? (ending_date ? new Date(ending_date) : null)
+          : existingProduct.ending_date,
         updatedAt: new Date(),
       },
     });
