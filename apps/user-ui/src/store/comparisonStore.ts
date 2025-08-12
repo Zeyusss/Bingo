@@ -21,7 +21,10 @@ export interface ComparisonProduct {
   customProperties?: Record<string, any>;
   addedAt: number; 
   lastViewed: number; 
-  source?: 'search' | 'product_page' | 'category' | 'recommendation'; 
+  source?: 'search' | 'product_page' | 'category' | 'recommendation';
+  personalizationEnabled?: boolean;
+  personalizationRequired?: boolean;
+  personalizationInstructions?: string;
 }
 
 interface ComparisonStore {

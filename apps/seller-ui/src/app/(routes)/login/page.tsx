@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios, { AxiosError } from "axios";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
@@ -20,7 +20,8 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [showRestrictedModal, setShowRestrictedModal] = useState(false);
   const router = useRouter();
-  const { seller, isLoading } = useSeller();
+  const queryClient = useQueryClient();
+  const { seller, isLoading, refetch } = useSeller();
 
   React.useEffect(() => {
     if (!isLoading && seller) {
@@ -43,9 +44,17 @@ const Login = () => {
       );
       return response.data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       setServerError(null);
-      router.push("/");
+      
+      // Invalidate and refetch seller data to detect the new login state
+      queryClient.invalidateQueries({ queryKey: ["seller"] });
+      
+      // Small delay to ensure cookie is set, then refetch
+      setTimeout(async () => {
+        await refetch();
+        router.push("/");
+      }, 100);
     },
     onError: (error: AxiosError) => {
       const errorMessage =
@@ -167,9 +176,16 @@ const Login = () => {
             <button
               type="submit"
               disabled={loginMutation.isPending}
-              className="w-full bg-black text-white p-2 rounded hover:bg-blue-600"
+              className="w-full bg-black text-white p-2 rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
-              {loginMutation.isPending ? "Logging in..." : "Login"}
+              {loginMutation.isPending ? (
+                <>
+                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Logging in...
+                </>
+              ) : (
+                "Login"
+              )}
             </button>
 
             {serverError && (

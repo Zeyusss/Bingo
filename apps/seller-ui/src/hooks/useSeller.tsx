@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "../utils/axiosInstance";
 import { getQueryConfig, createQueryKey } from "../utils/queryConfig";
-
+import { useRouter } from "next/navigation";
 
 const fetchSeller = async () => {
   try {
@@ -14,7 +14,8 @@ const fetchSeller = async () => {
     return response.data.seller;
   } catch (error: any) {
     if (error?.response?.status === 401) {
-      throw error;
+    
+      return null;
     }
     throw error;
   }
@@ -25,8 +26,9 @@ interface UseSellerOptions {
 }
 
 const useSeller = (options: UseSellerOptions = {}) => {
-
   const criticalConfig = getQueryConfig('critical');
+  const queryClient = useQueryClient();
+  const router = useRouter();
   
   const {
     data: seller,
@@ -54,8 +56,24 @@ const useSeller = (options: UseSellerOptions = {}) => {
     refetchOnMount: false,
     refetchOnReconnect: false, 
   });
+
+  const logout = async () => {
+    try {
+      await axiosInstance.get("/api/logout-seller", {
+        withCredentials: true
+      });
+      
+      queryClient.clear();
+      
+      router.push("/login");
+    } catch (error) {
+      console.error('Logout error:', error);
+      queryClient.clear();
+      router.push("/login");
+    }
+  };
   
-  return { seller, isLoading, isError, refetch };
+  return { seller, isLoading, isError, refetch, logout };
 };
 
 export default useSeller;

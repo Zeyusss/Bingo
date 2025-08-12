@@ -1,14 +1,11 @@
 'use client';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
-  getFilteredRowModel,
   flexRender,
 } from '@tanstack/react-table';
 import { useQuery } from '@tanstack/react-query';
-import { Input } from "apps/seller-ui/src/shared/components/ui/input"
-import { Button } from "apps/seller-ui/src/shared/components/ui/button"
 import {
   Table,
   TableBody,
@@ -17,21 +14,62 @@ import {
   TableHeader,
   TableRow
 } from "apps/seller-ui/src/shared/components/ui/table"
-import { Skeleton } from "apps/seller-ui/src/shared/components/ui/skeleton"
 import axiosInstance from 'apps/seller-ui/src/utils/axiosInstance';
+import Pagination from 'apps/seller-ui/src/shared/components/pagination/Pagination'
+import FilterControls from 'apps/seller-ui/src/shared/components/filters/FilterControls'
+import { usePaginationAndFilters } from 'apps/seller-ui/src/hooks/usePaginationAndFilters'
 
-const fetchOrders = async () => {
-  const res = await axiosInstance.get('/order/api/get-seller-orders');
-  return res.data.orders;
+const fetchPayments = async (queryString: string) => {
+  const paymentsQueryString = `${queryString}&status=Paid`;
+  
+  const res = await axiosInstance.get(`/order/api/get-seller-orders?${paymentsQueryString}`);
+  const orders = res.data.orders || [];
+  const pagination = res.data.pagination || { total: 0, page: 1, limit: 10, totalPages: 1, hasNext: false, hasPrev: false };
+  
+  return {
+    payments: orders,
+    pagination,
+    summary: {
+      totalRevenue: orders.reduce((sum: number, order: any) => sum + (order.total || 0), 0),
+      totalPayments: orders.length,
+    }
+  };
 };
 
 const SellerPayments = () => {
-  const [globalFilter, setGlobalFilter] = useState('');
-  const { data: orders = [], isLoading } = useQuery({
-    queryKey: ['seller-orders'],
-    queryFn: fetchOrders,
+  const {
+    limit,
+    search,
+    sortBy,
+    sortOrder,
+    filters,
+    setPage,
+    setLimit,
+    setSearch,
+    setSortBy,
+    setSortOrder,
+    setFilter,
+    clearFilters,
+    queryString,
+  } = usePaginationAndFilters({
+    defaultLimit: 10,
+    defaultSortBy: 'createdAt',
+    defaultSortOrder: 'desc',
+    additionalFilters: {
+      dateFrom: '',
+      dateTo: '',
+    },
+  })
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['seller-payments', queryString],
+    queryFn: () => fetchPayments(queryString),
     staleTime: 1000 * 60 * 5,
   });
+
+  const payments = data?.payments || []
+  const pagination = data?.pagination || { total: 0, page: 1, limit: 10, totalPages: 1, hasNext: false, hasPrev: false }
+  const summary = data?.summary || { totalRevenue: 0, totalPayments: 0 }
 
   const columns = useMemo(
     () => [
@@ -39,7 +77,7 @@ const SellerPayments = () => {
         accessorKey: 'id',
         header: 'Order ID',
         cell: ({ row }: any) => (
-          <span className="text-gray-900 text-sm">
+          <span className="text-gray-800 text-sm font-medium">
             #{row.original.id.slice(-6).toUpperCase()}
           </span>
         ),
@@ -48,7 +86,7 @@ const SellerPayments = () => {
         accessorKey: 'user.name',
         header: 'Buyer',
         cell: ({ row }: any) => (
-          <span className="text-gray-900">
+          <span className="text-gray-800 font-medium">
             {row.original.user?.name || 'Guest'}
           </span>
         ),
@@ -58,7 +96,7 @@ const SellerPayments = () => {
         cell: ({ row }: any) => {
           const sellerShare = row.original.total * 0.9;
           return (
-            <span className="text-green-600 font-semibold">
+            <span className="text-orange-600 font-semibold">
               ${sellerShare.toFixed(2)}
             </span>
           );
@@ -69,7 +107,7 @@ const SellerPayments = () => {
         cell: ({ row }: any) => {
           const adminFee = row.original.total * 0.1;
           return (
-            <span className="text-purple-600 font-semibold">
+            <span className="text-gray-600 font-semibold">
               ${adminFee.toFixed(2)}
             </span>
           );
@@ -80,10 +118,10 @@ const SellerPayments = () => {
         header: 'Status',
         cell: ({ row }: any) => (
           <span
-            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
               row.original.status === 'Paid'
-                ? 'bg-green-100 text-green-800'
-                : 'bg-gray-100 text-gray-800'
+                ? 'bg-green-100 text-green-700'
+                : 'bg-gray-100 text-gray-700'
             }`}
           >
             {row.original.status}
@@ -103,40 +141,57 @@ const SellerPayments = () => {
   );
 
   const table = useReactTable({
-    data: orders,
+    data: payments,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    globalFilterFn: 'includesString',
-    state: { globalFilter },
-    onGlobalFilterChange: setGlobalFilter,
   });
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="min-h-screen bg-[#F4F2EF] bg-[url('/wood-texture.jpg')] bg-cover bg-center bg-fixed p-6 space-y-6">
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
-          <p className="text-gray-600 mt-1">Your order earnings</p>
+          <h1 className="text-3xl font-bold text-gray-900 font-[Poppins]">Payments Management</h1>
+          <p className="text-lg text-gray-600 mt-2 font-[Work Sans]">Track your earnings and payment history</p>
         </div>
-        <div className="text-sm text-gray-500">{orders.length} payments</div>
+        <div className="flex items-center gap-6">
+          <div className="bg-white px-4 py-2 rounded-full border border-gray-200 shadow-sm">
+            <span className="text-sm font-medium text-gray-700 font-[Work Sans]">{pagination.total} payments</span>
+          </div>
+          <div className="bg-orange-50 px-4 py-2 rounded-full border border-orange-200 shadow-sm">
+            <span className="text-sm text-orange-700 font-semibold font-[Work Sans]">
+              Total Revenue: ${summary.totalRevenue.toFixed(2)}
+            </span>
+          </div>
+        </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <Input
-          placeholder="Search payments..."
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="pl-10"
-        />
-      </div>
+      <FilterControls
+        searchValue={search}
+        onSearchChange={setSearch}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+        sortOrder={sortOrder}
+        onSortOrderChange={setSortOrder}
+        filters={{
+          dateFrom: {
+            value: filters.dateFrom,
+            onChange: (value) => setFilter('dateFrom', value),
+          },
+          dateTo: {
+            value: filters.dateTo,
+            onChange: (value) => setFilter('dateTo', value),
+          },
+        }}
+        onClearFilters={clearFilters}
+        placeholder="Search payments by order ID or buyer name..."
+      />
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-orange-100 overflow-hidden shadow-lg">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="bg-orange-50/50">
               {table.getHeaderGroups()[0].headers.map((header) => (
-                <TableHead key={header.id} className="text-center">
+                <TableHead key={header.id} className="text-center font-semibold text-gray-800 font-[Poppins]">
                   {flexRender(header.column.columnDef.header, header.getContext())}
                 </TableHead>
               ))}
@@ -145,24 +200,32 @@ const SellerPayments = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8">
-                  <div className="flex items-center justify-center space-x-2">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
-                    <span>Loading payments...</span>
+                <TableCell colSpan={6} className="text-center py-12">
+                  <div className="flex flex-col items-center justify-center space-y-3">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
+                    <span className="text-gray-600 font-[Work Sans]">Loading payments...</span>
                   </div>
                 </TableCell>
               </TableRow>
             ) : table.getRowModel().rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                  No payments found
+                <TableCell colSpan={6} className="text-center py-12">
+                  <div className="flex flex-col items-center justify-center space-y-3">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                      <span className="text-2xl">💰</span>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-gray-600 font-semibold font-[Work Sans]">No payments found</p>
+                      <p className="text-sm text-gray-500 font-[Work Sans]">Your payment history will appear here once you receive orders</p>
+                    </div>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow key={row.id} className="hover:bg-orange-50/30 transition-colors">
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="text-center">
+                    <TableCell key={cell.id} className="text-center font-[Work Sans]">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
@@ -172,6 +235,17 @@ const SellerPayments = () => {
           </TableBody>
         </Table>
       </div>
+
+      <Pagination
+        currentPage={pagination.page}
+        totalPages={pagination.totalPages}
+        totalItems={pagination.total}
+        itemsPerPage={limit}
+        onPageChange={setPage}
+        onItemsPerPageChange={setLimit}
+        hasNext={pagination.hasNext}
+        hasPrev={pagination.hasPrev}
+      />
     </div>
   );
 };

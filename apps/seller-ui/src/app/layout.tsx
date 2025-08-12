@@ -24,6 +24,7 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`min-h-screen font-sans  antialiased ${poppins.variable}`}
+        suppressHydrationWarning={true}
       >
         <Providers>
           <AuthGuard>{children}</AuthGuard>
