@@ -104,12 +104,14 @@ model sellers {
   password     String
   stripeId     String?
   shop         shops?
+
   isVerified              Boolean             @default(false)
   verificationStatus      VerificationStatus  @default(None)
   idFrontImage            String?
   idBackImage             String?
-  contractSignedImage     String?
   personalImage           String?
+  termsAccepted           Boolean             @default(false)
+  termsAcceptedAt         DateTime?
   verificationSubmittedAt DateTime?
   verificationReviewedAt  DateTime?
   verificationNotes       String?
