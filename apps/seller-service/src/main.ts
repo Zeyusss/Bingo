@@ -6,6 +6,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import router from "./routes/seller.routes";
+import "./jobs/shop-deletion.job";
 
 const app = express();
 

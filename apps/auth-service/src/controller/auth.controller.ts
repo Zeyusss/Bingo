@@ -1272,10 +1272,11 @@ export const uploadUserImage = async (
   });
 
   try {
-    const { file, fileName, folder = "user_profiles" } = req.body;
+    const { image, file, fileName, folder = "chat-images" } = req.body;
+    const imageData = image || file;
 
-    if (!file || !fileName) {
-      throw new ValidationError("File and fileName are required");
+    if (!imageData || !fileName) {
+      throw new ValidationError("Image and fileName are required");
     }
 
     await requestLogger.info('User image upload attempt started', {
@@ -1290,7 +1291,7 @@ export const uploadUserImage = async (
     });
 
     const uploadResponse = await imagekit.upload({
-      file: file,
+      file: imageData,
       fileName: fileName,
       folder: folder,
     });
@@ -1308,6 +1309,7 @@ export const uploadUserImage = async (
     return res.status(200).json({
       success: true,
       message: "Image uploaded successfully",
+      imageUrl: uploadResponse.url,
       url: uploadResponse.url,
       file_id: uploadResponse.fileId,
     });
