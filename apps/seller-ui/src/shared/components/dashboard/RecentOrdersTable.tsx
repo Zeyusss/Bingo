@@ -101,7 +101,7 @@ const RecentOrdersTable: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5 text-blue-600" />
+              <ShoppingCart className="h-6 w-6 text-orange-600" />
               Recent Orders
             </CardTitle>
             <CardDescription>

@@ -109,7 +109,6 @@ function DashboardContent() {
   const { seller } = useSeller({ enabled: true });
   const [showNotifications, setShowNotifications] = useState(false);
   
-  // Get current time for welcome message
   const currentHour = new Date().getHours();
   const getGreeting = () => {
     if (currentHour < 12) return "Good morning";
@@ -233,43 +232,17 @@ function DashboardContent() {
 
           {/* Revenue Trends */}
           <div className="mb-8">
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2 font-[Poppins]">
-                <DollarSign className="h-6 w-6 text-orange-600" />
-                Revenue Trends
-              </h2>
-              <p className="text-base text-gray-600 mt-1 font-[Work Sans]">
-                Track your earnings and growth over time
-              </p>
-            </div>
+
             <RevenueChart />
           </div>
-
           {/* Recent Orders */}
           <div className="mb-8">
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2 font-[Poppins]">
-                <ShoppingCart className="h-6 w-6 text-orange-600" />
-                Recent Orders
-              </h2>
-              <p className="text-base text-gray-600 mt-1 font-[Work Sans]">
-                Orders that need your attention
-              </p>
-            </div>
+ 
             <RecentOrdersTable />
           </div>
 
           {/* Top Performing Products */}
           <div className="mb-8">
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2 font-[Poppins]">
-                <Star className="h-6 w-6 text-yellow-500" />
-                Top Performing Products
-              </h2>
-              <p className="text-base text-gray-600 mt-1 font-[Work Sans]">
-                Your best-selling items
-              </p>
-            </div>
             <TopSellingProducts />
           </div>
         </div>
