@@ -54,12 +54,6 @@ const RevenueChart: React.FC = () => {
       (sum: number, point: any) => sum + (point.y || 0),
       0
     ) || 0;
-  const currentMonth = data?.[0]?.data?.[data[0].data.length - 1]?.y || 0;
-  const previousMonth = data?.[0]?.data?.[data[0].data.length - 2]?.y || 0;
-  const growth =
-    previousMonth > 0
-      ? ((currentMonth - previousMonth) / previousMonth) * 100
-      : 0;
 
   return (
     <Card className="h-full hover:shadow-lg transition-shadow duration-200">
@@ -192,9 +186,7 @@ const RevenueChart: React.FC = () => {
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: point.seriesColor }}
                       />
-                      <span className="text-sm text-gray-600">
-                        Revenue:
-                      </span>
+                      <span className="text-sm text-gray-600">Revenue:</span>
                       <span className="text-sm font-semibold text-gray-900">
                         ${point.data.yFormatted}
                       </span>

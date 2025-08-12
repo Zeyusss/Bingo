@@ -13,7 +13,6 @@ import {
   Shield,
   CheckCircle,
   Layout,
-
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -37,7 +36,7 @@ const fetchEvents = async () => {
 };
 
 const Page = () => {
-  const { seller, isLoading, refetch, logout } = useSeller();
+  const { seller, isLoading, refetch } = useSeller();
   const [activeTab, setActiveTab] = useState("Products");
   const [editType, setEditType] = useState<"cover" | "avatar" | null>(null);
   const router = useRouter();
@@ -92,11 +91,14 @@ const Page = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       ) : (
-        <div className="w-full min-h-screen bg-[#F4F2EF]" style={{
-          backgroundImage: "url('/assets/wd-furniture-background.webp')",
-          backgroundRepeat: "repeat",
-          backgroundSize: "auto", 
-        }}>
+        <div
+          className="w-full min-h-screen bg-[#F4F2EF]"
+          style={{
+            backgroundImage: "url('/assets/wd-furniture-background.webp')",
+            backgroundRepeat: "repeat",
+            backgroundSize: "auto",
+          }}
+        >
           <ImageUploadModal
             isOpen={!!editType}
             onClose={() => setEditType(null)}
@@ -186,17 +188,22 @@ const Page = () => {
                       <div className="flex item-center gap-4 mt-4">
                         <div className="flex items-center text-yellow-500 gap-1">
                           <Star fill="#eab308" size={18} />{" "}
-                          <span className="text-gray-700 font-medium">{seller?.shop?.ratings || "N/A"}</span>
+                          <span className="text-gray-700 font-medium">
+                            {seller?.shop?.ratings || "N/A"}
+                          </span>
                         </div>
                         <div className="flex items-center gap-1 text-gray-700">
                           <Users size={18} />{" "}
-                          <span className="font-medium">{seller?.followers || 0} Followers</span>
+                          <span className="font-medium">
+                            {seller?.followers || 0} Followers
+                          </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 mt-4 text-gray-700">
                         <Clock size={18} />
                         <span className="font-medium">
-                          {seller?.shop?.opening_hours || "Mon - Sat: 9 AM - 6 PM"}
+                          {seller?.shop?.opening_hours ||
+                            "Mon - Sat: 9 AM - 6 PM"}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mt-4 text-gray-700">
@@ -206,23 +213,37 @@ const Page = () => {
                         </span>
                       </div>
                     </div>
-                    
+
                     <div className="lg:w-64 bg-gray-50 rounded-lg p-4 border border-gray-200">
-                      <h3 className="text-sm font-bold text-gray-800 font-[Poppins] mb-3">Shop Info</h3>
+                      <h3 className="text-sm font-bold text-gray-800 font-[Poppins] mb-3">
+                        Shop Info
+                      </h3>
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-gray-600">
                           <Calendar size={14} />
                           <span className="text-xs font-medium">
-                            Joined {seller?.shop?.createdAt
-                              ? new Date(seller.shop.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                            Joined{" "}
+                            {seller?.shop?.createdAt
+                              ? new Date(
+                                  seller.shop.createdAt
+                                ).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  year: "numeric",
+                                })
                               : "N/A"}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 text-gray-600">
                           <Globe size={14} />
                           <span className="text-xs font-medium">
-                            Updated {seller?.shop?.updatedAt
-                              ? new Date(seller.shop.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                            Updated{" "}
+                            {seller?.shop?.updatedAt
+                              ? new Date(
+                                  seller.shop.updatedAt
+                                ).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                })
                               : "N/A"}
                           </span>
                         </div>
@@ -288,7 +309,6 @@ const Page = () => {
                   </div>
                 ) : (
                   <div></div>
-
                 )}
               </div>
             </div>
@@ -371,7 +391,9 @@ const Page = () => {
                           />
                         ))}
                       </div>
-                      <p className="text-gray-700 text-base font-[Work Sans] leading-relaxed mb-4">{review.reviews}</p>
+                      <p className="text-gray-700 text-base font-[Work Sans] leading-relaxed mb-4">
+                        {review.reviews}
+                      </p>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm">
@@ -397,7 +419,9 @@ const Page = () => {
                   ))}
                   {reviews?.length === 0 && (
                     <div className="text-center py-12">
-                      <p className="text-gray-500 text-lg font-[Work Sans]">No reviews yet!</p>
+                      <p className="text-gray-500 text-lg font-[Work Sans]">
+                        No reviews yet!
+                      </p>
                     </div>
                   )}
                 </div>

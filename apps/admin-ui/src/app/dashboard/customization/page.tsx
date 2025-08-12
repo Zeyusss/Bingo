@@ -36,7 +36,6 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-
 type Category = {
   id: string;
   name: string;
@@ -48,7 +47,6 @@ type Subcategory = {
   name: string;
   categoryId: string;
 };
-
 
 const SortableCategoryRow = ({
   category,
@@ -121,7 +119,6 @@ const SortableCategoryRow = ({
   );
 };
 
-
 const SortableSubcategoryItem = ({
   subcategory,
   onDelete,
@@ -180,21 +177,25 @@ const CustomizationPage: React.FC = () => {
   const helpSections: HelpSection[] = [
     {
       title: "Overview",
-      content: "The Customization page provides comprehensive control over your platform's visual and organizational elements. Manage categories, configure sliders, and organize gallery content to create an engaging user experience.",
+      content:
+        "The Customization page provides comprehensive control over your platform's visual and organizational elements. Manage categories, configure sliders, and organize gallery content to create an engaging user experience.",
       subsections: [
         {
           title: "Category Management",
-          content: "Create, organize, and manage product categories and subcategories with drag-and-drop functionality"
+          content:
+            "Create, organize, and manage product categories and subcategories with drag-and-drop functionality",
         },
         {
           title: "Visual Customization",
-          content: "Configure sliders, banners, and gallery displays for enhanced visual appeal"
+          content:
+            "Configure sliders, banners, and gallery displays for enhanced visual appeal",
         },
         {
           title: "Content Organization",
-          content: "Structure your platform content for optimal user navigation and discovery"
-        }
-      ]
+          content:
+            "Structure your platform content for optimal user navigation and discovery",
+        },
+      ],
     },
     {
       title: "Category Management",
@@ -202,21 +203,25 @@ const CustomizationPage: React.FC = () => {
       subsections: [
         {
           title: "Add Categories",
-          content: "Create new main categories to organize your products and services"
+          content:
+            "Create new main categories to organize your products and services",
         },
         {
           title: "Add Subcategories",
-          content: "Create subcategories within existing categories for detailed organization"
+          content:
+            "Create subcategories within existing categories for detailed organization",
         },
         {
           title: "Drag & Drop Reordering",
-          content: "Easily reorder categories and subcategories by dragging them to new positions"
+          content:
+            "Easily reorder categories and subcategories by dragging them to new positions",
         },
         {
           title: "Search & Filter",
-          content: "Quickly find specific categories or subcategories using the search function"
-        }
-      ]
+          content:
+            "Quickly find specific categories or subcategories using the search function",
+        },
+      ],
     },
     {
       title: "Visual Elements",
@@ -224,17 +229,20 @@ const CustomizationPage: React.FC = () => {
       subsections: [
         {
           title: "Slider Configuration",
-          content: "Manage homepage sliders, promotional banners, and featured content displays"
+          content:
+            "Manage homepage sliders, promotional banners, and featured content displays",
         },
         {
           title: "Gallery Management",
-          content: "Organize and display image galleries, product showcases, and visual content"
+          content:
+            "Organize and display image galleries, product showcases, and visual content",
         },
         {
           title: "Layout Control",
-          content: "Configure how content is displayed and organized across your platform"
-        }
-      ]
+          content:
+            "Configure how content is displayed and organized across your platform",
+        },
+      ],
     },
     {
       title: "Advanced Features",
@@ -242,17 +250,20 @@ const CustomizationPage: React.FC = () => {
       subsections: [
         {
           title: "Bulk Operations",
-          content: "Perform bulk actions on multiple categories or subcategories simultaneously"
+          content:
+            "Perform bulk actions on multiple categories or subcategories simultaneously",
         },
         {
           title: "Import/Export",
-          content: "Import category structures or export existing configurations for backup"
+          content:
+            "Import category structures or export existing configurations for backup",
         },
         {
           title: "Template Management",
-          content: "Create and manage templates for consistent category and content organization"
-        }
-      ]
+          content:
+            "Create and manage templates for consistent category and content organization",
+        },
+      ],
     },
     {
       title: "Best Practices",
@@ -260,18 +271,21 @@ const CustomizationPage: React.FC = () => {
       subsections: [
         {
           title: "User Experience",
-          content: "Organize categories logically and maintain consistent naming conventions"
+          content:
+            "Organize categories logically and maintain consistent naming conventions",
         },
         {
           title: "Performance",
-          content: "Optimize images and content for fast loading times and smooth navigation"
+          content:
+            "Optimize images and content for fast loading times and smooth navigation",
         },
         {
           title: "Maintenance",
-          content: "Regularly review and update categories, remove unused items, and keep content fresh"
-        }
-      ]
-    }
+          content:
+            "Regularly review and update categories, remove unused items, and keep content fresh",
+        },
+      ],
+    },
   ];
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -279,15 +293,12 @@ const CustomizationPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("category");
-  const [activeId, setActiveId] = useState<string | null>(null);
   const [isReordering, setIsReordering] = useState(false);
-
 
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
   const [isAddSubcategoryModalOpen, setIsAddSubcategoryModalOpen] =
     useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
 
   const [newCategory, setNewCategory] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -298,14 +309,12 @@ const CustomizationPage: React.FC = () => {
     subcategory?: string;
   } | null>(null);
 
-
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-
 
   const fetchCategories = async () => {
     setLoading(true);
@@ -341,7 +350,6 @@ const CustomizationPage: React.FC = () => {
     fetchCategories();
   }, []);
 
-
   const filteredCategories = categories.filter(
     (cat) =>
       cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -350,15 +358,12 @@ const CustomizationPage: React.FC = () => {
       )
   );
 
-
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
+    // Could add visual feedback here if needed
   };
-
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-    setActiveId(null);
 
     if (!over || active.id === over.id) {
       return;
@@ -378,17 +383,14 @@ const CustomizationPage: React.FC = () => {
           const newCategories = arrayMove(categories, oldIndex, newIndex);
           setCategories(newCategories);
 
-
           const categoryNames = newCategories.map((cat) => cat.name);
-          const res = await axiosInstance.put(
-            `/admin/api/config/categories/reorder`,
-            { categories: categoryNames }
-          );
+          await axiosInstance.put(`/admin/api/config/categories/reorder`, {
+            categories: categoryNames,
+          });
 
           toast.success("Category order updated!");
         }
-      }
-      else if (activeId.startsWith("subcategory-")) {
+      } else if (activeId.startsWith("subcategory-")) {
         const activeSubcategory = categories
           .flatMap((cat) => cat.subcategories)
           .find((sub) => sub.id === activeId);
@@ -429,18 +431,14 @@ const CustomizationPage: React.FC = () => {
           );
           if (!sourceCategory) throw new Error("Source category not found");
 
-          const res = await axiosInstance.put(
-            `/admin/api/config/subcategories/move`,
-            {
-              subcategoryName: activeSubcategory.name,
-              fromCategory: sourceCategory.name,
-              toCategory: targetCategory.name,
-            }
-          );
+          await axiosInstance.put(`/admin/api/config/subcategories/move`, {
+            subcategoryName: activeSubcategory.name,
+            fromCategory: sourceCategory.name,
+            toCategory: targetCategory.name,
+          });
 
           toast.success("Subcategory moved to new category!");
-        }
-        else if (overId.startsWith("subcategory-")) {
+        } else if (overId.startsWith("subcategory-")) {
           const overSubcategory = categories
             .flatMap((cat) => cat.subcategories)
             .find((sub) => sub.id === overId);
@@ -478,13 +476,10 @@ const CustomizationPage: React.FC = () => {
             setCategories(newCategories);
 
             const subcategoryNames = newSubcategories.map((sub) => sub.name);
-            const res = await axiosInstance.put(
-              `/admin/api/config/subcategories/reorder`,
-              {
-                categoryName: category.name,
-                subcategories: subcategoryNames,
-              }
-            );
+            await axiosInstance.put(`/admin/api/config/subcategories/reorder`, {
+              categoryName: category.name,
+              subcategories: subcategoryNames,
+            });
 
             toast.success("Subcategory order updated!");
           }
@@ -501,8 +496,8 @@ const CustomizationPage: React.FC = () => {
     if (!newCategory.trim()) return;
     try {
       setLoading(true);
-      const res = await axiosInstance.post(`/admin/api/config/category`, {
-        categoryName: newCategory
+      await axiosInstance.post(`/admin/api/config/category`, {
+        categoryName: newCategory,
       });
       await fetchCategories();
       setNewCategory("");
@@ -518,7 +513,7 @@ const CustomizationPage: React.FC = () => {
     if (!selectedCategory || !newSubcategory.trim()) return;
     try {
       setLoading(true);
-      const res = await axiosInstance.post(`/admin/api/config/subcategory`, {
+      await axiosInstance.post(`/admin/api/config/subcategory`, {
         categoryName: selectedCategory,
         subcategoryName: newSubcategory,
       });
@@ -539,14 +534,14 @@ const CustomizationPage: React.FC = () => {
     try {
       setLoading(true);
       if (deleteItem.type === "category") {
-        const res = await axiosInstance.delete(
+        await axiosInstance.delete(
           `/admin/api/config/category/${encodeURIComponent(
             deleteItem.category
           )}`
         );
         toast.success("Category deleted successfully!");
       } else {
-        const res = await axiosInstance.delete(
+        await axiosInstance.delete(
           `/admin/api/config/subcategory/${encodeURIComponent(
             deleteItem.category
           )}/${encodeURIComponent(deleteItem.subcategory!)}`
@@ -893,7 +888,7 @@ const CustomizationPage: React.FC = () => {
           </div>
         </div>
       </Modal>
-      
+
       {/* Customization Management Help Modal */}
       <HelpModal
         isOpen={showHelpModal}

@@ -13,6 +13,8 @@ import {
   FileText,
   User,
   CreditCard,
+  Loader2,
+  XCircle,
 } from "lucide-react";
 import Image from "next/image";
 import axiosInstance from "../../../../utils/axiosInstance";
@@ -57,6 +59,12 @@ const VerificationPage = () => {
     personal: null as string | null,
   });
 
+  const [uploadingFiles, setUploadingFiles] = useState({
+    idFront: false,
+    idBack: false,
+    personal: false,
+  });
+
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
@@ -85,7 +93,59 @@ const VerificationPage = () => {
     }
   }, [verification?.termsAccepted]);
 
-  // Handle file selection and preview generation
+  // Upload file immediately when selected
+  const uploadFileMutation = useMutation({
+    mutationFn: async ({
+      file,
+      documentType,
+    }: {
+      file: File;
+      documentType: string;
+    }) => {
+      // Set uploading state
+      setUploadingFiles((prev) => ({ ...prev, [documentType]: true }));
+
+      const reader = new FileReader();
+      return new Promise((resolve, reject) => {
+        reader.onload = async () => {
+          try {
+            const response = await axiosInstance.post(
+              "/seller/api/verification/upload-document",
+              {
+                documentType: documentType,
+                imageData: reader.result as string,
+              }
+            );
+            resolve(response.data);
+          } catch (error) {
+            reject(error);
+          }
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    },
+    onSuccess: (data, variables) => {
+      // Clear uploading state
+      setUploadingFiles((prev) => ({
+        ...prev,
+        [variables.documentType]: false,
+      }));
+      // Refetch verification status to get updated file URLs
+      refetchVerification();
+    },
+    onError: (error, variables) => {
+      // Clear uploading state
+      setUploadingFiles((prev) => ({
+        ...prev,
+        [variables.documentType]: false,
+      }));
+      console.error("File upload failed:", error);
+      // You can add toast notification here
+    },
+  });
+
+  // Handle file selection, preview generation, and immediate upload
   const handleFileSelect = (
     file: File,
     documentType: keyof typeof selectedFiles
@@ -105,6 +165,9 @@ const VerificationPage = () => {
       }));
     };
     reader.readAsDataURL(file);
+
+    // Upload immediately
+    uploadFileMutation.mutate({ file, documentType });
   };
 
   // Remove/replace file
@@ -141,87 +204,9 @@ const VerificationPage = () => {
     },
   });
 
-  // Submit verification mutation - now handles uploading files
+  // Submit verification mutation - simplified since files are uploaded immediately
   const submitVerificationMutation = useMutation({
     mutationFn: async () => {
-      // First upload all selected files
-      const uploadPromises = [];
-
-      if (selectedFiles.idFront) {
-        const reader = new FileReader();
-        const promise = new Promise((resolve, reject) => {
-          reader.onload = async () => {
-            try {
-              const response = await axiosInstance.post(
-                "/seller/api/verification/upload-document",
-                {
-                  documentType: "idFront",
-                  imageData: reader.result as string,
-                }
-              );
-              resolve(response.data);
-            } catch (error) {
-              reject(error);
-            }
-          };
-          reader.onerror = reject;
-        });
-        reader.readAsDataURL(selectedFiles.idFront);
-        uploadPromises.push(promise);
-      }
-
-      if (selectedFiles.idBack) {
-        const reader = new FileReader();
-        const promise = new Promise((resolve, reject) => {
-          reader.onload = async () => {
-            try {
-              const response = await axiosInstance.post(
-                "/seller/api/verification/upload-document",
-                {
-                  documentType: "idBack",
-                  imageData: reader.result as string,
-                }
-              );
-              resolve(response.data);
-            } catch (error) {
-              reject(error);
-            }
-          };
-          reader.onerror = reject;
-        });
-        reader.readAsDataURL(selectedFiles.idBack);
-        uploadPromises.push(promise);
-      }
-
-      if (selectedFiles.personal) {
-        const reader = new FileReader();
-        const promise = new Promise((resolve, reject) => {
-          reader.onload = async () => {
-            try {
-              const response = await axiosInstance.post(
-                "/seller/api/verification/upload-document",
-                {
-                  documentType: "personal",
-                  imageData: reader.result as string,
-                }
-              );
-              resolve(response.data);
-            } catch (error) {
-              reject(error);
-            }
-          };
-          reader.onerror = reject;
-        });
-        reader.readAsDataURL(selectedFiles.personal);
-        uploadPromises.push(promise);
-      }
-
-      // Wait for all uploads to complete
-      if (uploadPromises.length > 0) {
-        await Promise.all(uploadPromises);
-      }
-
-      // Then submit verification
       const res = await axiosInstance.post("/seller/api/verification/submit");
       return res.data;
     },
@@ -240,20 +225,44 @@ const VerificationPage = () => {
         personal: null,
       });
     },
+    onError: (error) => {
+      console.error("Verification submission failed:", error);
+      // You can add toast notification here
+    },
   });
 
   const canSubmit = () => {
+    // Check if all required documents are uploaded to the backend (not just selected locally)
     return (
-      (verification?.idFrontImage || selectedFiles.idFront) &&
-      (verification?.idBackImage || selectedFiles.idBack) &&
-      (verification?.personalImage || selectedFiles.personal) &&
+      verification?.idFrontImage &&
+      verification?.idBackImage &&
+      verification?.personalImage &&
       termsAccepted
     );
   };
 
-  const downloadContract = () => {
-    // Create a simple terms document download
-    const termsContent = `
+  const downloadContract = async () => {
+    try {
+      const response = await axiosInstance.get(
+        "/seller/api/verification/download-contract",
+        {
+          responseType: "blob",
+        }
+      );
+
+      const blob = new Blob([response.data], { type: "text/plain" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "seller_verification_contract.txt";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to download contract:", error);
+      // Fallback to the existing terms content
+      const termsContent = `
 SELLER VERIFICATION TERMS AND CONDITIONS
 
 By accepting these terms, you agree to:
@@ -269,15 +278,16 @@ For full terms and conditions, please visit our website or contact support.
 Date: ${new Date().toLocaleDateString()}
     `;
 
-    const blob = new Blob([termsContent], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "seller-verification-terms.txt";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      const blob = new Blob([termsContent], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "seller-verification-terms.txt";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
   };
 
   const handleTermsAcceptance = () => {
@@ -498,6 +508,13 @@ Date: ${new Date().toLocaleDateString()}
                         </label>
                       </div>
                     </div>
+                  ) : uploadingFiles.idFront ? (
+                    <div>
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-3"></div>
+                      <p className="text-blue-400 mb-3">
+                        Uploading ID front side...
+                      </p>
+                    </div>
                   ) : (
                     <div>
                       <Upload
@@ -516,12 +533,19 @@ Date: ${new Date().toLocaleDateString()}
                         }}
                         className="hidden"
                         id="idFront"
+                        disabled={uploadingFiles.idFront}
                       />
                       <label
                         htmlFor="idFront"
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded cursor-pointer"
+                        className={`px-4 py-2 rounded cursor-pointer ${
+                          uploadingFiles.idFront
+                            ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                            : "bg-blue-600 hover:bg-blue-700 text-white"
+                        }`}
                       >
-                        Choose File
+                        {uploadingFiles.idFront
+                          ? "Uploading..."
+                          : "Choose File"}
                       </label>
                     </div>
                   )}
@@ -886,6 +910,31 @@ Date: ${new Date().toLocaleDateString()}
                       ? "Resubmit for Review"
                       : "Submit for Review"}
                   </button>
+                )}
+
+              {/* Show helpful message if can't submit */}
+              {!canSubmit() &&
+                verification?.verificationStatus !== "Pending" &&
+                verification?.verificationStatus !== "Approved" && (
+                  <div className="p-4 bg-orange-900/50 border border-orange-700 rounded-lg text-center">
+                    <AlertCircle
+                      className="mx-auto text-orange-400 mb-2"
+                      size={24}
+                    />
+                    <p className="text-orange-100 font-medium mb-2">
+                      Complete Required Steps
+                    </p>
+                    <p className="text-orange-200 text-sm">
+                      {!verification?.idFrontImage && "• Upload ID front side"}
+                      <br />
+                      {!verification?.idBackImage && "• Upload ID back side"}
+                      <br />
+                      {!verification?.personalImage &&
+                        "• Upload personal photo"}
+                      <br />
+                      {!termsAccepted && "• Accept terms and conditions"}
+                    </p>
+                  </div>
                 )}
 
               {verification?.verificationStatus === "Pending" && (

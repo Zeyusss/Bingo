@@ -5,15 +5,9 @@ import RevenueChart from "../../../shared/components/dashboard/RevenueChart";
 import RecentOrdersTable from "../../../shared/components/dashboard/RecentOrdersTable";
 import TopSellingProducts from "../../../shared/components/dashboard/TopSellingProducts";
 import ErrorBoundary from "../../../shared/components/dashboard/ErrorBoundary";
-import { 
-  Activity, 
-  BarChart3, 
-  TrendingUp, 
-  Clock,
-  CheckCircle,
-  DollarSign,
-  ShoppingCart,
-  Star,
+import VerificationStatusCard from "../../../shared/components/verification/VerificationStatusCard";
+import {
+  BarChart3,
   Bell,
   Plus,
   BarChart,
@@ -21,38 +15,44 @@ import {
   AlertTriangle,
   Info,
   CheckCircle2,
-  X
+  X,
+  ShoppingCart,
 } from "lucide-react";
-import { useShopStats } from "../../../hooks/useDashboardData";
 import useSeller from "../../../hooks/useSeller";
 
 // Notifications Component
-function NotificationsPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function NotificationsPanel({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
   const notifications = [
     {
       id: 1,
-      type: 'success' as const,
-      title: 'New Order Received',
-      message: 'Order #1234 from John Doe - $89.99',
-      time: '2 minutes ago',
-      icon: CheckCircle2
+      type: "success" as const,
+      title: "New Order Received",
+      message: "Order #1234 from John Doe - $89.99",
+      time: "2 minutes ago",
+      icon: CheckCircle2,
     },
     {
       id: 2,
-      type: 'warning' as const,
-      title: 'Low Stock Alert',
-      message: 'iPhone Case - Only 3 items left',
-      time: '1 hour ago',
-      icon: AlertTriangle
+      type: "warning" as const,
+      title: "Low Stock Alert",
+      message: "iPhone Case - Only 3 items left",
+      time: "1 hour ago",
+      icon: AlertTriangle,
     },
     {
       id: 3,
-      type: 'info' as const,
-      title: 'Payment Processed',
-      message: 'Weekly payout of $1,245.67 processed',
-      time: '3 hours ago',
-      icon: Info
-    }
+      type: "info" as const,
+      title: "Payment Processed",
+      message: "Weekly payout of $1,245.67 processed",
+      time: "3 hours ago",
+      icon: Info,
+    },
   ];
 
   if (!isOpen) return null;
@@ -62,8 +62,10 @@ function NotificationsPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () 
       <div className="bg-white w-96 h-full shadow-2xl transform transition-transform duration-300">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900 font-[Poppins]">Notifications</h2>
-            <button 
+            <h2 className="text-xl font-semibold text-gray-900 font-[Poppins]">
+              Notifications
+            </h2>
+            <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             >
@@ -75,24 +77,33 @@ function NotificationsPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () 
           {notifications.map((notification) => {
             const IconComponent = notification.icon;
             const bgColor = {
-              success: 'bg-green-50 border-green-200',
-              warning: 'bg-yellow-50 border-yellow-200',
-              info: 'bg-blue-50 border-blue-200'
+              success: "bg-green-50 border-green-200",
+              warning: "bg-yellow-50 border-yellow-200",
+              info: "bg-blue-50 border-blue-200",
             }[notification.type];
             const iconColor = {
-              success: 'text-green-600',
-              warning: 'text-yellow-600',
-              info: 'text-blue-600'
+              success: "text-green-600",
+              warning: "text-yellow-600",
+              info: "text-blue-600",
             }[notification.type];
-            
+
             return (
-              <div key={notification.id} className={`p-4 rounded-lg border ${bgColor}`}>
+              <div
+                key={notification.id}
+                className={`p-4 rounded-lg border ${bgColor}`}
+              >
                 <div className="flex items-start space-x-3">
                   <IconComponent className={`h-5 w-5 ${iconColor} mt-0.5`} />
                   <div className="flex-1">
-                    <h3 className="font-medium text-gray-900 font-[Poppins]">{notification.title}</h3>
-                    <p className="text-sm text-gray-600 mt-1 font-[Work Sans]">{notification.message}</p>
-                    <p className="text-xs text-gray-500 mt-2 font-[Work Sans]">{notification.time}</p>
+                    <h3 className="font-medium text-gray-900 font-[Poppins]">
+                      {notification.title}
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1 font-[Work Sans]">
+                      {notification.message}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2 font-[Work Sans]">
+                      {notification.time}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -105,10 +116,9 @@ function NotificationsPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () 
 }
 
 function DashboardContent() {
-  const { data: shopStats } = useShopStats();
   const { seller } = useSeller({ enabled: true });
   const [showNotifications, setShowNotifications] = useState(false);
-  
+
   const currentHour = new Date().getHours();
   const getGreeting = () => {
     if (currentHour < 12) return "Good morning";
@@ -118,38 +128,49 @@ function DashboardContent() {
 
   // Quick action handlers
   const handleAddProduct = () => {
-    window.location.href = '/dashboard/create-product';
+    window.location.href = "/dashboard/create-product";
   };
 
   const handleViewOrders = () => {
-    window.location.href = '/dashboard/orders';
+    window.location.href = "/dashboard/orders";
   };
 
   const handleViewAnalytics = () => {
-    window.location.href = '/dashboard/analytics';
+    window.location.href = "/dashboard/analytics";
   };
 
   const handleViewPayments = () => {
-    window.location.href = '/dashboard/payments';
+    window.location.href = "/dashboard/payments";
   };
 
   return (
     <>
-      <NotificationsPanel isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
-      <div className="min-h-screen bg-[#F4F2EF]" style={{ backgroundImage: 'url("https://ik.imagekit.io/w7lwh7wre/wood-texture.jpg?updatedAt=1754240423756")', backgroundSize: 'cover', backgroundAttachment: 'fixed' }}>
+      <NotificationsPanel
+        isOpen={showNotifications}
+        onClose={() => setShowNotifications(false)}
+      />
+      <div
+        className="min-h-screen bg-[#F4F2EF]"
+        style={{
+          backgroundImage:
+            'url("https://ik.imagekit.io/w7lwh7wre/wood-texture.jpg?updatedAt=1754240423756")',
+          backgroundSize: "cover",
+          backgroundAttachment: "fixed",
+        }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 font-[Poppins]">
-                  {getGreeting()}, {seller?.shop?.name || 'Seller'}! 👋
+                  {getGreeting()}, {seller?.shop?.name || "Seller"}! 👋
                 </h1>
                 <p className="text-lg text-gray-600 mt-2 font-[Work Sans]">
                   Here's what's happening with your shop today
                 </p>
               </div>
-              <button 
+              <button
                 onClick={() => setShowNotifications(true)}
                 className="relative p-3 bg-white rounded-full shadow-sm border border-gray-200 hover:bg-gray-50 transition-colors"
               >
@@ -160,11 +181,18 @@ function DashboardContent() {
               </button>
             </div>
 
+            {/* Verification Status Card */}
+            <div className="mb-6">
+              <VerificationStatusCard />
+            </div>
+
             {/* Quick Actions */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 font-[Poppins]">Quick Actions</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4 font-[Poppins]">
+                Quick Actions
+              </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <button 
+                <button
                   onClick={handleAddProduct}
                   className="flex items-center space-x-3 p-4 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50 transition-all duration-200 group"
                 >
@@ -172,11 +200,15 @@ function DashboardContent() {
                     <Plus className="h-5 w-5 text-orange-600" />
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-gray-900 font-[Poppins]">Add Product</p>
-                    <p className="text-sm text-gray-500 font-[Work Sans]">Create new listing</p>
+                    <p className="font-medium text-gray-900 font-[Poppins]">
+                      Add Product
+                    </p>
+                    <p className="text-sm text-gray-500 font-[Work Sans]">
+                      Create new listing
+                    </p>
                   </div>
                 </button>
-                <button 
+                <button
                   onClick={handleViewOrders}
                   className="flex items-center space-x-3 p-4 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50 transition-all duration-200 group"
                 >
@@ -184,11 +216,15 @@ function DashboardContent() {
                     <ShoppingCart className="h-5 w-5 text-orange-600" />
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-gray-900 font-[Poppins]">View Orders</p>
-                    <p className="text-sm text-gray-500 font-[Work Sans]">Manage orders</p>
+                    <p className="font-medium text-gray-900 font-[Poppins]">
+                      View Orders
+                    </p>
+                    <p className="text-sm text-gray-500 font-[Work Sans]">
+                      Manage orders
+                    </p>
                   </div>
                 </button>
-                <button 
+                <button
                   onClick={handleViewAnalytics}
                   className="flex items-center space-x-3 p-4 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50 transition-all duration-200 group"
                 >
@@ -196,11 +232,15 @@ function DashboardContent() {
                     <BarChart className="h-5 w-5 text-orange-600" />
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-gray-900 font-[Poppins]">Analytics</p>
-                    <p className="text-sm text-gray-500 font-[Work Sans]">View insights</p>
+                    <p className="font-medium text-gray-900 font-[Poppins]">
+                      Analytics
+                    </p>
+                    <p className="text-sm text-gray-500 font-[Work Sans]">
+                      View insights
+                    </p>
                   </div>
                 </button>
-                <button 
+                <button
                   onClick={handleViewPayments}
                   className="flex items-center space-x-3 p-4 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50 transition-all duration-200 group"
                 >
@@ -208,8 +248,12 @@ function DashboardContent() {
                     <CreditCard className="h-5 w-5 text-orange-600" />
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-gray-900 font-[Poppins]">Payments</p>
-                    <p className="text-sm text-gray-500 font-[Work Sans]">Track earnings</p>
+                    <p className="font-medium text-gray-900 font-[Poppins]">
+                      Payments
+                    </p>
+                    <p className="text-sm text-gray-500 font-[Work Sans]">
+                      Track earnings
+                    </p>
                   </div>
                 </button>
               </div>
@@ -232,12 +276,10 @@ function DashboardContent() {
 
           {/* Revenue Trends */}
           <div className="mb-8">
-
             <RevenueChart />
           </div>
           {/* Recent Orders */}
           <div className="mb-8">
- 
             <RecentOrdersTable />
           </div>
 
