@@ -36,7 +36,13 @@ const ProvidersWithWebSocket = ({
   children: React.ReactNode;
 }) => {
   const { user, isLoading } = useUser();
-  if (isLoading) return null;
+  
+
+  if (isLoading) {
+   
+    return <>{children}</>;
+  }
+  
   return (
     <>
       {user && <WebSocketProvider user={user}>{children}</WebSocketProvider>}

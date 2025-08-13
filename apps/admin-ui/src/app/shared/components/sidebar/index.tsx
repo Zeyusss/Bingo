@@ -21,9 +21,7 @@ import {
   LogOut,
   PackageSearch,
   PencilRuler,
-  Settings,
   ShieldCheck,
-  Store,
   Users,
 } from "lucide-react";
 import PaymentIcon from "../../../assets/icons/payment";
@@ -36,7 +34,7 @@ const SidebarWrapper = () => {
 
   const handleLogout = async () => {
     try {
-      await axiosInstance.get("http://localhost:6001/api/logout-user");
+      await axiosInstance.get("/api/logout-user");
       toast.success("Logged out successfully!");
       router.push("/");
     } catch (error) {

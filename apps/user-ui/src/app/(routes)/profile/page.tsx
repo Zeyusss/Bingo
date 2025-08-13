@@ -6,6 +6,7 @@ import  QuickActionCard  from 'apps/user-ui/src/shared/components/cards/quick-ac
 import  ChangePassword  from 'apps/user-ui/src/shared/components/change-password';
 import  ShippingAddressSection  from 'apps/user-ui/src/shared/components/shippingAddress';
 import  OrdersTable  from  'apps/user-ui/src/shared/components/tables/orders-table';
+import { useStore } from 'apps/user-ui/src/store';
 
 import  ProfilePictureUpload  from 'apps/user-ui/src/shared/components/profile/ProfilePictureUpload';
 import { 
@@ -101,7 +102,9 @@ const Page = () => {
 
   const orders = ordersData?.orders || [];
   const totalOrders = orders.length || 0;
-  const processingOrders = orders.filter((order: any) => order.deliveryStatus === 'Processing').length || 0;
+  const processingOrders = orders.filter((order: any) => 
+    order.deliveryStatus !== 'Delivered' && order.deliveryStatus !== null
+  ).length || 0;
   const completedOrders = orders.filter((order: any) => order.deliveryStatus === 'Delivered').length || 0;
   const recentOrders = orders.slice(0, 3) || [];
 
@@ -127,15 +130,17 @@ const Page = () => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await axios.post('/auth/api/logout');
-      queryClient.clear();
-      router.push('/auth');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
+const logOutHandler = async ()=> {
+        await axiosInstance.get("/api/logout-user").then((res)=>{
+            queryClient.invalidateQueries({queryKey:["user"]});
+            
+
+            const { clearSessionData } = useStore.getState();
+            clearSessionData();
+
+            router.push("/login");
+        });
+    };
 
 
   const NavItem = ({ icon: Icon, label, isActive, onClick, danger = false }: any) => (
@@ -307,7 +312,7 @@ const Page = () => {
                     icon={LogOut}
                     label="Logout"
                     isActive={false}
-                    onClick={handleLogout}
+                    onClick={()=> logOutHandler()}
                     danger={true}
                   />
                 </div>

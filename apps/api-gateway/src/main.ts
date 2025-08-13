@@ -100,10 +100,19 @@ app.get("/gateway-health", (req, res) => {
 });
 
 // routes
-app.use('/admin/api/dashboard/resource-monitor', monitoringLimiter, proxy("http://localhost:6005")); // ultra-high for monitoring
-app.use('/admin/api/dashboard/system-stats', monitoringLimiter, proxy("http://localhost:6005")); // ultra-high for stats
+app.use('/admin/api/dashboard/resource-monitor', monitoringLimiter, proxy("http://localhost:6005", {
+  proxyReqPathResolver: (req) => '/api/dashboard/resource-monitor'
+})); // ultra-high for monitoring
+app.use('/admin/api/dashboard/system-stats', monitoringLimiter, proxy("http://localhost:6005", {
+  proxyReqPathResolver: (req) => '/api/dashboard/system-stats'
+})); // ultra-high for stats
+ app.use('/admin/api/dashboard/revenue', dashboardLimiter, proxy("http://localhost:6005", {
+  proxyReqPathResolver: (req) => '/api/dashboard/revenue'
+})); // specific route for revenue
 app.use('/admin/api/dashboard', dashboardLimiter, proxy("http://localhost:6005")); // high capacity for dashboards
-app.use('/order/api/get-recent-orders', dashboardLimiter, proxy("http://localhost:6004")); // high capacity for order dashboard
+app.use('/order/api/get-recent-orders', dashboardLimiter, proxy("http://localhost:6004", {
+  proxyReqPathResolver: (req) => '/api/get-recent-orders'
+})); // high capacity for order dashboard
 app.use("/chatting", apiLimiter, proxy("http://localhost:6006")); // standard limits 
 app.use("/admin", apiLimiter, proxy("http://localhost:6005")); // standard limits
 app.use("/order", apiLimiter, proxy("http://localhost:6004")); // standard limits 

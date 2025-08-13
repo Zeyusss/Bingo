@@ -3,20 +3,37 @@ import React, { useEffect, useState } from "react";
 import { ChevronUp } from "lucide-react";
 
 const ScrollToTopButton = () => {
+
   const [isVisible, setIsVisible] = useState(false);
+ 
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+
+    setIsClient(true);
+    
+   
+    if (typeof window === 'undefined') return;
+    
     const toggleVisibility = () => {
       setIsVisible(window.scrollY > 100);
     };
 
+
+    toggleVisibility();
+    
     window.addEventListener("scroll", toggleVisibility);
     return () => window.removeEventListener("scroll", toggleVisibility);
   }, []);
 
   const scrollToTop = () => {
+
+    if (typeof window === 'undefined') return;
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+ 
+  if (!isClient) return null;
 
   return (
 <button

@@ -1,8 +1,40 @@
-import React from "react";
+"use client";
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import SidebarWrapper from "../shared/components/sidebar";
 import { QueryProvider } from "../shared/components/providers/QueryProvider";
+import useAdmin from "../../hooks/useAdmin";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
+  const { admin, isLoading, isError } = useAdmin();
+  const router = useRouter();
+
+
+  useEffect(() => {
+    if (!isLoading && (!admin || isError)) {
+      console.log('Admin not authenticated, redirecting to login...');
+      router.replace('/');
+    }
+  }, [admin, isLoading, isError, router]);
+
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+          <p className="text-gray-600">Verifying authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+ 
+  if (!admin || isError) {
+    return null;
+  }
+
+ 
   return (
     <QueryProvider>
       <div

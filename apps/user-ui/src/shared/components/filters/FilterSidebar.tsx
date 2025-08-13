@@ -65,7 +65,11 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
   const sidebarRef = useRef<HTMLDivElement>(null);
 
 
+
   useEffect(() => {
+
+    if (typeof document === 'undefined') return;
+    
     const handleClickOutside = (event: MouseEvent) => {
       if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
         onClose();

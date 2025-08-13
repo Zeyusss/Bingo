@@ -13,7 +13,6 @@ interface EditProductModalProps {
     regular_price: string;
     sale_price: string;
     category: string;
-    subCategory: string;
     stock: string;
     tags: string;
   };
@@ -23,7 +22,6 @@ interface EditProductModalProps {
     regular_price: string;
     sale_price: string;
     category: string;
-    subCategory: string;
     stock: string;
     tags: string;
   }>>;
@@ -253,7 +251,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                       <select
                         value={editFormData.category}
                         onChange={(e) =>
-                          setEditFormData((prev: any) => ({ ...prev, category: e.target.value, subCategory: '' }))
+                          setEditFormData((prev: any) => ({ ...prev, category: e.target.value }))
                         }
                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors appearance-none bg-white ${
                           errors.category ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-gray-300'
@@ -274,31 +272,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                       </p>
                     )}
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Subcategory
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={editFormData.subCategory || ""}
-                        onChange={(e) =>
-                          setEditFormData((prev: any) => ({ ...prev, subCategory: e.target.value }))
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors appearance-none bg-white"
-                        disabled={!editFormData.category}
-                      >
-                        <option value="">Select a subcategory</option>
-                        {Array.isArray(availableSubCategories) && availableSubCategories.map((subCategory) => (
-                          <option key={subCategory} value={subCategory}>
-                            {subCategory}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">Optional - Select a category first</p>
-                  </div>
+
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">

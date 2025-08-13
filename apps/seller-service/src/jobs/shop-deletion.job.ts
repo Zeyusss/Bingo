@@ -2,72 +2,83 @@ import prisma from "@packages/libs/prisma";
 import cron from "node-cron";
 
 
+
+console.log("Shop deletion service: SOFT DELETE ONLY mode - No permanent deletions will occur");
+
+
 cron.schedule("0 * * * *", async () => {
     try {
         const now = new Date();
+        console.log("Checking for shops whose deletion time has passed...");
         
 
-        const shopsToDelete = await prisma.shops.findMany({
+        const shopsToProcess = await prisma.shops.findMany({
             where: {
                 deletedAt: { 
+                    not: null,
                     lte: now 
                 },
+                sellers: {
+                    isDeleted: false
+                }
             },
             include: {
-                sellers: true,
-                products: true,
-                images: true,
+                sellers: true
             }
         });
 
-        if (shopsToDelete.length > 0) {
-            console.log(`Found ${shopsToDelete.length} shops scheduled for permanent deletion`);
+        if (shopsToProcess.length > 0) {
+            console.log(`Found ${shopsToProcess.length} shops whose deletion time has passed - blocking associated sellers`);
 
-            for (const shop of shopsToDelete) {
+            for (const shop of shopsToProcess) {
                 try {
-                    await prisma.$transaction(async (tx) => {
-                        const productsCount = Array.isArray(shop.products) ? shop.products.length : (shop.products ? 1 : 0);
-                        if (productsCount > 0) {
-                            await tx.products.deleteMany({
-                                where: { shopId: shop.id }
-                            });
-                            console.log(`Deleted ${productsCount} products for shop ${shop.id}`);
+                 
+                    await prisma.sellers.update({
+                        where: { id: shop.sellerId },
+                        data: {
+                            isDeleted: true,
+                            deletedAt: now
                         }
-
-
-                        if (shop.sellerId) {
-                            await tx.sellers.delete({
-                                where: { id: shop.sellerId }
-                            });
-                            console.log(`Deleted seller ${shop.sellerId} for shop ${shop.id}`);
-                        }
-
-                        const imagesCount = Array.isArray(shop.images) ? shop.images.length : (shop.images ? 1 : 0);
-                        if (imagesCount > 0) {
-                            await tx.images.deleteMany({
-                                where: { shopId: shop.id }
-                            });
-                            console.log(`Deleted ${imagesCount} images for shop ${shop.id}`);
-                        }
-
-                        await tx.shops.delete({
-                            where: { id: shop.id }
-                        });
-
-                        console.log(`Successfully deleted shop: ${shop.name} (ID: ${shop.id})`);
                     });
 
+             
+                    await prisma.shops.update({
+                        where: { id: shop.id },
+                        data: {
+                            isDeleted: true
+                        }
+                    });
+
+                    console.log(`Successfully blocked seller ${shop.sellerId} for shop ${shop.name} (ID: ${shop.id})`);
                 } catch (error) {
-                    console.error(`Error deleting shop ${shop.id}:`, error);
+                    console.error(`Error blocking seller for shop ${shop.id}:`, error);
                 }
             }
 
-            console.log(`Completed shop deletion process. Deleted ${shopsToDelete.length} shops.`);
+            console.log(`Completed seller blocking process. Blocked ${shopsToProcess.length} sellers.`);
+        } else {
+            console.log("No shops found whose deletion time has passed.");
         }
+        
 
+        const softDeletedShops = await prisma.shops.count({
+            where: {
+                OR: [
+                    { isDeleted: true },
+                    { deletedAt: { not: null } }
+                ]
+            }
+        });
+        
+        const softDeletedSellers = await prisma.sellers.count({
+            where: { isDeleted: true }
+        });
+        
+        console.log(`Monitoring: ${softDeletedShops} shops soft-deleted, ${softDeletedSellers} sellers blocked (all data retained)`);
+        
     } catch (error) {
-        console.error("Error in shop deletion cron job:", error);
+        console.error("Error in seller blocking job:", error);
     }
 });
 
-console.log("Shop deletion cron job initialized - runs every hour");
+console.log("Shop maintenance service initialized - SOFT DELETE ONLY policy active");

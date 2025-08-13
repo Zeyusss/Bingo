@@ -14,8 +14,11 @@ interface SideCartProps {
 }
 
 export default function SideCart({ isOpen, onClose }: SideCartProps) {
-  const { cart, updateCartItemQuantity, removeFromCart } = useStore();
+  const { getAuthenticatedCart, updateCartItemQuantity, removeFromCart } = useStore();
   const { user } = useUser();
+  
+
+  const cart = getAuthenticatedCart(user);
   const location = useLocationTracking();
   const deviceInfo = useDeviceTracking();
   const [mounted, setMounted] = useState(false);

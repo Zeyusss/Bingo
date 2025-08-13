@@ -17,7 +17,7 @@ const RevenueChart: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Card className="h-full">
+      <Card className="h-full bg-white border border-gray-200">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="space-y-2">
@@ -36,15 +36,15 @@ const RevenueChart: React.FC = () => {
 
   if (error) {
     return (
-      <Card className="h-full">
+      <Card className="h-full bg-white border border-gray-200">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2 text-red-600">
+              <CardTitle className="flex items-center gap-2 text-red-600 font-Poppins">
                 <DollarSign className="h-5 w-5" />
                 Revenue Chart
               </CardTitle>
-              <CardDescription>Failed to load revenue data</CardDescription>
+              <CardDescription className="font-Roboto">Failed to load revenue data</CardDescription>
             </div>
             <Button
               onClick={() => refetch()}
@@ -72,16 +72,21 @@ const RevenueChart: React.FC = () => {
     );
   }
 
-  const totalRevenue =
-    data?.[0]?.data?.reduce((sum: number, point: any) => sum + point.y, 0) || 0;
-  const currentMonth = data?.[0]?.data?.[data[0].data.length - 1]?.y || 0;
-  const previousMonth = data?.[0]?.data?.[data[0].data.length - 2]?.y || 0;
+  const totalRevenue = Array.isArray(data) && data[0]?.data
+    ? data[0].data.reduce((sum: number, point: any) => sum + point.y, 0)
+    : 0;
+  const currentMonth = Array.isArray(data) && data[0]?.data
+    ? data[0].data[data[0].data.length - 1]?.y || 0
+    : 0;
+  const previousMonth = Array.isArray(data) && data[0]?.data
+    ? data[0].data[data[0].data.length - 2]?.y || 0
+    : 0;
   const growth =
     previousMonth > 0
       ? ((currentMonth - previousMonth) / previousMonth) * 100
       : 0;
 
-  // Format month names properly
+ 
   const formatMonth = (monthStr: string) => {
     if (!monthStr) return "";
     const months = {
@@ -99,7 +104,7 @@ const RevenueChart: React.FC = () => {
       "12": "Dec",
     };
 
-    // Handle different date formats
+   
     if (monthStr.includes("-")) {
       const parts = monthStr.split("-");
       if (parts.length >= 2) {
@@ -108,7 +113,7 @@ const RevenueChart: React.FC = () => {
       }
     }
 
-    // Handle month names directly
+ 
     const month = monthStr.substring(0, 3).toLowerCase();
     const monthMap: { [key: string]: string } = {
       jan: "Jan",
@@ -128,32 +133,33 @@ const RevenueChart: React.FC = () => {
     return monthMap[month] || monthStr;
   };
 
-  // Process data to format month names
-  const processedData =
-    data?.map((series:any) => ({
-      ...series,
-      data: series.data.map((point:any) => ({
-        ...point,
-        x: formatMonth(point.x),
-      })),
-    })) || [];
+ 
+  const processedData = Array.isArray(data) 
+    ? data.map((series: any) => ({
+        ...series,
+        data: series.data.map((point: any) => ({
+          ...point,
+          x: formatMonth(point.x),
+        })),
+      }))
+    : [];
 
   return (
-    <Card className="h-full hover:shadow-lg transition-shadow duration-200">
+    <Card className="h-full hover:shadow-lg transition-shadow duration-200 bg-white border border-gray-200">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-green-600" />
+            <CardTitle className="flex items-center gap-2 font-Poppins">
+              <DollarSign className="h-5 w-5 text-red-600" />
               Revenue Trends
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="font-Roboto">
               Last 6 months • Total: ${totalRevenue.toLocaleString()}
             </CardDescription>
           </div>
-          <div className="flex items-center gap-1 text-sm text-green-600">
+          <div className="flex items-center gap-1 text-sm text-red-600">
             <TrendingUp className="h-4 w-4" />
-            <span className="font-medium">
+            <span className="font-medium font-Roboto">
               {growth > 0 ? "+" : ""}
               {growth.toFixed(1)}%
             </span>

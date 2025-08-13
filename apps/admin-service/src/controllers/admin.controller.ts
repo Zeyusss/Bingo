@@ -16,9 +16,12 @@ export async function getRevenue(
   next: NextFunction
 ) {
   try {
+    console.log('📊 Admin Dashboard: Fetching revenue data...');
     const data = await fetchRevenueData();
+    console.log('✅ Admin Dashboard: Revenue data fetched successfully:', data);
     res.status(200).json(data);
   } catch (error) {
+    console.error('❌ Admin Dashboard: Error fetching revenue data:', error);
     return next(error);
   }
 }
@@ -55,9 +58,12 @@ export async function getSystemStats(
   next: NextFunction
 ) {
   try {
+    console.log('📊 Admin Dashboard: Fetching system stats...');
     const data = await fetchSystemStats();
+    console.log('✅ Admin Dashboard: System stats fetched successfully:', data);
     res.status(200).json(data);
   } catch (error) {
+    console.error('❌ Admin Dashboard: Error fetching system stats:', error);
     return next(error);
   }
 }
@@ -1307,7 +1313,7 @@ export const reviewVerification = async (
       return next(new ValidationError("Verification is not pending review"));
     }
 
-    // Validate that terms were accepted before allowing approval
+ 
     if (action === "approve" && !seller.termsAccepted) {
       return next(
         new ValidationError(
@@ -1349,7 +1355,7 @@ export const reviewVerification = async (
       },
     });
 
-    // Here you could add notification logic to inform the seller
+   
 
     res.status(200).json({
       success: true,
@@ -1377,41 +1383,41 @@ export const getVerificationStats = async (
       sellersWithTermsAccepted,
       sellersWithoutTerms,
     ] = await Promise.all([
-      // Total sellers count
+
       prisma.sellers.count(),
 
-      // Pending verifications
+    
       prisma.sellers.count({
         where: { verificationStatus: "Pending" },
       }),
 
-      // Approved verifications
+     
       prisma.sellers.count({
         where: { verificationStatus: "Approved" },
       }),
 
-      // Rejected verifications
+   
       prisma.sellers.count({
         where: { verificationStatus: "Rejected" },
       }),
 
-      // Requires resubmission
+    
       prisma.sellers.count({
         where: { verificationStatus: "RequiresResubmission" },
       }),
 
-      // Sellers who have accepted terms
+    
       prisma.sellers.count({
         where: { termsAccepted: true },
       }),
 
-      // Sellers who haven't accepted terms yet
+   
       prisma.sellers.count({
         where: { termsAccepted: false },
       }),
     ]);
 
-    // Calculate percentages
+ 
     const verificationRate =
       totalSellers > 0 ? (approvedVerifications / totalSellers) * 100 : 0;
     const termsAcceptanceRate =
@@ -1454,7 +1460,7 @@ export const getVerificationHistory = async (
 
     const skip = (Number(page) - 1) * Number(limit);
 
-    // Build where clause for filtering
+   
     const whereClause: any = {};
 
     if (status && status !== "all") {

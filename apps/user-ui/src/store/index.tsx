@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import * as cartApi from '../services/cartApi';
+import * as wishlistApi from '../services/wishlistApi';
 
 type Product = {
   id: string;
@@ -25,6 +27,8 @@ type Store = {
     type: "required" | "optional" | null;
     product: any;
   };
+  isLoadingCart: boolean;
+  isLoadingWishlist: boolean;
   addToCart: (
     product: Product,
     user: any,
@@ -64,6 +68,15 @@ type Store = {
   showChatLoginPrompt: () => void;
   showPersonalizationPrompt: (type: "required" | "optional", product: any) => void;
   closePersonalizationModal: () => void;
+  clearCart: () => void;
+  clearWishlist: () => void;
+  clearAllUserData: () => void;
+  clearSessionData: () => void;
+  getAuthenticatedCart: (user: any) => Product[];
+  loadCartFromBackend: (user: any) => Promise<void>;
+  loadWishlistFromBackend: (user: any) => Promise<void>;
+  syncCartWithBackend: boolean;
+  syncWishlistWithBackend: boolean;
 };
 
 export const useStore = create<Store>()(
@@ -75,175 +88,312 @@ export const useStore = create<Store>()(
       showSideCart: false,
       showLoginPrompt: { show: false, action: null },
       showPersonalizationModal: { show: false, type: null, product: null },
+      isLoadingCart: false,
+      isLoadingWishlist: false,
+      syncCartWithBackend: true,
+      syncWishlistWithBackend: true,
 
-      addToCart: (product, user, location, deviceInfo) => {
+      addToCart: async (product, user, location, deviceInfo) => {
         if (!user?.id) {
           set({ showLoginPrompt: { show: true, action: "cart" } });
           return;
         }
 
-        set((state) => {
-          const existing = state.cart?.find((item) => item.id === product.id);
-          const requestedQuantity = product.quantity ?? 1;
-          const productStock = product.stock ?? 0;
+        try {
+         
+          const response = await cartApi.addToCart(product.id, product.quantity ?? 1);
           
-          if (productStock === 0) {
-            return state;
-          }
-          
-          if (existing) {
-            const currentQuantity = existing.quantity ?? 1;
-            const newQuantity = currentQuantity + requestedQuantity;
-            
-            
-            if (productStock > 0 && newQuantity > productStock) {
+          if (response.success) {
+   
+            set((state) => {
+              const existing = state.cart?.find((item) => item.id === product.id);
+              const requestedQuantity = product.quantity ?? 1;
               
-              const availableToAdd = Math.max(0, productStock - currentQuantity);
-              if (availableToAdd > 0) {
+              if (existing) {
                 return {
                   cart: state.cart.map((item) =>
                     item.id === product.id
                       ? {
                           ...item,
-                          quantity: currentQuantity + availableToAdd,
+                          quantity: (item.quantity ?? 1) + requestedQuantity,
                         }
                       : item
                   ),
                 };
               }
               
-              return state;
+              return {
+                cart: [
+                  ...state.cart,
+                  { ...product, quantity: requestedQuantity },
+                ],
+              };
+            });
+
+            set({ showSideCart: true });
+
+           
+            if (location && deviceInfo) {
+
+              fetch("/api/track", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  userId: user?.id,
+                  productId: product?.id,
+                  shopId: product?.shopId,
+                  action: "add_to_cart",
+                  country: location?.country || "Unknown",
+                  city: location?.city || "Unknown",
+                  device: deviceInfo || "Unknown Device",
+                }),
+              }).catch(error => {
+                console.warn('Analytics tracking failed (non-critical):', error);
+              });
             }
-            
-            
-            return {
-              cart: state.cart.map((item) =>
-                item.id === product.id
-                  ? {
-                      ...item,
-                      quantity: newQuantity,
-                    }
-                  : item
-              ),
-            };
           }
+        } catch (error) {
+          console.error('Error adding to cart:', error);
           
+          console.warn('Backend unavailable - adding to cart locally only');
           
-          if (productStock > 0 && requestedQuantity > productStock) {
+
+          set((state) => {
+            const existing = state.cart?.find((item) => item.id === product.id);
+            const requestedQuantity = product.quantity ?? 1;
+            
+            if (existing) {
+              return {
+                cart: state.cart.map((item) =>
+                  item.id === product.id
+                    ? {
+                        ...item,
+                        quantity: (item.quantity ?? 1) + requestedQuantity,
+                      }
+                    : item
+                ),
+              };
+            }
             
             return {
               cart: [
                 ...state.cart,
-                { ...product, quantity: productStock },
+                { ...product, quantity: requestedQuantity },
               ],
             };
-          }
-          
-         
-          return {
-            cart: [
-              ...state.cart,
-              { ...product, quantity: requestedQuantity },
-            ],
-          };
-        });
+          });
 
-        if (user?.id) {
           set({ showSideCart: true });
         }
-
-        //send analytics event via API
-        if (user?.id && location && deviceInfo) {
-          fetch("/api/track", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userId: user?.id,
-              productId: product?.id,
-              shopId: product?.shopId,
-              action: "add_to_cart",
-              country: location?.country || "Unknown",
-              city: location?.city || "Unknown",
-              device: deviceInfo || "Unknown Device",
-            }),
-          });
-        }
       },
 
-      //remove from cart
-      removeFromCart: (id, user, location, deviceInfo) => {
-        //find product
-        const removeProduct = get().cart.find((item) => item.id === id);
-        set((state) => ({
-          cart: state.cart?.filter((item) => item.id !== id),
-        }));
-        //send analytics event via API
-        if (user?.id && location && deviceInfo && removeProduct) {
-          fetch("/api/track", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userId: user?.id,
-              productId: removeProduct?.id,
-              shopId: removeProduct?.shopId,
-              action: "remove_from_cart",
-              country: location?.country || "Unknown",
-              city: location?.city || "Unknown",
-              device: deviceInfo || "Unknown Device",
-            }),
-          });
+ 
+      removeFromCart: async (id, user, location, deviceInfo) => {
+        if (!user?.id) return;
+
+        try {
+
+          const response = await cartApi.removeFromCart(id);
+          
+          if (response.success) {
+           
+            const removeProduct = get().cart.find((item) => item.id === id);
+            
+
+            set((state) => ({
+              cart: state.cart?.filter((item) => item.id !== id),
+            }));
+
+        
+            if (location && deviceInfo && removeProduct) {
+
+              fetch("/api/track", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  userId: user?.id,
+                  productId: removeProduct?.id,
+                  shopId: removeProduct?.shopId,
+                  action: "remove_from_cart",
+                  country: location?.country || "Unknown",
+                  city: location?.city || "Unknown",
+                  device: deviceInfo || "Unknown Device",
+                }),
+              }).catch(error => {
+                console.warn('Analytics tracking failed (non-critical):', error);
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error removing from cart:', error);
+         
+          console.warn('Backend unavailable - removing from cart locally only');
+          
+ 
+          const removeProduct = get().cart.find((item) => item.id === id);
+          
+        
+          set((state) => ({
+            cart: state.cart?.filter((item) => item.id !== id),
+          }));
+
+
+          if (location && deviceInfo && removeProduct) {
+            fetch("/api/track", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                userId: user?.id,
+                productId: removeProduct?.id,
+                shopId: removeProduct?.shopId,
+                action: "remove_from_cart",
+                country: location?.country || "Unknown",
+                city: location?.city || "Unknown",
+                device: deviceInfo || "Unknown Device",
+              }),
+            }).catch(error => {
+              console.warn('Analytics tracking failed (non-critical):', error);
+            });
+          }
         }
       },
-      addToWishlist: (product, user, location, deviceInfo) => {
+      addToWishlist: async (product, user, location, deviceInfo) => {
         if (!user?.id) {
           set({ showLoginPrompt: { show: true, action: "wishlist" } });
           return;
         }
 
-        set((state) => {
-          if (state.wishlist.find((item) => item.id === product.id))
-            return state;
-          return { wishlist: [...state.wishlist, product] };
-        });
+        try {
 
-        if (user?.id && location && deviceInfo) {
-          fetch("/api/track", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userId: user?.id,
-              productId: product?.id,
-              shopId: product?.shopId,
-              action: "add_to_wishlist",
-              country: location?.country || "Unknown",
-              city: location?.city || "Unknown",
-              device: deviceInfo || "Unknown Device",
-            }),
+          const response = await wishlistApi.addToWishlist(product.id);
+          
+          if (response.success) {
+
+            set((state) => {
+              if (state.wishlist.find((item) => item.id === product.id))
+                return state;
+              return { wishlist: [...state.wishlist, product] };
+            });
+
+
+            if (location && deviceInfo) {
+
+              fetch("/api/track", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  userId: user?.id,
+                  productId: product?.id,
+                  shopId: product?.shopId,
+                  action: "add_to_wishlist",
+                  country: location?.country || "Unknown",
+                  city: location?.city || "Unknown",
+                  device: deviceInfo || "Unknown Device",
+                }),
+              }).catch(error => {
+                console.warn('Analytics tracking failed (non-critical):', error);
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error adding to wishlist:', error);
+
+          console.warn('Backend unavailable - adding to wishlist locally only');
+          
+
+          set((state) => {
+            if (state.wishlist.find((item) => item.id === product.id))
+              return state;
+            return { wishlist: [...state.wishlist, product] };
           });
+
+
+          if (location && deviceInfo) {
+            fetch("/api/track", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                userId: user?.id,
+                productId: product?.id,
+                shopId: product?.shopId,
+                action: "add_to_wishlist",
+                country: location?.country || "Unknown",
+                city: location?.city || "Unknown",
+                device: deviceInfo || "Unknown Device",
+              }),
+            }).catch(error => {
+              console.warn('Analytics tracking failed (non-critical):', error);
+            });
+          }
         }
       },
-      removeFromWishlist: (id, user, location, deviceInfo) => {
-        const removeProduct = get().wishlist.find((item) => item.id === id);
+      removeFromWishlist: async (id, user, location, deviceInfo) => {
+        if (!user?.id) return;
 
-        set((state) => ({
-          wishlist: state.wishlist.filter((item) => item.id !== id),
-        }));
+        try {
 
-        //send analytics event via API
-        if (user?.id && location && deviceInfo && removeProduct) {
-          fetch("/api/track", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userId: user?.id,
-              productId: removeProduct?.id,
-              shopId: removeProduct?.shopId,
-              action: "remove_from_wishlist",
-              country: location?.country || "Unknown",
-              city: location?.city || "Unknown",
-              device: deviceInfo || "Unknown Device",
-            }),
-          });
+          const response = await wishlistApi.removeFromWishlist(id);
+          
+          if (response.success) {
+           
+            const removeProduct = get().wishlist.find((item) => item.id === id);
+
+
+            set((state) => ({
+              wishlist: state.wishlist.filter((item) => item.id !== id),
+            }));
+
+           
+            if (location && deviceInfo && removeProduct) {
+
+              fetch("/api/track", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  userId: user?.id,
+                  productId: removeProduct?.id,
+                  shopId: removeProduct?.shopId,
+                  action: "remove_from_wishlist",
+                  country: location?.country || "Unknown",
+                  city: location?.city || "Unknown",
+                  device: deviceInfo || "Unknown Device",
+                }),
+              }).catch(error => {
+                console.warn('Analytics tracking failed (non-critical):', error);
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error removing from wishlist:', error);
+
+          console.warn('Backend unavailable - removing from wishlist locally only');
+          
+        
+          const removeProduct = get().wishlist.find((item) => item.id === id);
+
+
+          set((state) => ({
+            wishlist: state.wishlist.filter((item) => item.id !== id),
+          }));
+
+        
+          if (location && deviceInfo && removeProduct) {
+            fetch("/api/track", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                userId: user?.id,
+                productId: removeProduct?.id,
+                shopId: removeProduct?.shopId,
+                action: "remove_from_wishlist",
+                country: location?.country || "Unknown",
+                city: location?.city || "Unknown",
+                device: deviceInfo || "Unknown Device",
+              }),
+            }).catch(error => {
+              console.warn('Analytics tracking failed (non-critical):', error);
+            });
+          }
         }
       },
       addToCompare: (product) => {
@@ -311,6 +461,92 @@ export const useStore = create<Store>()(
       },
       closePersonalizationModal: () => {
         set({ showPersonalizationModal: { show: false, type: null, product: null } });
+      },
+      clearCart: () => {
+        set({ cart: [] });
+      },
+      clearWishlist: () => {
+        set({ wishlist: [] });
+      },
+      clearAllUserData: () => {
+        set({ 
+          cart: [], 
+          wishlist: [], 
+          compare: [],
+          showSideCart: false,
+          showLoginPrompt: { show: false, action: null },
+          showPersonalizationModal: { show: false, type: null, product: null }
+        });
+      },
+      clearSessionData: () => {
+
+        set({ 
+          cart: [], 
+          compare: [],
+          showSideCart: false,
+          showLoginPrompt: { show: false, action: null },
+          showPersonalizationModal: { show: false, type: null, product: null }
+        });
+        
+
+        if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+          try {
+
+            const state = get();
+            localStorage.setItem('store-storage', JSON.stringify({
+              state: {
+                cart: [],
+                wishlist: state.wishlist, 
+                compare: [],
+                showSideCart: false,
+                showLoginPrompt: { show: false, action: null },
+                showPersonalizationModal: { show: false, type: null, product: null }
+              },
+              version: 0
+            }));
+          } catch (error) {
+            console.error('Failed to persist store to localStorage:', error);
+          }
+        }
+      },
+      getAuthenticatedCart: (user: any) => {
+
+        const state = get();
+        return user?.id ? state.cart : [];
+      },
+
+
+      loadCartFromBackend: async (user: any) => {
+        if (!user?.id) return;
+        
+        set({ isLoadingCart: true });
+        try {
+          const response = await cartApi.getCartItems();
+          if (response.success) {
+            set({ cart: response.cart });
+          }
+        } catch (error) {
+          console.error('Error loading cart from backend:', error);
+        } finally {
+          set({ isLoadingCart: false });
+        }
+      },
+
+
+      loadWishlistFromBackend: async (user: any) => {
+        if (!user?.id) return;
+        
+        set({ isLoadingWishlist: true });
+        try {
+          const response = await wishlistApi.getWishlistItems();
+          if (response.success) {
+            set({ wishlist: response.wishlist });
+          }
+        } catch (error) {
+          console.error('Error loading wishlist from backend:', error);
+        } finally {
+          set({ isLoadingWishlist: false });
+        }
       },
     }),
     { name: "store-storage" }

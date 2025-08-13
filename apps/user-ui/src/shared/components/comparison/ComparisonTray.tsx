@@ -30,29 +30,29 @@ const ComparisonTray: React.FC<ComparisonTrayProps> = ({ className = "" }) => {
   };
 
   const handleAddAllToCart = () => {
-    // Check if any products require personalization
+
     const personalizedProducts = products.filter(product => 
       product.personalizationEnabled && product.personalizationRequired
     );
     
     if (personalizedProducts.length > 0) {
-      // Show modal for the first personalized product
+
       showPersonalizationPrompt('required', personalizedProducts[0]);
       return;
     }
 
-    // Check if any products have optional personalization
+
     const optionalPersonalizedProducts = products.filter(product => 
       product.personalizationEnabled && !product.personalizationRequired
     );
     
     if (optionalPersonalizedProducts.length > 0) {
-      // Show modal for the first optionally personalized product
+
       showPersonalizationPrompt('optional', optionalPersonalizedProducts[0]);
       return;
     }
 
-    // Add all products to cart (no personalization required)
+
     products.forEach((product) => {
       const cartProduct = {
         id: product.id,

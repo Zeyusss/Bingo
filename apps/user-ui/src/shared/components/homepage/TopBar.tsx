@@ -71,10 +71,10 @@ const TopBar = () => {
           <Link href="#" className="hover:text-orange-500 transition-colors font-medium">
           Policies
           </Link>
-          <Link href="#" className="hover:text-orange-500 transition-colors font-medium">
+          <Link href="/about-us" className="hover:text-orange-500 transition-colors font-medium">
           About Us
           </Link>
-          <Link href="#" className="hover:text-orange-500 transition-colors font-medium">
+          <Link href="/our-team" className="hover:text-orange-500 transition-colors font-medium">
           Our Team
           </Link>
         </div>

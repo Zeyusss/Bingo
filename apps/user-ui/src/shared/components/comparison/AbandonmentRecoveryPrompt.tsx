@@ -22,15 +22,27 @@ const AbandonmentRecoveryPrompt: React.FC<AbandonmentRecoveryPromptProps> = ({ o
   } = useComparisonStore();
 
   const [isVisible, setIsVisible] = useState(false);
+
   const [dismissedPermanently, setDismissedPermanently] = useState(false);
 
+  const [isClient, setIsClient] = useState(false);
+
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+
+    setIsClient(true);
     
-    const dismissed = localStorage.getItem('comparison-recovery-dismissed');
-    if (dismissed) {
-      setDismissedPermanently(true);
-      return;
+
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
+    
+    try {
+      const dismissed = localStorage.getItem('comparison-recovery-dismissed');
+      if (dismissed) {
+        setDismissedPermanently(true);
+        return;
+      }
+    } catch (error) {
+      console.error('Failed to check localStorage for dismissed state:', error);
+      return; 
     }
 
     cleanupExpired();
@@ -57,7 +69,14 @@ const AbandonmentRecoveryPrompt: React.FC<AbandonmentRecoveryPromptProps> = ({ o
   };
 
   const handleDismissPermanently = () => {
-    localStorage.setItem('comparison-recovery-dismissed', 'true');
+
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('comparison-recovery-dismissed', 'true');
+      } catch (error) {
+        console.error('Failed to save dismissed state to localStorage:', error);
+      }
+    }
     setDismissedPermanently(true);
     setIsVisible(false);
     onDismiss?.();
@@ -69,7 +88,8 @@ const AbandonmentRecoveryPrompt: React.FC<AbandonmentRecoveryPromptProps> = ({ o
     onDismiss?.();
   };
 
-  if (!isVisible || dismissedPermanently || products.length === 0) {
+
+  if (!isClient || dismissedPermanently || !isVisible || products.length === 0) {
     return null;
   }
 

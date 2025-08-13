@@ -20,8 +20,10 @@ const CartPage = () => {
   const { user, isLoading } = useUser();
   const location = useLocationTracking();
   const deviceInfo = useDeviceTracking();
-  const cart = useStore((state: any) => state.cart);
-  const removeFromCart = useStore((state: any) => state.removeFromCart);
+  const { getAuthenticatedCart, removeFromCart } = useStore();
+  
+
+  const cart = getAuthenticatedCart(user);
   const { removeAbandonedCart } = useAbandonedCart();
 
   const [couponCode, setCouponCode] = useState("");

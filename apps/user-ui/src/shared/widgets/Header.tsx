@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation";
 
 const Header = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { user, isLoading } = useUser();
+  const { user } = useUser();
   const wishlist = useStore((state: any) => state.wishlist);
   const cart = useStore((state: any) => state.cart);
   const compare = useStore((state: any) => state.compare);
@@ -27,9 +27,15 @@ const Header = () => {
   );
 
   const router = useRouter();
+
   const [showMobileHeader, setShowMobileHeader] = useState(true);
 
-useEffect(() => {
+
+  useEffect(() => {
+  
+
+  if (typeof window === 'undefined') return;
+  
   let lastScrollY = window.scrollY;
   let ticking = false;
 
@@ -83,14 +89,16 @@ useEffect(() => {
         <Link href="/" className="text-xl font-bold text-black">
           Bingo
         </Link>
-        <Link href="/cart" className="relative">
-          <ShoppingCart className="w-5 h-5 text-black" />
-          {totalCartItems > 0 && (
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 text-white text-[10px] rounded-full flex items-center justify-center">
-              {totalCartItems}
-            </div>
-          )}
-        </Link>
+        {user?.id && (
+          <Link href="/cart" className="relative">
+            <ShoppingCart className="w-5 h-5 text-black" />
+            {totalCartItems > 0 && (
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                {totalCartItems}
+              </div>
+            )}
+          </Link>
+        )}
       </div>
 
 
@@ -123,24 +131,21 @@ useEffect(() => {
             )}
           </Link>
 
-          <Link
-            href="/wishlist"
-            className="relative w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200"
-          >
-            <HeartIcon />
-            {wishlist.length > 0 && (
-              <div className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center border border-white">
-                {wishlist.length}
-              </div>
-            )}
-          </Link>
+          {user?.id && (
+            <Link
+              href="/wishlist"
+              className="relative w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200"
+            >
+              <HeartIcon />
+              {wishlist.length > 0 && (
+                <div className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center border border-white">
+                  {wishlist.length}
+                </div>
+              )}
+            </Link>
+          )}
 
-          {isLoading ? (
-            <div className="px-4 py-2 rounded-full bg-gray-100 flex items-center gap-2 border border-gray-200">
-              <ProfileIcon />
-              <span className="text-sm font-medium">Loading...</span>
-            </div>
-          ) : user ? (
+          {user ? (
             <Link
               href="/profile"
               className="px-4 py-2 rounded-full bg-gray-100 flex items-center gap-2 border border-gray-200 hover:bg-gray-200"
@@ -158,17 +163,19 @@ useEffect(() => {
             </Link>
           )}
 
-          <Link
-            href="/cart"
-            className="relative w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"
-          >
-            <ShoppingCart className="text-black w-5 h-5" />
-            {totalCartItems > 0 && (
-              <div className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 text-white text-[10px] font-semibold rounded-full flex items-center justify-center border border-white">
-                {totalCartItems}
-              </div>
-            )}
-          </Link>
+          {user?.id && (
+            <Link
+              href="/cart"
+              className="relative w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"
+            >
+              <ShoppingCart className="text-black w-5 h-5" />
+              {totalCartItems > 0 && (
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 text-white text-[10px] font-semibold rounded-full flex items-center justify-center border border-white">
+                  {totalCartItems}
+                </div>
+              )}
+            </Link>
+          )}
         </div>
       </div>
 

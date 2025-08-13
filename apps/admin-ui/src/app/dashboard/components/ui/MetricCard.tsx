@@ -68,14 +68,14 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   };
 
   return (
-    <Card className={cn('hover:shadow-lg transition-all duration-200', className)}>
+    <Card className={cn('hover:shadow-lg transition-all duration-200 bg-white border border-gray-200', className)}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium text-gray-600">
+          <CardTitle className="text-sm font-medium text-gray-600 font-Roboto">
             {title}
           </CardTitle>
           {icon && (
-            <div className="text-gray-400">
+            <div className="text-red-500">
               {icon}
             </div>
           )}
@@ -83,12 +83,12 @@ export const MetricCard: React.FC<MetricCardProps> = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          <div className="text-2xl font-bold text-gray-900">
+          <div className="text-2xl font-bold text-gray-900 font-Poppins">
             {typeof value === 'number' ? value.toLocaleString() : value}
           </div>
           <div className="flex items-center justify-between">
             {description && (
-              <p className="text-xs text-gray-500 flex-1">
+              <p className="text-xs text-gray-500 flex-1 font-Roboto">
                 {description}
               </p>
             )}

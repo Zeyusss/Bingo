@@ -7,15 +7,16 @@ import {
   CardDescription,
 } from "./ui/Card";
 import { Badge } from "./ui/Badge";
-import { Skeleton, SkeletonTable } from "./ui/Skeleton";
+import { Skeleton } from "./ui/Skeleton";
 import { useRecentOrders } from "../../../hooks/useDashboardData";
 import {
   ShoppingCart,
-  Eye,
   ExternalLink,
+  Eye,
   AlertCircle,
   RefreshCw,
 } from "lucide-react";
+import Link from "next/link";
 import { Button } from "./ui/Button";
 
 const RecentOrdersTable: React.FC = () => {
@@ -34,7 +35,11 @@ const RecentOrdersTable: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <SkeletonTable />
+          <div className="space-y-3">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+          </div>
         </CardContent>
       </Card>
     );
@@ -108,10 +113,10 @@ const RecentOrdersTable: React.FC = () => {
               Latest {orders.length} transactions
             </CardDescription>
           </div>
-          <button className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm font-medium transition-colors">
+          <Link href="/orders" className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm font-medium transition-colors">
             View all
             <ExternalLink className="h-4 w-4" />
-          </button>
+          </Link>
         </div>
       </CardHeader>
       <CardContent>
@@ -157,7 +162,7 @@ const RecentOrdersTable: React.FC = () => {
                       #{order.id.slice(-8)}
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-700">
-                      {order.customerName}
+                      <span>{order.user?.name || 'Unknown Customer'}</span>
                     </td>
                     <td className="py-3 px-4 text-sm font-medium text-gray-900">
                       ${order.total.toFixed(2)}
@@ -171,10 +176,19 @@ const RecentOrdersTable: React.FC = () => {
                       {new Date(order.createdAt).toLocaleDateString()}
                     </td>
                     <td className="py-3 px-4">
-                      <button className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm">
-                        <Eye className="h-4 w-4" />
-                        View
-                      </button>
+                      {order.items?.[0]?.product?.slug ? (
+                        <Link
+                          href={`/products/${order.items[0].product.slug}`}
+                          className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm transition-colors"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Eye className="h-4 w-4" />
+                          View Product
+                        </Link>
+                      ) : (
+                        <span className="text-gray-400 text-sm">No product</span>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -190,7 +204,7 @@ const RecentOrdersTable: React.FC = () => {
               No recent orders found
             </div>
           ) : (
-            orders.map((order:any) => (
+            orders.map((order: any) => (
               <div
                 key={order.id}
                 className="bg-gray-50 rounded-lg p-4 border border-gray-200"
@@ -208,15 +222,24 @@ const RecentOrdersTable: React.FC = () => {
                     ${order.total.toFixed(2)}
                   </span>
                 </div>
-                <div className="text-sm text-gray-600 mb-2">
-                  {order.customerName}
-                </div>
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span>{new Date(order.createdAt).toLocaleDateString()}</span>
-                  <button className="text-blue-600 hover:text-blue-800 flex items-center gap-1">
-                    <Eye className="h-3 w-3" />
-                    View
-                  </button>
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-600">
+                    <p className="mb-1">{order.user?.name || "Unknown Customer"}</p>
+                    <p>{new Date(order.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  {order.items?.[0]?.product?.slug ? (
+                    <Link
+                      href={`/products/${order.items[0].product.slug}`}
+                      className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm transition-colors"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Eye className="h-4 w-4" />
+                      View
+                    </Link>
+                  ) : (
+                    <span className="text-gray-400 text-sm">No product</span>
+                  )}
                 </div>
               </div>
             ))

@@ -2,11 +2,15 @@ require('dotenv').config({ path: require('path').resolve(__dirname, '../../../.e
 
 import express from 'express';
 import "./jobs/product-crone.job"
+import "./jobs/abandoned-cart.job"
 import cors from 'cors';
 import { errorMiddleware } from '@packages/error-handler/error-middleware';
 import { createLoggingMiddleware, createErrorLoggingMiddleware } from '@packages/middleware/logging.middleware';
 import cookieParser from 'cookie-parser';
 import router from './routes/product.routes';
+import cartRouter from './routes/cart.routes';
+import wishlistRouter from './routes/wishlist.routes';
+import abandonedCartRouter from './routes/abandonedCart.routes';
 import swaggerUi from 'swagger-ui-express';
 const swaggerDocument = require('./swagger-output.json');
 
@@ -40,7 +44,10 @@ app.get("/docs-json", (req, res) => {
 });
 
 // Routes
-app.use('/api', router); 
+app.use('/api', router);
+app.use('/api/cart', cartRouter);
+app.use('/api/wishlist', wishlistRouter);
+app.use('/api/abandoned-cart', abandonedCartRouter); 
 
 
 app.use(createErrorLoggingMiddleware('product-service'));

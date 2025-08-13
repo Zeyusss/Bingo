@@ -11,6 +11,7 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useAuthStore } from "../../../store/authStore";
 import useRedirectIfAuthenticated from "../../../hooks/useRedirectIfAuthenticated";
+import { useStore } from "../../../store";
 
 type FormData = {
   email: string;
@@ -27,6 +28,7 @@ const Login = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { setLoggedIn } = useAuthStore();
+  const { loadCartFromBackend, loadWishlistFromBackend } = useStore();
 
   const {
     register,
@@ -43,10 +45,20 @@ const Login = () => {
       );
       return response.data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       setServerError(null);
       setLoggedIn(true);
       queryClient.invalidateQueries({ queryKey: ["user"] });
+      
+      try {
+        await Promise.all([
+          loadCartFromBackend(data.user),
+          loadWishlistFromBackend(data.user)
+        ]);
+      } catch (error) {
+        console.error('Error loading cart/wishlist after login:', error);
+      }
+      
       router.push("/");
     },
     onError: (error: AxiosError) => {

@@ -26,25 +26,13 @@ const Page = () => {
   const { admin, isLoading } = useAdmin();
 
 
+
   useEffect(() => {
     if (!isLoading && admin) {
+
       router.replace("/dashboard");
     }
   }, [admin, isLoading, router]);
-
-  useEffect(() => {
-    axios
-      .get(`${process.env.NEXT_PUBLIC_SERVER_URI}/api/logged-in-admin`, {
-        withCredentials: true,
-      })
-      .then((res) => {
-        if (res.data?.user) {
-          router.replace("/dashboard");
-        }
-      })
-      .catch(() => {
-      });
-  }, [router]);
 
   const loginMutation = useMutation({
     mutationFn: async (data: FormData) => {

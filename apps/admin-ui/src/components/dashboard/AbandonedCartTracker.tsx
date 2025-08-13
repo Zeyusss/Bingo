@@ -4,22 +4,20 @@ import { useState, useEffect } from "react";
 import { ShoppingCart, Users, TrendingUp, Mail, X, Eye } from "lucide-react";
 
 interface AbandonedCartItem {
-  productId: string;
-  quantity: number;
+  id: string;
+  name: string;
   price: number;
-  productName: string;
-  productImage?: string;
+  quantity: number;
+  image?: string;
 }
 
 interface AbandonedCart {
   userId: string;
   userEmail: string;
   userName: string;
-  items: AbandonedCartItem[];
+  cartItems: AbandonedCartItem[];
   totalAmount: number;
-  createdAt: string;
-  emailSent: boolean;
-  optedOut: boolean;
+  lastUpdated: string;
 }
 
 export default function AbandonedCartTracker() {
@@ -30,7 +28,7 @@ export default function AbandonedCartTracker() {
     totalCarts: 0,
     totalValue: 0,
     emailsSent: 0,
-    recoveryRate: 0,
+    recoveryRate: "0%", 
   });
 
   useEffect(() => {
@@ -39,41 +37,46 @@ export default function AbandonedCartTracker() {
 
   const fetchAbandonedCarts = async () => {
     try {
-      const response = await fetch("/order/api/abandoned-cart/list");
-      const data = await response.json();
+     
+      const [cartsResponse, statsResponse] = await Promise.all([
+        fetch("/product/api/abandoned-cart/all?hours=0.1"),
+        fetch("/product/api/abandoned-cart/stats?hours=0.1")
+      ]);
+      
+      const cartsData = await cartsResponse.json();
+      const statsData = await statsResponse.json();
 
-      // Ensure data is an array, if not use empty array
-      const cartsArray = Array.isArray(data)
-        ? data
-        : data?.carts || data?.data || [];
+      const cartsArray = cartsData.success ? cartsData.data || [] : [];
       setAbandonedCarts(cartsArray);
 
-      const totalValue = cartsArray.reduce(
-        (sum: number, cart: AbandonedCart) => sum + cart.totalAmount,
-        0
-      );
-      const emailsSent = cartsArray.filter(
-        (cart: AbandonedCart) => cart.emailSent
-      ).length;
+      if (statsData.success && statsData.data) {
+        setStats({
+          totalCarts: statsData.data.totalAbandonedCarts || 0,
+          totalValue: statsData.data.totalAbandonedValue || 0,
+          emailsSent: statsData.data.emailsSent || 0,
+          recoveryRate: statsData.data.recoveryRate || "0%", 
+        });
+      } else {
 
-      setStats({
-        totalCarts: cartsArray.length,
-        totalValue,
-        emailsSent,
-        recoveryRate:
-          cartsArray.length > 0
-            ? Math.round((emailsSent / cartsArray.length) * 100)
-            : 0,
-      });
+        const totalValue = cartsArray.reduce(
+          (sum: number, cart: AbandonedCart) => sum + cart.totalAmount,
+          0
+        );
+        setStats({
+          totalCarts: cartsArray.length,
+          totalValue,
+          emailsSent: 0, 
+          recoveryRate: "0%", 
+        });
+      }
     } catch (error) {
       console.error("Error fetching abandoned carts:", error);
-      // Set empty array on error to prevent map/reduce errors
       setAbandonedCarts([]);
       setStats({
         totalCarts: 0,
         totalValue: 0,
         emailsSent: 0,
-        recoveryRate: 0,
+        recoveryRate: "0%", 
       });
     } finally {
       setLoading(false);
@@ -82,23 +85,70 @@ export default function AbandonedCartTracker() {
 
   const sendReminderEmail = async (userId: string) => {
     try {
-      await fetch(`/order/api/abandoned-cart/email-sent/${userId}`, {
-        method: "PUT",
+      const response = await fetch(`/product/api/abandoned-cart/trigger/${userId}`, {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
-      fetchAbandonedCarts();
+      
+      if (response.ok) {
+        alert('Reminder email sent successfully!');
+        fetchAbandonedCarts();
+      } else {
+        alert('Failed to send reminder email');
+      }
     } catch (error) {
       console.error("Error sending reminder:", error);
+      alert('Error sending reminder email');
     }
   };
 
-  const removeCart = async (userId: string) => {
+  const processAllAbandonedCarts = async () => {
     try {
-      await fetch(`/order/api/abandoned-cart/remove/${userId}`, {
-        method: "DELETE",
+      const response = await fetch('/product/api/abandoned-cart/process', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
-      fetchAbandonedCarts();
+      
+      const result = await response.json();
+      if (result.success) {
+        alert(`Processed abandoned carts. Sent: ${result.data.sent}, Errors: ${result.data.errors}`);
+        fetchAbandonedCarts();
+      } else {
+        alert('Failed to process abandoned carts');
+      }
     } catch (error) {
-      console.error("Error removing cart:", error);
+      console.error("Error processing abandoned carts:", error);
+      alert('Error processing abandoned carts');
+    }
+  };
+
+  const sendTestEmail = async () => {
+    const testUserId = prompt('Enter a test user ID (or leave empty to use a default test):');
+    
+    try {
+      const response = await fetch('/product/api/abandoned-cart/test-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: testUserId || '507f1f77bcf86cd799439011' 
+        })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        alert('Test email sent successfully!');
+      } else {
+        alert(`Failed to send test email: ${result.message}`);
+      }
+    } catch (error) {
+      console.error("Error sending test email:", error);
+      alert('Error sending test email');
     }
   };
 
@@ -173,7 +223,7 @@ export default function AbandonedCartTracker() {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Recovery Rate</p>
               <p className="text-2xl font-bold text-gray-900">
-                {stats.recoveryRate}%
+                {stats.recoveryRate}
               </p>
             </div>
           </div>
@@ -182,8 +232,22 @@ export default function AbandonedCartTracker() {
 
       {/* Abandoned Carts Table */}
       <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <h3 className="text-lg font-medium text-gray-900">Abandoned Carts</h3>
+          <div className="flex gap-2">
+            <button
+              onClick={processAllAbandonedCarts}
+              className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+            >
+              Process All Carts
+            </button>
+            <button
+              onClick={sendTestEmail}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Send Test Email
+            </button>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -224,32 +288,20 @@ export default function AbandonedCartTracker() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {cart.items?.length || 0} item
-                      {(cart.items?.length || 0) !== 1 ? "s" : ""}
+                      {cart.cartItems?.length || 0} item
+                      {(cart.cartItems?.length || 0) !== 1 ? "s" : ""}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       ${(cart.totalAmount || 0).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {cart.createdAt
-                        ? new Date(cart.createdAt).toLocaleDateString()
+                      {cart.lastUpdated
+                        ? new Date(cart.lastUpdated).toLocaleDateString()
                         : "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          cart.optedOut
-                            ? "bg-red-100 text-red-800"
-                            : cart.emailSent
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {cart.optedOut
-                          ? "Opted Out"
-                          : cart.emailSent
-                          ? "Email Sent"
-                          : "Pending"}
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                        Pending
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
@@ -259,19 +311,12 @@ export default function AbandonedCartTracker() {
                       >
                         <Eye className="h-4 w-4" />
                       </button>
-                      {!cart.emailSent && !cart.optedOut && (
-                        <button
-                          onClick={() => sendReminderEmail(cart.userId)}
-                          className="text-green-600 hover:text-green-900"
-                        >
-                          <Mail className="h-4 w-4" />
-                        </button>
-                      )}
                       <button
-                        onClick={() => removeCart(cart.userId)}
-                        className="text-red-600 hover:text-red-900"
+                        onClick={() => sendReminderEmail(cart.userId)}
+                        className="text-green-600 hover:text-green-900"
+                        title="Send Reminder Email"
                       >
-                        <X className="h-4 w-4" />
+                        <Mail className="h-4 w-4" />
                       </button>
                     </td>
                   </tr>
@@ -315,22 +360,22 @@ export default function AbandonedCartTracker() {
             </div>
 
             <div className="space-y-3">
-              {selectedCart.items && Array.isArray(selectedCart.items) ? (
-                selectedCart.items.map((item, index) => (
+              {selectedCart.cartItems && Array.isArray(selectedCart.cartItems) ? (
+                selectedCart.cartItems.map((item: AbandonedCartItem, index: number) => (
                   <div
                     key={index}
                     className="flex items-center space-x-3 p-3 border rounded-lg"
                   >
-                    {item.productImage && (
+                    {item.image && (
                       <img
-                        src={item.productImage}
-                        alt={item.productName || "Product"}
+                        src={item.image}
+                        alt={item.name || "Product"}
                         className="w-12 h-12 object-cover rounded"
                       />
                     )}
                     <div className="flex-1">
                       <p className="font-medium text-gray-900">
-                        {item.productName || "Unknown Product"}
+                        {item.name || "Unknown Product"}
                       </p>
                       <p className="text-sm text-gray-500">
                         Quantity: {item.quantity || 0} × $

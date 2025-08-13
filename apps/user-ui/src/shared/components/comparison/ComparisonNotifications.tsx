@@ -44,7 +44,11 @@ const ComparisonNotifications: React.FC<ComparisonNotificationsProps> = ({ class
                   {expiryWarning} - view now to keep them
                 </p>
                 <button
-                  onClick={() => window.location.href = '/compare'}
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      window.location.href = '/compare';
+                    }
+                  }}
                   className="mt-2 text-xs bg-amber-600 text-white px-2 py-1 rounded hover:bg-amber-700 transition-colors"
                 >
                   View Comparison

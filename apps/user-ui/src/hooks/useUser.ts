@@ -6,10 +6,24 @@ import { isProtected } from "../utils/protected";
 
 const fetchUser = async () => {
   try {
-    const response = await axiosInstance.get("/api/logged-in-user", isProtected);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); 
+    
+    const response = await axiosInstance.get("/api/logged-in-user", {
+      ...isProtected,
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
     return response.data.user ?? null;
   } catch (error: any) {
-    if (error?.response?.status !== 401 && error?.response?.status !== 400) {
+   
+    if (error.name === 'AbortError') {
+      console.warn("User fetch timed out - backend may be unavailable");
+    } else if (error.code === 'ECONNREFUSED' || error.code === 'NETWORK_ERROR') {
+      console.warn("Backend connection failed - running in offline mode");
+    } else if (error?.response?.status !== 401 && error?.response?.status !== 400) {
       console.error("Failed to fetch user data:", error);
     }
     return null;
@@ -29,11 +43,16 @@ const useUser = () => {
     queryFn: fetchUser,
     staleTime: 1000 * 60 * 5, 
     gcTime: 1000 * 60 * 30, 
-    retry: false,
-    refetchOnWindowFocus: true, 
+    retry: 1,
+    retryDelay: 1000, 
+    refetchOnWindowFocus: false,
     refetchOnMount: true, 
     refetchOnReconnect: true,
     enabled: true,
+
+    meta: {
+      timeout: 5000 
+    }
   });
 
   React.useEffect(() => {

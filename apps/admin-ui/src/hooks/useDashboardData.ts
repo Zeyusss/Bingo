@@ -49,10 +49,22 @@ export interface ResourceMonitorData {
 export interface RecentOrdersData {
   orders: {
     id: string;
-    customerName: string;
     total: number;
     status: string;
     createdAt: string;
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      avatar?: string;
+    };
+    orderItems: {
+      product: {
+        id: string;
+        title: string;
+        slug: string;
+      };
+    }[];
   }[];
 }
 
@@ -99,8 +111,8 @@ export function useRecentOrders() {
   return useQuery({
     queryKey: QUERY_KEYS.RECENT_ORDERS,
     queryFn: () => fetcher(`${BASE_URL}/order/api/get-recent-orders`),
-    staleTime: 2 * 60 * 1000,
-    refetchInterval: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, 
+    refetchInterval: 10 * 60 * 1000, 
     refetchOnWindowFocus: false,
   });
 }
@@ -119,8 +131,8 @@ export function useResourceMonitor() {
   return useQuery({
     queryKey: QUERY_KEYS.RESOURCE_MONITOR,
     queryFn: () => fetcher(`${BASE_URL}/admin/api/dashboard/resource-monitor`),
-    staleTime: 30 * 1000,
-    refetchInterval: 60 * 1000,
+    staleTime: 2 * 60 * 1000, 
+    refetchInterval: 5 * 60 * 1000, 
     refetchOnWindowFocus: false,
   });
 }
