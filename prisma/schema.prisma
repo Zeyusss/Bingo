@@ -42,6 +42,9 @@ model users {
   images      images[]     @relation("UserImages")
   following   followers[]  @relation("user_follows")
   orders      orders[]
+  cartItems   cart_items[]
+  wishlistItems wishlist_items[]
+  abandonedCart abandoned_carts?
   isBlocked   Boolean      @default(false)
   isDeleted   Boolean      @default(false)
   deletedAt   DateTime?
@@ -186,6 +189,8 @@ model products {
   shopId                String        @db.ObjectId
   Shop                  shops         @relation(fields: [shopId], references: [id])
   totalSales            Int           @default(0)
+  cartItems             cart_items[]
+  wishlistItems         wishlist_items[]
 }
 
 model productAnalytics {
@@ -359,4 +364,41 @@ model message {
   createdAt      DateTime @default(now())
 
   @@unique([conversationId, senderId, content, createdAt])
+}
+
+model cart_items {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  productId String   @db.ObjectId
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user      users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   products @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, productId])
+}
+
+model wishlist_items {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  productId String   @db.ObjectId
+  createdAt DateTime @default(now())
+  
+  user      users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   products @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, productId])
+}
+
+model abandoned_carts {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String    @unique @db.ObjectId
+  emailSentAt DateTime?
+  emailCount  Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  user        users     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

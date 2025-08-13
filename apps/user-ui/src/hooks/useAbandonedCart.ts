@@ -25,7 +25,7 @@ export default function useAbandonedCart() {
           0
         );
 
-        await axiosInstance.post('/order/api/abandoned-cart/track', {
+        await axiosInstance.post('/product/api/abandoned-cart/track', {
           userId: user.id,
           userEmail: user.email,
           userName: user.name,

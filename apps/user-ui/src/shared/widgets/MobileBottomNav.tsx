@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useStore } from "../../store";
+import useUser from "../../hooks/useUser";
 import {
   ShoppingCart,
   Heart,
@@ -15,6 +16,7 @@ import ScrollToTopButton from "../components/homepage/ScrollToTopButton";
 
 const MobileBottomNav = () => {
   const pathname = usePathname();
+  const { user } = useUser();
   const cart = useStore((state) => state.cart);
   const wishlist = useStore((state) => state.wishlist);
   const compare = useStore((state) => state.compare);
@@ -27,9 +29,9 @@ const MobileBottomNav = () => {
   const navItems = [
     { href: "/", label: "Home", icon: Home },
     { href: "/products", label: "Shop", icon: Store },
-    { href: "/wishlist", label: "Wishlist", icon: Heart, count: wishlist.length },
-    { href: "/compare", label: "Compare", icon: BarChart2 },
-    { href: "/cart", label: "Cart", icon: ShoppingCart, count: totalCartItems },
+    ...(user?.id ? [{ href: "/wishlist", label: "Wishlist", icon: Heart, count: wishlist.length }] : []),
+    { href: "/compare", label: "Compare", icon: BarChart2, count: compare.length },
+    ...(user?.id ? [{ href: "/cart", label: "Cart", icon: ShoppingCart, count: totalCartItems }] : []),
     { href: "/profile", label: "Account", icon: User },
   ];
 

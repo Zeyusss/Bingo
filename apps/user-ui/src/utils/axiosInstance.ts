@@ -1,6 +1,7 @@
 import axios from "axios";
 import { runRedirectToLogin } from "./redirect";
 import { toast } from "react-hot-toast";
+import { useStore } from "../store";
 
 let rateLimitState = {
   isRateLimited: false,
@@ -118,6 +119,10 @@ let isRefreshing = false;
 let refreshSubscribers: (() => void)[] = [];
 
 const handleLogout = () => {
+
+  const { clearSessionData } = useStore.getState();
+  clearSessionData();
+  
   const publicPaths = ["/login", "/signup", "/forgot-password"];
   const currentPath = window.location.pathname;
   if (!publicPaths.includes(currentPath)) {

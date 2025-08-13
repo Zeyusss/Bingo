@@ -220,7 +220,7 @@ const LogViewer = () => {
 
         socket.onclose = () => {
           setIsConnected(false);
-          console.log('[LogViewer] Disconnected from log stream');
+
 
           setTimeout(connectWebSocket, 3000);
         };

@@ -1,7 +1,5 @@
 import {useQuery} from "@tanstack/react-query";
-import axiosInstance from "../utils/axiosInstance"
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import axiosInstance from "../utils/axiosInstance";
 
 //fetch admin data from API
 const fetchAdmin = async ()=> {
@@ -18,16 +16,17 @@ const useAdmin = ()=>{
     } = useQuery({
         queryKey: [ "admin"],
         queryFn: fetchAdmin,
-        staleTime: 1000 * 60 * 5,
-        retry : 1,
-    })
-    const history = useRouter();
+        staleTime: 1000 * 60 * 30, 
+        gcTime: 1000 * 60 * 60, 
+        refetchInterval: false, 
+        refetchOnWindowFocus: false, 
+        refetchOnMount: false, 
+        refetchOnReconnect: false,
+        retry: 0, 
 
-    useEffect(()=> {
-        if(!isLoading && !admin){
-            history.push("/")
-        }
-    },[admin,isLoading]);
+        placeholderData: null,
+    })
+
     return { admin , isLoading ,isError,refetch};
 }
 

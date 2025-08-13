@@ -2,17 +2,22 @@
 
 import { ShoppingBag } from "lucide-react";
 import { useStore } from "../../../store";
+import useUser from "../../../hooks/useUser";
 
 interface FloatingCartButtonProps {
   onClick: () => void;
 }
 
 export default function FloatingCartButton({ onClick }: FloatingCartButtonProps) {
-  const { cart } = useStore();
+  const { getAuthenticatedCart } = useStore();
+  const { user, isLoading } = useUser();
   
+
+  const cart = getAuthenticatedCart(user);
   const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
 
-  if (totalItems === 0) return null;
+
+  if (!user || isLoading || totalItems === 0) return null;
 
   return (
     <button

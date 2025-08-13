@@ -4,9 +4,11 @@ import React from 'react';
 import { X, AlertCircle, Info } from 'lucide-react';
 import { useStore } from '../../../store';
 import { useRouter } from 'next/navigation';
+import useUser from '../../../hooks/useUser';
 
 const PersonalizationModal: React.FC = () => {
   const { showPersonalizationModal, closePersonalizationModal, addToCart } = useStore();
+  const { user } = useUser();
   const router = useRouter();
 
   if (!showPersonalizationModal.show) return null;
@@ -25,7 +27,7 @@ const PersonalizationModal: React.FC = () => {
       price: product.sale_price || product.regular_price,
       image: product.images?.[0]?.url || '/assets/categories/default.jpg',
     };
-    addToCart(cartProduct, null, null, null);
+    addToCart(cartProduct, user, null, null);
     closePersonalizationModal();
   };
 

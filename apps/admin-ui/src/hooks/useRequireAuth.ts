@@ -8,7 +8,7 @@ const useRequireAuth = () => {
 
     useEffect(() => {
         if (!isLoading && !admin) {
-            router.replace("/login");
+            router.replace("/");
         }
     }, [admin, isLoading, router]);
 

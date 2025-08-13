@@ -232,15 +232,19 @@ const ShopFilterSidebar: React.FC<ShopFilterSidebarProps> = ({
                       {children}
                     </div>
                   )}
-                  renderThumb={({ props }) => (
-                    <div
-                      {...props}
-                      className="h-4 w-4 bg-blue-600 rounded-full shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      style={{
-                        ...props.style,
-                      }}
-                    />
-                  )}
+                  renderThumb={({ props }) => {
+                    const { key, ...restProps } = props;
+                    return (
+                      <div
+                        key={key}
+                        {...restProps}
+                        className="h-4 w-4 bg-blue-600 rounded-full shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        style={{
+                          ...props.style,
+                        }}
+                      />
+                    );
+                  }}
                 />
                 <div className="flex justify-between text-xs text-gray-500">
                   <span>0 stars</span>

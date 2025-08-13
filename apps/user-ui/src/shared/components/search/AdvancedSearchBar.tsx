@@ -44,10 +44,13 @@ const AdvancedSearchBar: React.FC<AdvancedSearchBarProps> = ({
     brands: [],
   });
   const [popularSearches, setPopularSearches] = useState<string[]>([]);
+
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
+
+  const [isClient, setIsClient] = useState(false);
   const [showFiltersModal, setShowFiltersModal] = useState(false);
   const [filters, setFilters] = useState({
     categories: "",
@@ -64,12 +67,21 @@ const AdvancedSearchBar: React.FC<AdvancedSearchBarProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
 
+
   useEffect(() => {
-    if (typeof window === 'undefined') return;
     
-    const saved = localStorage.getItem("recentSearches");
-    if (saved) {
-      setRecentSearches(JSON.parse(saved));
+    setIsClient(true);
+    
+
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
+    
+    try {
+      const saved = localStorage.getItem("recentSearches");
+      if (saved) {
+        setRecentSearches(JSON.parse(saved));
+      }
+    } catch (error) {
+      console.error('Failed to load recent searches from localStorage:', error);
     }
   }, []);
 
@@ -245,7 +257,11 @@ const AdvancedSearchBar: React.FC<AdvancedSearchBarProps> = ({
       handleSearch(suggestion.name, { ...filters, brand: suggestion.name });
     }
   };
+
   useEffect(() => {
+
+    if (typeof document === 'undefined') return;
+    
     const handleClickOutside = (event: MouseEvent) => {
       if (
         searchRef.current &&

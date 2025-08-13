@@ -25,7 +25,11 @@ const CategoryScroller = () => {
           <button
             key={cat}
             className="px-5 py-2 bg-blue-50 text-blue-700 rounded-full font-medium border border-blue-100 hover:bg-blue-600 hover:text-white transition whitespace-nowrap shadow-sm"
-            onClick={() => window.location.href = `/products?categories=${encodeURIComponent(cat)}`}
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                window.location.href = `/products?categories=${encodeURIComponent(cat)}`;
+              }
+            }}
           >
             {cat}
           </button>

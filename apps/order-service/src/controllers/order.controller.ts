@@ -222,7 +222,7 @@ export const createOrder = async (
           .send("No session found, skipping order creation");
       }
 
-      const { cart, totalAmount, shippingAddressId, coupon } =
+      const { cart, shippingAddressId, coupon } =
         JSON.parse(sessionData);
 
       const user = await prisma.users.findUnique({ where: { id: userId } });
@@ -301,7 +301,7 @@ export const createOrder = async (
                 quantity: item.quantity,
                 price: item.sale_price,
                 selectedOptions: item.selectedOptions,
-                // Include personalization data if provided by customer
+           
                 personalizationData: item.personalizationData || null,
               })),
             },
@@ -884,11 +884,40 @@ export const getRecentOrders = async (
       take: 10,
       include: {
         user: {
-          select: { id: true, name: true, email: true, avatar: true },
+          select: { id: true, name: true, email: true },
+        },
+        items: {
+          take: 1, 
+          select: {
+            id: true,
+            productId: true,
+            quantity: true,
+            price: true,
+          },
         },
       },
     });
-    res.json({ success: true, orders });
+
+
+    const ordersWithProducts = await Promise.all(
+      orders.map(async (order) => {
+        if (order.items.length > 0) {
+          const product = await prisma.products.findUnique({
+            where: { id: order.items[0].productId },
+            select: { id: true, title: true, slug: true },
+          });
+          return {
+            ...order,
+            items: order.items.map((item, index) => 
+              index === 0 ? { ...item, product } : item
+            ),
+          };
+        }
+        return order;
+      })
+    );
+
+    res.json({ success: true, orders: ordersWithProducts });
   } catch (error) {
     return next(error);
   }
