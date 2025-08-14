@@ -104,7 +104,7 @@ axiosInstance.interceptors.response.use(
       
       if (error.response?.data?.message?.includes("suspended") || 
           error.response?.data?.message?.includes("deleted")) {
-        console.log("🔥 AXIOS: Account suspended/deleted, logging out immediately");
+        console.warn("Account suspended/deleted, logging out");
         if (showToast) {
           showToast('Your account has been suspended or deleted by an administrator.', 'error');
         }

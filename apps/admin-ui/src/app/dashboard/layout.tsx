@@ -11,9 +11,12 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
 
   useEffect(() => {
-    if (!isLoading && (!admin || isError)) {
-      console.log('Admin not authenticated, redirecting to login...');
-      router.replace('/');
+       if (!isLoading && isError && !admin) {
+      console.log('Admin authentication failed, redirecting to login...');
+      const timer = setTimeout(() => {
+        router.replace('/');
+      }, 1000);
+      return () => clearTimeout(timer);
     }
   }, [admin, isLoading, isError, router]);
 

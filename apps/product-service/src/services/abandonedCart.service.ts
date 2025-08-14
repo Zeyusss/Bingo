@@ -111,60 +111,7 @@ export const getAbandonedCarts = async (hoursThreshold: number = 24): Promise<Ab
       }
     });
 
-    console.log(`[DEBUG] Found ${abandonedCartItems.length} abandoned cart items:`, 
-      abandonedCartItems.map(item => ({
-        id: item.id,
-        userId: item.userId,
-        productId: item.productId,
-        updatedAt: item.updatedAt.toISOString(),
-        ageInHours: (new Date().getTime() - item.updatedAt.getTime()) / (1000 * 60 * 60)
-      }))
-    );
-
-    
-    console.log(`[DEBUG] Checking ALL cart items in database...`);
-    const allCartItems = await prisma.cart_items.findMany({
-      select: {
-        id: true,
-        userId: true,
-        productId: true,
-        updatedAt: true,
-        createdAt: true
-      },
-      take: 10 
-    });
-    
-    console.log(`[DEBUG] Total cart items in database: ${allCartItems.length}`);
-    console.log(`[DEBUG] Sample cart items:`, allCartItems.map(item => ({
-      id: item.id,
-      userId: item.userId,
-      productId: item.productId,
-      createdAt: item.createdAt.toISOString(),
-      updatedAt: item.updatedAt.toISOString(),
-      ageInHours: (new Date().getTime() - item.updatedAt.getTime()) / (1000 * 60 * 60),
-      isOlderThanThreshold: item.updatedAt < localThresholdDate
-    })));
-
-   
-    const yourCartItem = await prisma.cart_items.findUnique({
-      where: { id: "689c30ebb9254a59c833b1b9" }
-    });
-    
-    if (yourCartItem) {
-      console.log(`[DEBUG] Found your specific cart item:`, {
-        id: yourCartItem.id,
-        userId: yourCartItem.userId,
-        productId: yourCartItem.productId,
-        createdAt: yourCartItem.createdAt.toISOString(),
-        updatedAt: yourCartItem.updatedAt.toISOString(),
-        ageInHours: (new Date().getTime() - yourCartItem.updatedAt.getTime()) / (1000 * 60 * 60),
-        thresholdDate: localThresholdDate.toISOString(),
-        isOlderThanThreshold: yourCartItem.updatedAt < localThresholdDate,
-        shouldBeIncluded: yourCartItem.updatedAt < localThresholdDate ? "YES" : "NO"
-      });
-    } else {
-      console.log(`[DEBUG] Your specific cart item (689c30ebb9254a59c833b1b9) NOT FOUND in database!`);
-    }
+    // Group cart items by user for processing
 
     
     const cartsByUser = new Map<string, any[]>();
