@@ -1,24 +1,33 @@
 import { Router } from 'express';
+import isAuthenticated from '@packages/middleware/isAuthenticated';
 import {
+  trackAbandonedCartController,
   getAllAbandonedCarts,
   processAbandonedCartsController,
   getAbandonedCartStatsController,
   sendTestAbandonedCartEmail,
   triggerAbandonedCartEmailForUser,
-  trackAbandonedCartController
+  adminForceAbandonedCartEmail,
+  testAbandonedCartProcessing
 } from '../controllers/abandonedCart.controller';
-import isAuthenticated from '../../../../packages/middleware/isAuthenticated';
 
 const router = Router();
 
-
+// Public endpoint for tracking abandoned carts (used by frontend)
 router.post('/track', trackAbandonedCartController);
 
-
+// Admin endpoints (protected)
 router.get('/all', isAuthenticated, getAllAbandonedCarts);
-router.post('/process', isAuthenticated, processAbandonedCartsController);
 router.get('/stats', isAuthenticated, getAbandonedCartStatsController);
+router.post('/process', isAuthenticated, processAbandonedCartsController);
 router.post('/test-email', isAuthenticated, sendTestAbandonedCartEmail);
+
+// automated trigger (restrictive - used by cron jobs)
 router.post('/trigger/:userId', isAuthenticated, triggerAbandonedCartEmailForUser);
+
+// admin manual override 
+router.post('/admin/force-trigger/:userId', isAuthenticated, adminForceAbandonedCartEmail);
+
+router.post('/test-processing', isAuthenticated, testAbandonedCartProcessing);
 
 export default router;

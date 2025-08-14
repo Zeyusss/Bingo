@@ -41,6 +41,7 @@ import {
 } from "../controllers/admin.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isAdmin } from "@packages/middleware/authorizeRoles";
+import cronJobsRouter from './cronJobs.routes';
 
 const router: Router = express.Router();
 
@@ -52,11 +53,10 @@ router.get(
   isAdmin,
   getWorldActivity
 );
-router.get("/dashboard/system-stats", isAuthenticated, isAdmin, getSystemStats);
+router.get("/dashboard/system-stats", isAuthenticated, getSystemStats);
 router.get(
   "/dashboard/resource-monitor",
   isAuthenticated,
-  isAdmin,
   getResourceMonitor
 );
 router.get("/get-all-products", isAuthenticated, isAdmin, getAllProducts);
@@ -170,4 +170,6 @@ router.get(
   getVerificationHistory
 );
 
+// Cron Jobs Management Routes
+router.use('/cron-jobs', cronJobsRouter);
 export default router;
