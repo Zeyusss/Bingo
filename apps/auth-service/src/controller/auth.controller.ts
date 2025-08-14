@@ -312,17 +312,26 @@ export const refreshToken = async (
         new ValidationError("Unauthorized! No refresh token provided")
       );
     }
-    const decoded = jwt.verify(
-      refreshToken,
-      process.env.REFRESH_TOKEN_SECRET as string
-    ) as { id: string; role: string };
+    
+    let decoded;
+    try {
+      decoded = jwt.verify(
+        refreshToken,
+        process.env.REFRESH_TOKEN_SECRET as string
+      ) as { id: string; role: string };
+    } catch (jwtError: any) {
+      console.error('JWT verification failed:', jwtError.message);
+      return next(new JsonWebTokenError("Invalid or expired refresh token"));
+    }
+    
     if (!decoded || !decoded.id || !decoded.role) {
+      console.error('Invalid token structure');
       return new JsonWebTokenError("Invalid refresh token");
     }
 
     let account;
 
-    if (decoded.role === "user") {
+    if (decoded.role === "user" || decoded.role === "admin") {
       account = await prisma.users.findUnique({ 
         where: { id: decoded.id },
         include: {
@@ -353,19 +362,25 @@ export const refreshToken = async (
     }
 
     if (!account) {
-      return new AuthError("Forbidden ! User/Seller not found");
+      console.error('Account not found for refresh token');
+      return next(new AuthError("Forbidden ! User/Seller not found"));
     }
 
+    console.log('🔑 Generating new access token for role:', decoded.role);
     const newAccessToken = jwt.sign(
       { id: decoded.id, role: decoded.role },
       process.env.ACCESS_TOKEN_SECRET as string,
       { expiresIn: "15m" }
     );
 
+    console.log('Setting access token cookie for role:', decoded.role);
     if (decoded.role === "user") {
       setCookie(res, "access_Token", newAccessToken);
+      console.log('Set access_Token cookie for user');
     } else if (decoded.role === "seller") {
       setCookie(res, "seller-access-token", newAccessToken);
+    } else if (decoded.role === "admin") {
+      setCookie(res, "access_token", newAccessToken);
     }
 
     req.role = decoded.role;

@@ -237,9 +237,10 @@ class RequestManager {
     const startTime = Date.now();
 
     try {
-      const axios = (await import('axios')).default;
+     
+      const { default: configuredAxiosInstance } = await import('./axiosInstance');
       
-      const requestPromise = axios({
+      const requestPromise = configuredAxiosInstance.direct({
         url,
         timeout: options.timeout,
         ...config

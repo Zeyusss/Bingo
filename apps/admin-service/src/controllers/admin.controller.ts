@@ -16,12 +16,10 @@ export async function getRevenue(
   next: NextFunction
 ) {
   try {
-    console.log('📊 Admin Dashboard: Fetching revenue data...');
     const data = await fetchRevenueData();
-    console.log('✅ Admin Dashboard: Revenue data fetched successfully:', data);
     res.status(200).json(data);
   } catch (error) {
-    console.error('❌ Admin Dashboard: Error fetching revenue data:', error);
+    console.error('Error fetching revenue data:', error);
     return next(error);
   }
 }
@@ -58,12 +56,10 @@ export async function getSystemStats(
   next: NextFunction
 ) {
   try {
-    console.log('📊 Admin Dashboard: Fetching system stats...');
     const data = await fetchSystemStats();
-    console.log('✅ Admin Dashboard: System stats fetched successfully:', data);
     res.status(200).json(data);
   } catch (error) {
-    console.error('❌ Admin Dashboard: Error fetching system stats:', error);
+    console.error('Error fetching system stats:', error);
     return next(error);
   }
 }

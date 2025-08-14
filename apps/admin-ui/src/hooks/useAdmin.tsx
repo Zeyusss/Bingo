@@ -3,8 +3,13 @@ import axiosInstance from "../utils/axiosInstance";
 
 //fetch admin data from API
 const fetchAdmin = async ()=> {
-    const response = await axiosInstance.get("/api/logged-in-admin");
-    return response.data.user
+    try {
+        const response = await axiosInstance.get("/api/logged-in-admin");
+        return response.data.user
+    } catch (error: any) {
+        console.error('Admin fetch failed:', error.response?.status || error.message);
+        throw error;
+    }
 }
 
 const useAdmin = ()=>{
@@ -20,9 +25,10 @@ const useAdmin = ()=>{
         gcTime: 1000 * 60 * 60, 
         refetchInterval: false, 
         refetchOnWindowFocus: false, 
-        refetchOnMount: false, 
-        refetchOnReconnect: false,
-        retry: 0, 
+        refetchOnMount: true, 
+        refetchOnReconnect: true, 
+        retry: 1, 
+        retryDelay: 1000, 
 
         placeholderData: null,
     })

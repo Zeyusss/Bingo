@@ -113,7 +113,8 @@ axiosInstance.interceptors.response.use(
         isRefreshing = false;
         onRefreshSuccess();
         return axiosInstance(originalRequest);
-      } catch (refreshError) {
+      } catch (refreshError: any) {
+        console.error('Token refresh failed:', refreshError.message);
         isRefreshing = false;
         refreshSubscribers = [];
         handleLogout();
