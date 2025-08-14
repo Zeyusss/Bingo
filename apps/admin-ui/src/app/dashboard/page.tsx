@@ -4,8 +4,8 @@ import { MetricsOverview } from "./components/MetricsOverview";
 import RevenueChart from "./components/RevenueChart";
 import RecentOrdersTable from "./components/RecentOrdersTable";
 import ResourceMonitor from "./components/ResourceMonitor";
-import AbandonedCartTracker from "../../components/dashboard/AbandonedCartTracker";
-import { Activity, BarChart3, TrendingUp, ShoppingCart } from "lucide-react";
+
+import { Activity, BarChart3, TrendingUp } from "lucide-react";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
 import HelpModal, { HelpSection } from "../shared/components/HelpModal";
 import HelpButton from "../shared/components/HelpButton";
@@ -13,7 +13,7 @@ import HelpButton from "../shared/components/HelpButton";
 function DashboardContent() {
   const [showHelpModal, setShowHelpModal] = useState(false);
 
-  // Help content for the dashboard
+ 
   const helpSections: HelpSection[] = [
     {
       title: "Overview",
@@ -117,7 +117,7 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Dashboard Header */}
+   
       <div className="bg-white border-b border-gray-200 mb-6 shadow-sm">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
@@ -150,9 +150,9 @@ function DashboardContent() {
         </div>
       </div>
 
-      {/* Main Content */}
+     
       <div className="px-6 pb-8">
-        {/* Key Metrics */}
+      
         <div className="mb-8">
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2 font-Poppins">
@@ -166,35 +166,14 @@ function DashboardContent() {
           <MetricsOverview />
         </div>
 
-        {/* Revenue Chart */}
+       
         <div className="mb-8">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2 font-Poppins">
-              <TrendingUp className="h-5 w-5 text-red-600" />
-              Revenue Trends
-            </h2>
-            <p className="text-sm text-gray-600 mt-1 font-Roboto">
-              Track platform revenue performance over time
-            </p>
-          </div>
           <RevenueChart />
         </div>
 
-        {/* Abandoned Cart Tracking */}
-        <div className="mb-8">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2 font-Poppins">
-              <ShoppingCart className="h-5 w-5 text-red-600" />
-              Abandoned Cart Recovery
-            </h2>
-            <p className="text-sm text-gray-600 mt-1 font-Roboto">
-              Track and recover abandoned shopping carts to boost conversions
-            </p>
-          </div>
-          <AbandonedCartTracker />
-        </div>
 
-        {/* Orders and Resources */}
+
+       
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <RecentOrdersTable />
@@ -205,7 +184,7 @@ function DashboardContent() {
         </div>
       </div>
       
-      {/* Dashboard Help Modal */}
+   
       <HelpModal
         isOpen={showHelpModal}
         onClose={() => setShowHelpModal(false)}

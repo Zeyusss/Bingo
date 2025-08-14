@@ -22,6 +22,7 @@ import {
   PackageSearch,
   PencilRuler,
   ShieldCheck,
+  ShoppingCart,
   Users,
 } from "lucide-react";
 import PaymentIcon from "../../../assets/icons/payment";
@@ -105,6 +106,23 @@ const SidebarWrapper = () => {
                 icon={<ListOrdered fill={getIconColor("/dashboard/orders")} />}
                 isActive={activeSidebar === "/dashboard/orders"}
                 href="/dashboard/orders"
+              />
+              <SidebarItem
+                title="Abandoned Carts"
+                icon={<ShoppingCart size={22} color={getIconColor("/dashboard/abandoned-carts")} />}
+                isActive={activeSidebar === "/dashboard/abandoned-carts"}
+                href="/dashboard/abandoned-carts"
+              />
+              <SidebarItem
+                isActive={activeSidebar === "/dashboard/cron-jobs"}
+                title="Cron Jobs"
+                href="/dashboard/cron-jobs"
+                icon={
+                  <FileClock
+                    size={24}
+                    color={getIconColor("/dashboard/cron-jobs")}
+                  />
+                }
               />
               <SidebarItem
                 title="Payments"
