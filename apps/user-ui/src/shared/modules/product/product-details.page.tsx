@@ -465,6 +465,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
                     addToCart(
                       {
                         ...productDetails,
+                        price: productDetails.sale_price || productDetails.regular_price,
                         quantity,
                         selectedOptions: {
                           color: isSelected,

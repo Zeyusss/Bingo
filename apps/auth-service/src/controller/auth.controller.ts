@@ -211,7 +211,7 @@ export const userLogin = async (
       return next(new AuthError("Invalid email or password"));
     }
 
-    // Clear existing cookies for security
+   
     await requestLogger.debug('Clearing existing authentication cookies');
     res.clearCookie("access_Token", {
       httpOnly: true,
@@ -304,6 +304,7 @@ export const refreshToken = async (
 ) => {
   try {
     const refreshToken =
+      req.cookies["refresh_Token"] ||
       req.cookies["refresh_token"] ||
       req.cookies["seller-refresh-token"] ||
       req.headers.authorization?.split(" ")[1];
@@ -381,6 +382,7 @@ export const refreshToken = async (
       setCookie(res, "seller-access-token", newAccessToken);
     } else if (decoded.role === "admin") {
       setCookie(res, "access_token", newAccessToken);
+      console.log('Set access_token cookie for admin');
     }
 
     req.role = decoded.role;
@@ -1646,6 +1648,169 @@ export const updateUserProfile = async (req: any, res: Response, next: NextFunct
     });
   } catch (error) {
     console.error("Error updating user profile:", error);
+    return next(error);
+  }
+};
+
+// Follow a shop
+export const followShop = async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const { shopId } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    if (!shopId) {
+      return res.status(400).json({ message: "Shop ID is required" });
+    }
+
+    
+    const shop = await prisma.shops.findUnique({
+      where: { id: shopId }
+    });
+
+    if (!shop) {
+      return res.status(404).json({ message: "Shop not found" });
+    }
+
+    
+    const existingFollow = await prisma.followers.findFirst({
+      where: {
+        userId,
+        shopId
+      }
+    });
+
+    if (existingFollow) {
+      return res.status(400).json({ message: "Already following this shop" });
+    }
+
+    // Create follow relationship
+    await prisma.followers.create({
+      data: {
+        userId,
+        shopId
+      }
+    });
+
+    res.status(200).json({
+      message: "Successfully followed shop",
+      success: true
+    });
+  } catch (error) {
+    console.error("Error following shop:", error);
+    return next(error);
+  }
+};
+
+// Unfollow a shop
+export const unfollowShop = async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const { shopId } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    if (!shopId) {
+      return res.status(400).json({ message: "Shop ID is required" });
+    }
+
+    
+    const existingFollow = await prisma.followers.findFirst({
+      where: {
+        userId,
+        shopId
+      }
+    });
+
+    if (!existingFollow) {
+      return res.status(400).json({ message: "Not following this shop" });
+    }
+
+   
+    await prisma.followers.delete({
+      where: {
+        id: existingFollow.id
+      }
+    });
+
+    res.status(200).json({
+      message: "Successfully unfollowed shop",
+      success: true
+    });
+  } catch (error) {
+    console.error("Error unfollowing shop:", error);
+    return next(error);
+  }
+};
+
+// Get user's followed shops
+export const getUserFollowedShops = async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 6;
+    const skip = (page - 1) * limit;
+
+    if (!userId) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    const [shops, total] = await Promise.all([
+      prisma.shops.findMany({
+        where: {
+          followers: {
+            some: {
+              userId
+            }
+          }
+        },
+        include: {
+          avatar: {
+            select: {
+              url: true
+            }
+          },
+          reviews: {
+            select: {
+              rating: true
+            }
+          },
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc'
+        }
+      }),
+      prisma.shops.count({
+        where: {
+          followers: {
+            some: {
+              userId
+            }
+          }
+        }
+      })
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    res.status(200).json({
+      shops,
+      pagination: {
+        total,
+        page,
+        totalPages,
+        limit
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching followed shops:", error);
     return next(error);
   }
 };

@@ -26,12 +26,25 @@ import {
   Users,
 } from "lucide-react";
 import PaymentIcon from "../../../assets/icons/payment";
+import { useQuery } from "@tanstack/react-query";
 
 const SidebarWrapper = () => {
   const { activeSidebar, setActiveSidebar } = useSidebar();
   const pathName = usePathname();
   const router = useRouter();
   const { admin } = useAdmin();
+
+ 
+  const { data: notificationsData } = useQuery({
+    queryKey: ["admin-unread-notifications-count"],
+    queryFn: async () => {
+      const res = await axiosInstance.get("/admin/api/get-all-notifications?limit=1&status=Unread");
+      return res.data;
+    },
+    refetchInterval: 30000, 
+  });
+
+  const unreadCount = notificationsData?.meta?.unreadCount || 0;
 
   const handleLogout = async () => {
     try {
@@ -197,17 +210,24 @@ const SidebarWrapper = () => {
                   />
                 }
               />
-              <SidebarItem
-                isActive={activeSidebar === "/dashboard/notifications"}
-                title="Notifications"
-                href="/dashboard/notifications"
-                icon={
-                  <BellRing
-                    size={24}
-                    color={getIconColor("/dashboard/notifications")}
-                  />
-                }
-              />
+              <div className="relative">
+                <SidebarItem
+                  isActive={activeSidebar === "/dashboard/notifications"}
+                  title="Notifications"
+                  href="/dashboard/notifications"
+                  icon={
+                    <BellRing
+                      size={24}
+                      color={getIconColor("/dashboard/notifications")}
+                    />
+                  }
+                />
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </div>
             </SidebarMenu>
             <SidebarMenu title="Customization">
               <SidebarItem

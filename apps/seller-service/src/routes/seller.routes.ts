@@ -32,6 +32,11 @@ import {
   uploadVerificationDocument,
   downloadContract,
   acceptTerms,
+  sellerNotifications,
+  getSellerNotifications,
+  markSellerNotificationAsRead,
+  markAllSellerNotificationsAsRead,
+  deleteSellerNotification,
 } from "../controllers/seller.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isSeller } from "@packages/middleware/authorizeRoles";
@@ -46,6 +51,11 @@ router.put("/edit-profile", isAuthenticated, editSellerProfile);
 router.get("/get-seller/:id", getSellerInfo);
 router.get("/get-seller-products/:id", getSellerProducts);
 router.get("/get-seller-events/:id", getSellerEvents);
+router.get("/seller-notifications",isAuthenticated,isSeller,sellerNotifications);
+router.get("/get-seller-notifications", isAuthenticated, isSeller, getSellerNotifications);
+router.patch("/notifications/mark-all-read", isAuthenticated, isSeller, markAllSellerNotificationsAsRead);
+router.patch("/notifications/:notificationId/read", isAuthenticated, isSeller, markSellerNotificationAsRead);
+router.delete("/notifications/:notificationId", isAuthenticated, isSeller, deleteSellerNotification);
 router.post("/create-event/:id", isAuthenticated, isSeller, createEvent);
 router.put("/update-event/:id", isAuthenticated, isSeller, updateEvent);
 router.delete("/remove-event/:id", isAuthenticated, isSeller, removeEvent);
@@ -124,5 +134,6 @@ router.get(
   isSeller,
   downloadContract
 );
+
 
 export default router;

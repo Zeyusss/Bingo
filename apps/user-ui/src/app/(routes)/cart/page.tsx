@@ -10,7 +10,7 @@ import axiosInstance from "apps/user-ui/src/utils/axiosInstance";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import { toast } from "sonner";
+import toast from "react-hot-toast";
 import InterestedInCard from "./InterestedInCard";
 import ShippingAddressSection from "apps/user-ui/src/shared/components/shippingAddress";
 import Footer from "apps/user-ui/src/shared/components/homepage/Footer";
@@ -140,10 +140,16 @@ const CartPage = () => {
   };
 
   const createPaymentSession = async () => {
-    if (!selectedAddressId) {
-      toast.error("Please select your address.");
+    if (!cart || cart.length === 0) {
+      toast.error("Cart is empty or invalid.");
       return;
     }
+
+    if (!selectedAddressId) {
+      toast.error("Please add an address first.");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await axiosInstance.post(
@@ -152,7 +158,7 @@ const CartPage = () => {
           cart,
           selectedAddressId,
           coupon: {
-            conde: storedCouponCode,
+            code: storedCouponCode,
             discountAmount,
             discountPercent,
             discountProductId,
@@ -501,9 +507,10 @@ const CartPage = () => {
             <div className="bg-white w-full max-w-3xl rounded-lg shadow-lg overflow-y-auto max-h-[90vh] p-4 relative">
               <button
                 onClick={() => setShowAddressModal(false)}
-                className="absolute top-3 right-4 text-gray-400 hover:text-gray-700"
+                className="absolute top-2 right-2 z-10 p-2 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+                title="Close"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5" />
               </button>
               <ShippingAddressSection
                 onSelectAddress={(id:any) => {

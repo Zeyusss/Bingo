@@ -272,6 +272,41 @@ export const createProduct = async (
       },
       include: { images: true },
     });
+    // Send notifications to followers of this shop
+    try {
+      const followers = await prisma.followers.findMany({
+        where: { shopId: req.seller?.shop?.id },
+        include: {
+          user: {
+            select: { id: true, name: true }
+          },
+          shop: {
+            select: { id: true, name: true }
+          }
+        }
+      });
+
+      // Create notifications for all followers
+      const notificationPromises = followers.map(follower => 
+        prisma.notifications.create({
+          data: {
+            title: "New Product Added",
+            message: `${follower.shop.name} just added a new product: ${title}`,
+            creatorId: req.seller.id,
+            receiverId: follower.user.id,
+            redirect_link: `/product/${slug}`,
+          },
+        })
+      );
+
+      await Promise.all(notificationPromises);
+      
+      console.log(`Sent ${followers.length} notifications for new product: ${title}`);
+    } catch (notificationError) {
+      console.error("Error sending follower notifications:", notificationError);
+      // Don't fail the product creation if notifications fail
+    }
+
     res.status(200).json({
       success: true,
       newProduct,
@@ -823,7 +858,6 @@ export const getFilteredProducts = async (
         gte: parsedPriceRange[0],
         lte: parsedPriceRange[1],
       },
-      starting_date: null,
       isDeleted: false,
     };
     if (categories && (categories as string[]).length > 0) {
@@ -1134,6 +1168,8 @@ export const getFilteredShops = async (
       limit = 12,
       minRating,
       sortBy = "newest",
+      notFollowed,
+      userId,
     } = req.query;
     if (typeof category === "string") category = category.split(",");
     if (typeof country === "string") country = country.split(",");
@@ -1152,6 +1188,15 @@ export const getFilteredShops = async (
       filters.country = { in: country };
     }
 
+    // Add notFollowed filter if userId is provided
+    if (notFollowed === 'true' && userId) {
+      filters.followers = {
+        none: {
+          userId: userId as string
+        }
+      };
+    }
+
     let orderBy: any = {};
     switch (sortBy) {
       case "oldest":
@@ -1166,21 +1211,35 @@ export const getFilteredShops = async (
         break;
     }
 
-    const allShops = await prisma.shops.findMany({
-      where: filters,
-      include: {
-        sellers: true,
-        followers: true,
-        reviews: true,
-        avatar: {
-          select: {
-            id: true,
-            url: true,
+    const [allShops, total] = await Promise.all([
+      prisma.shops.findMany({
+        where: filters,
+        include: {
+          sellers: true,
+          followers: true,
+          reviews: {
+            select: {
+              rating: true
+            }
           },
+          avatar: {
+            select: {
+              id: true,
+              url: true,
+            },
+          },
+          _count: {
+            select: {
+              products: true
+            }
+          }
         },
-      },
-      orderBy,
-    });
+        skip,
+        take: parsedLimit,
+        orderBy,
+      }),
+      prisma.shops.count({ where: filters })
+    ]);
 
     const shopsWithRatings = allShops
       .map((shop) => {
@@ -1197,7 +1256,7 @@ export const getFilteredShops = async (
           ...shop,
           rating: rating ? Math.round(rating * 10) / 10 : 0,
           avatar: (shop as any).avatar || null,
-          reviews: undefined,
+          reviews: shopReviews,
         };
       })
       .filter((shop) => {
@@ -1217,12 +1276,10 @@ export const getFilteredShops = async (
       );
     }
 
-    const total = shopsWithRatings.length;
-    const paginatedShops = shopsWithRatings.slice(skip, skip + parsedLimit);
     const totalPages = Math.ceil(total / parsedLimit);
 
     res.json({
-      shops: paginatedShops,
+      shops: shopsWithRatings,
       pagination: {
         total,
         page: parsedPage,

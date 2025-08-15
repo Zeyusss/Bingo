@@ -13,6 +13,8 @@ import CategoryBar from "./CategoryBar";
 import SidebarMobile from "./SidebarMobile";
 import MobileBottomNav from "./MobileBottomNav";
 import AdvancedSearchBar from "../components/search/AdvancedSearchBar";
+import NotificationDropdown from "../components/notifications/NotificationDropdown";
+import UserProfileDropdown from "../components/profile/UserProfileDropdown";
 import { useRouter } from "next/navigation";
 
 const Header = () => {
@@ -90,14 +92,17 @@ const Header = () => {
           Bingo
         </Link>
         {user?.id && (
-          <Link href="/cart" className="relative">
-            <ShoppingCart className="w-5 h-5 text-black" />
-            {totalCartItems > 0 && (
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 text-white text-[10px] rounded-full flex items-center justify-center">
-                {totalCartItems}
-              </div>
-            )}
-          </Link>
+          <div className="flex items-center gap-3">
+            <NotificationDropdown />
+            <Link href="/cart" className="relative">
+              <ShoppingCart className="w-5 h-5 text-black" />
+              {totalCartItems > 0 && (
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                  {totalCartItems}
+                </div>
+              )}
+            </Link>
+          </div>
         )}
       </div>
 
@@ -145,14 +150,10 @@ const Header = () => {
             </Link>
           )}
 
+          {user?.id && <NotificationDropdown />}
+
           {user ? (
-            <Link
-              href="/profile"
-              className="px-4 py-2 rounded-full bg-gray-100 flex items-center gap-2 border border-gray-200 hover:bg-gray-200"
-            >
-              <ProfileIcon />
-              <span className="text-sm font-medium">{user?.name?.split(" ")[0]}</span>
-            </Link>
+            <UserProfileDropdown />
           ) : (
             <Link
               href="/login"
