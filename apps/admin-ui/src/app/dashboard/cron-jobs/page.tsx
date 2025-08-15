@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Clock, Play, Pause, AlertCircle, CheckCircle, Eye, Search, Filter, ChevronLeft, ChevronRight, Activity, Database, Mail, Users } from "lucide-react";
+import { Clock,  AlertCircle, CheckCircle, Eye, Search, ChevronLeft, ChevronRight, Activity, Database, Mail, Users } from "lucide-react";
 import { toast } from "react-hot-toast";
 import HelpModal, { HelpSection } from "../../shared/components/HelpModal";
 import HelpButton from "../../shared/components/HelpButton";

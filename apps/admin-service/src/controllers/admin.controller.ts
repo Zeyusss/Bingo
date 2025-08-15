@@ -1273,7 +1273,7 @@ export const reviewVerification = async (
 ) => {
   try {
     const { sellerId } = req.params;
-    const { action, notes } = req.body; // action: 'approve' | 'reject' | 'require_resubmission'
+    const { action, notes } = req.body; 
     const adminId = req.user?.id;
 
     if (
@@ -1526,5 +1526,372 @@ export const getVerificationHistory = async (
     });
   } catch (error) {
     return next(error);
+  }
+};
+
+//get all notifications
+export const getAllNotifications = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const status = req.query.status as string;
+    const skip = (page - 1) * limit;
+
+  
+    const whereClause: any = {};
+    
+    
+    const adminUsers = await prisma.users.findMany({
+      where: { role: "admin" },
+      select: { id: true }
+    });
+    
+    const adminIds = adminUsers.map(admin => admin.id);
+    
+    if (adminIds.length > 0) {
+      whereClause.receiverId = { in: adminIds };
+    } else {
+      
+      return res.status(200).json({
+        success: true,
+        data: [],
+        meta: {
+          totalNotifications: 0,
+          currentPage: page,
+          totalPages: 0,
+          unreadCount: 0
+        }
+      });
+    }
+
+    
+    if (status && status !== "all") {
+      whereClause.status = status;
+    }
+
+    const [notifications, totalNotifications, unreadCount] = await Promise.all([
+      prisma.notifications.findMany({
+        where: whereClause,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          title: true,
+          message: true,
+          status: true,
+          redirect_link: true,
+          createdAt: true,
+          creatorId: true
+        }
+      }),
+      prisma.notifications.count({ where: whereClause }),
+      prisma.notifications.count({
+        where: {
+          ...whereClause,
+          status: "Unread"
+        }
+      })
+    ]);
+
+    const totalPages = Math.ceil(totalNotifications / limit);
+
+    res.status(200).json({
+      success: true,
+      data: notifications,
+      meta: {
+        totalNotifications,
+        currentPage: page,
+        totalPages,
+        unreadCount
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    next(error);
+  }
+};
+
+// Mark notification as read
+export const markNotificationAsRead = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { notificationId } = req.params;
+    
+    const notification = await prisma.notifications.update({
+      where: { id: notificationId },
+      data: { status: "Read" }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Notification marked as read",
+      notification
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delete notification (ADMIN ONLY)
+export const deleteNotification = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { notificationId } = req.params;
+    
+    await prisma.notifications.delete({
+      where: { id: notificationId }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Notification deleted successfully"
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Mark all notifications as read (ADMIN ONLY)
+export const markAllNotificationsAsRead = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    
+    const adminUsers = await prisma.users.findMany({
+      where: { role: "admin" },
+      select: { id: true }
+    });
+    
+    const adminIds = adminUsers.map(admin => admin.id);
+    
+    if (adminIds.length > 0) {
+      await prisma.notifications.updateMany({
+        where: {
+          receiverId: { in: adminIds },
+          status: "Unread"
+        },
+        data: { status: "Read" }
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "All notifications marked as read"
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// get all users notification
+export const getUserNotifications = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const status = req.query.status as string;
+    const skip = (page - 1) * limit;
+
+    
+    const whereClause: any = {
+      receiverId: req.user.id,
+    };
+    
+    
+    if (status && status !== "all") {
+      whereClause.status = status;
+    }
+
+    const [notifications, totalNotifications, unreadCount] = await Promise.all([
+      prisma.notifications.findMany({
+        where: whereClause,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          title: true,
+          message: true,
+          status: true,
+          redirect_link: true,
+          createdAt: true,
+          creatorId: true
+        }
+      }),
+      prisma.notifications.count({ where: whereClause }),
+      prisma.notifications.count({
+        where: {
+          receiverId: req.user.id,
+          status: "Unread"
+        }
+      })
+    ]);
+
+    const totalPages = Math.ceil(totalNotifications / limit);
+
+    res.status(200).json({
+      success: true,
+      data: notifications,
+      meta: {
+        totalNotifications,
+        currentPage: page,
+        totalPages,
+        unreadCount
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Mark user notification as read
+export const markUserNotificationAsRead = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+
+    await prisma.notifications.update({
+      where: {
+        id: id,
+        receiverId: req.user.id,
+      },
+      data: {
+        status: "Read",
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Notification marked as read",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delete user notification
+export const deleteUserNotification = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+
+    await prisma.notifications.delete({
+      where: {
+        id: id,
+        receiverId: req.user.id,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Notification deleted",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Mark all user notifications as read
+export const markAllUserNotificationsAsRead = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    await prisma.notifications.updateMany({
+      where: {
+        receiverId: req.user.id,
+        status: "Unread",
+      },
+      data: {
+        status: "Read",
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "All notifications marked as read",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delete all read user notifications
+export const deleteAllReadUserNotifications = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    await prisma.notifications.deleteMany({
+      where: {
+        receiverId: req.user.id,
+        status: "Read",
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "All read notifications deleted",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delete all read admin notifications (ADMIN ONLY)
+export const deleteAllReadAdminNotifications = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+   
+    const adminUsers = await prisma.users.findMany({
+      where: { role: "admin" },
+      select: { id: true }
+    });
+    
+    const adminIds = adminUsers.map(admin => admin.id);
+    
+    if (adminIds.length > 0) {
+      await prisma.notifications.deleteMany({
+        where: {
+          receiverId: { in: adminIds },
+          status: "Read"
+        }
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "All read admin notifications deleted"
+    });
+  } catch (error) {
+    console.error('Error deleting read admin notifications:', error);
+    next(error);
   }
 };

@@ -17,8 +17,14 @@ import {
   CheckCircle2,
   X,
   ShoppingCart,
+  Calendar,
+  ExternalLink,
+  Shield,
 } from "lucide-react";
 import useSeller from "../../../hooks/useSeller";
+import { useQuery } from "@tanstack/react-query";
+import enhancedAxiosInstance from "../../../utils/axiosInstance";
+import { useRouter } from "next/navigation";
 
 // Notifications Component
 function NotificationsPanel({
@@ -28,32 +34,51 @@ function NotificationsPanel({
   isOpen: boolean;
   onClose: () => void;
 }) {
-  const notifications = [
-    {
-      id: 1,
-      type: "success" as const,
-      title: "New Order Received",
-      message: "Order #1234 from John Doe - $89.99",
-      time: "2 minutes ago",
-      icon: CheckCircle2,
+  const router = useRouter();
+  
+  // Fetch real notifications data
+  const { data: notificationData, isLoading } = useQuery({
+    queryKey: ["dashboard-notifications"],
+    queryFn: async () => {
+      const res = await enhancedAxiosInstance.get("/seller/api/get-seller-notifications?limit=5");
+      return res.data;
     },
-    {
-      id: 2,
-      type: "warning" as const,
-      title: "Low Stock Alert",
-      message: "iPhone Case - Only 3 items left",
-      time: "1 hour ago",
-      icon: AlertTriangle,
-    },
-    {
-      id: 3,
-      type: "info" as const,
-      title: "Payment Processed",
-      message: "Weekly payout of $1,245.67 processed",
-      time: "3 hours ago",
-      icon: Info,
-    },
-  ];
+    enabled: isOpen, // Only fetch when panel is open
+  });
+
+  const notifications = notificationData?.data || [];
+
+  const getNotificationIcon = (title: string) => {
+    if (title.toLowerCase().includes("order")) return Calendar;
+    if (title.toLowerCase().includes("payment")) return CheckCircle2;
+    if (title.toLowerCase().includes("warning") || title.toLowerCase().includes("alert")) 
+      return AlertTriangle;
+    return Info;
+  };
+
+  const getNotificationType = (title: string) => {
+    if (title.toLowerCase().includes("order")) return "success";
+    if (title.toLowerCase().includes("payment")) return "success";
+    if (title.toLowerCase().includes("warning") || title.toLowerCase().includes("alert")) 
+      return "warning";
+    return "info";
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return "Just now";
+    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} hours ago`;
+    return `${Math.floor(diffInMinutes / 1440)} days ago`;
+  };
+
+  const handleViewAllNotifications = () => {
+    router.push("/dashboard/notifications");
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -74,41 +99,80 @@ function NotificationsPanel({
           </div>
         </div>
         <div className="p-6 space-y-4 overflow-y-auto h-full">
-          {notifications.map((notification) => {
-            const IconComponent = notification.icon;
-            const bgColor = {
-              success: "bg-green-50 border-green-200",
-              warning: "bg-yellow-50 border-yellow-200",
-              info: "bg-blue-50 border-blue-200",
-            }[notification.type];
-            const iconColor = {
-              success: "text-green-600",
-              warning: "text-yellow-600",
-              info: "text-blue-600",
-            }[notification.type];
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="text-center py-8">
+              <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 font-[Work Sans]">No notifications yet</p>
+            </div>
+          ) : (
+            notifications.map((notification: any) => {
+              const IconComponent = getNotificationIcon(notification.title);
+              const type = getNotificationType(notification.title);
+              const bgColor = {
+                success: "bg-green-50 border-green-200",
+                warning: "bg-yellow-50 border-yellow-200",
+                info: "bg-blue-50 border-blue-200",
+              }[type];
+              const iconColor = {
+                success: "text-green-600",
+                warning: "text-yellow-600",
+                info: "text-blue-600",
+              }[type];
 
-            return (
-              <div
-                key={notification.id}
-                className={`p-4 rounded-lg border ${bgColor}`}
-              >
-                <div className="flex items-start space-x-3">
-                  <IconComponent className={`h-5 w-5 ${iconColor} mt-0.5`} />
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900 font-[Poppins]">
-                      {notification.title}
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-1 font-[Work Sans]">
-                      {notification.message}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-2 font-[Work Sans]">
-                      {notification.time}
-                    </p>
+              return (
+                <div
+                  key={notification.id}
+                  className={`p-4 rounded-lg border ${bgColor} cursor-pointer hover:shadow-sm transition-shadow`}
+                  onClick={() => {
+                    if (notification.redirect_link) {
+                      if (notification.redirect_link.startsWith('/')) {
+                        router.push(notification.redirect_link);
+                      } else {
+                        window.open(notification.redirect_link, "_blank");
+                      }
+                    }
+                  }}
+                >
+                  <div className="flex items-start space-x-3">
+                    <IconComponent className={`h-5 w-5 ${iconColor} mt-0.5`} />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium text-gray-900 font-[Poppins]">
+                          {notification.title}
+                        </h3>
+                        {notification.status === "Unread" && (
+                          <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1 font-[Work Sans]">
+                        {notification.message}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-2 font-[Work Sans]">
+                        {formatDate(notification.createdAt)}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
+          
+          {/* View All Button */}
+          {notifications.length > 0 && (
+            <div className="pt-4 border-t border-gray-200">
+              <button
+                onClick={handleViewAllNotifications}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-[Poppins]"
+              >
+                <ExternalLink className="w-4 h-4" />
+                View All Notifications
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -118,6 +182,34 @@ function NotificationsPanel({
 function DashboardContent() {
   const { seller } = useSeller({ enabled: true });
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showVerifiedBanner, setShowVerifiedBanner] = useState(false);
+  
+  // Fetch unread notifications count for badge
+  const { data: notificationsData } = useQuery({
+    queryKey: ["unread-notifications-count"],
+    queryFn: async () => {
+      const res = await enhancedAxiosInstance.get("/seller/api/get-seller-notifications?limit=1&status=Unread");
+      return res.data;
+    },
+    refetchInterval: 30000, // Check for new notifications every 30 seconds
+  });
+
+  const unreadCount = notificationsData?.meta?.unreadCount || 0;
+
+  // Check if verified banner should be shown
+  React.useEffect(() => {
+    if (seller?.isVerified && seller?.verificationStatus === "Approved") {
+      const dismissed = localStorage.getItem("verifiedBannerDismissed");
+      if (!dismissed) {
+        setShowVerifiedBanner(true);
+      }
+    }
+  }, [seller]);
+
+  const handleDismissVerifiedBanner = () => {
+    setShowVerifiedBanner(false);
+    localStorage.setItem("verifiedBannerDismissed", "true");
+  };
 
   const currentHour = new Date().getHours();
   const getGreeting = () => {
@@ -175,16 +267,61 @@ function DashboardContent() {
                 className="relative p-3 bg-white rounded-full shadow-sm border border-gray-200 hover:bg-gray-50 transition-colors"
               >
                 <Bell className="h-6 w-6 text-gray-600" />
-                <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  3
-                </span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </button>
             </div>
 
-            {/* Verification Status Card */}
-            <div className="mb-6">
-              <VerificationStatusCard />
-            </div>
+            {/* Verified Success Banner */}
+            {showVerifiedBanner && (
+              <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6 shadow-sm">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                      <Shield className="w-6 h-6 text-green-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-green-900 font-[Poppins] mb-2">
+                        🎉 Congratulations! Your identity has been verified
+                      </h3>
+                      <p className="text-green-700 font-[Work Sans] mb-3">
+                        You can now sell on our platform and access all seller features.
+                      </p>
+                      <div className="flex items-center space-x-4 text-sm text-green-600 font-[Work Sans]">
+                        <div className="flex items-center space-x-1">
+                          <span className="font-medium">Submitted:</span>
+                          <span>{seller?.verificationSubmittedAt ? new Date(seller.verificationSubmittedAt).toLocaleDateString() : "8/11/2025"}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <span className="font-medium">Reviewed:</span>
+                          <span>{seller?.verificationApprovedAt ? new Date(seller.verificationApprovedAt).toLocaleDateString() : "8/12/2025"}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          <span className="font-medium text-green-600">Verified</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleDismissVerifiedBanner}
+                    className="p-2 text-green-400 hover:text-green-600 hover:bg-green-100 rounded-full transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Verification Status Card - Hide if verified and banner is showing */}
+            {!(seller?.isVerified && seller?.verificationStatus === "Approved" && showVerifiedBanner) && (
+              <div className="mb-6">
+                <VerificationStatusCard />
+              </div>
+            )}
 
             {/* Quick Actions */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

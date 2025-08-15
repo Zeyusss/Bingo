@@ -32,6 +32,9 @@ import {
   updateUserProfilePicture,
   updateUserProfilePhone,
   updateUserProfile,
+  followShop,
+  unfollowShop,
+  getUserFollowedShops,
 } from '../controller/auth.controller';
 import isAuthenticated from '@packages/middleware/isAuthenticated';
 import { isSeller } from '@packages/middleware/authorizeRoles';
@@ -71,4 +74,7 @@ router.get("/profile-picture-eligibility", isAuthenticated, getProfilePictureEli
 router.put("/update-profile-picture", isAuthenticated, updateUserProfilePicture);
 router.put("/update-profile-phone", isAuthenticated, updateUserProfilePhone);
 router.put("/update-user-profile", isAuthenticated, updateUserProfile);
+router.post("/follow-shop", isAuthenticated, followShop);
+router.post("/unfollow-shop", isAuthenticated, unfollowShop);
+router.get("/user-followed-shops", isAuthenticated, getUserFollowedShops);
 export default router;

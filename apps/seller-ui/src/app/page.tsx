@@ -116,7 +116,7 @@ const Page = () => {
                     : "/settings"
                 )
               }
-              className="flex items-center gap-2 text-gray-300 hover:text-white transition"
+              className="flex items-center gap-2 text-black  transition"
             >
               <ArrowLeft size={20} />
               <span className="font-medium">

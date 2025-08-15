@@ -27,8 +27,11 @@ import {
   Settings, 
   ShoppingBag, 
   User, 
+  Users,
   Star,
-  X
+  X,
+  Search,
+  Filter
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -36,6 +39,7 @@ import axios from 'axios';
 import { useForm } from 'react-hook-form';
 import { useMutation } from '@tanstack/react-query';
 import axiosInstance from 'apps/user-ui/src/utils/axiosInstance';
+import FollowingSection from 'apps/user-ui/src/shared/components/profile/FollowingSection';
 
 const Page = () => {
   const { user, isLoading } = useRequireAuth();
@@ -45,6 +49,19 @@ const Page = () => {
   const [activeTab, setActiveTab] = useState('Profile');
   const [isProfilePictureModalOpen, setIsProfilePictureModalOpen] = useState(false);
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
+
+
+  const { data: notificationsData } = useQuery({
+    queryKey: ['userNotifications'],
+    queryFn: async () => {
+      const response = await axiosInstance.get('/admin/api/get-user-notifications');
+      return response.data;
+    },
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
+
+  const unreadCount = notificationsData?.meta?.unreadCount || 0;
 
 
   const {
@@ -84,7 +101,6 @@ const Page = () => {
     }
     setIsEditProfileModalOpen(true);
   };
-
 
   const onSubmitProfileEdit = (data: { name: string; phone: string }) => {
     updateProfile(data);
@@ -143,7 +159,7 @@ const logOutHandler = async ()=> {
     };
 
 
-  const NavItem = ({ icon: Icon, label, isActive, onClick, danger = false }: any) => (
+  const NavItem = ({ icon: Icon, label, isActive, onClick, danger = false, badge }: any) => (
     <button
       onClick={onClick}
       className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
@@ -156,6 +172,11 @@ const logOutHandler = async ()=> {
     >
       <Icon className={`w-5 h-5 ${isActive ? 'text-blue-700' : danger ? 'text-red-600' : 'text-gray-500'}`} />
       <span className="font-medium">{label}</span>
+      {badge && badge > 0 && (
+        <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center">
+          {badge > 99 ? '99+' : badge}
+        </span>
+      )}
     </button>
   );
 
@@ -205,6 +226,298 @@ const logOutHandler = async ()=> {
       <span className="font-medium text-gray-900">{value || 'Not provided'}</span>
     </div>
   );
+
+  
+  const NotificationsSection = () => {
+    const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [currentPage, setCurrentPage] = useState(1);
+
+   
+    const markAllAsReadMutation = useMutation({
+      mutationFn: async () => {
+        await axiosInstance.patch('/admin/api/user-notifications/mark-all-read');
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['userNotifications'] });
+      },
+    });
+
+    
+    const deleteNotificationMutation = useMutation({
+      mutationFn: async (notificationId: string) => {
+        await axiosInstance.delete(`/admin/api/user-notifications/${notificationId}`);
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['userNotifications'] });
+      },
+    });
+
+   
+    const deleteAllReadMutation = useMutation({
+      mutationFn: async () => {
+        await axiosInstance.delete('/admin/api/user-notifications/delete-all-read');
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['userNotifications'] });
+      },
+    });
+
+    
+    const markAsReadMutation = useMutation({
+      mutationFn: async (notificationId: string) => {
+        const res = await axiosInstance.patch(`/admin/api/user-notifications/${notificationId}/read`);
+        return res.data;
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['user-notifications'] });
+        queryClient.invalidateQueries({ queryKey: ['unread-notifications'] });
+      },
+    });
+
+    
+    const { data: notificationData, isLoading, error } = useQuery({
+      queryKey: ["user-notifications", currentPage, statusFilter],
+      queryFn: async () => {
+        const params = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: "10",
+        });
+        
+        if (statusFilter !== "all") {
+          params.append("status", statusFilter);
+        }
+        
+        const res = await axiosInstance.get(`/admin/api/get-user-notifications?${params}`);
+        return res.data;
+      },
+    });
+
+    const notifications = notificationData?.data || [];
+    const meta = notificationData?.meta || { 
+      totalNotifications: 0, 
+      currentPage: 1, 
+      totalPages: 0, 
+      unreadCount: 0 
+    };
+
+    
+    useEffect(() => {
+      if (meta.unreadCount > 0) {
+        markAllAsReadMutation.mutate();
+      }
+    }, [meta.unreadCount, markAllAsReadMutation]);
+
+    const filteredNotifications = notifications.filter((notification: any) => {
+      const matchesSearch = searchQuery === "" || 
+        notification.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        notification.message.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesStatus = statusFilter === "all" || notification.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    });
+
+    const formatDate = (dateString: string) => {
+      return new Date(dateString).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    };
+
+    return (
+      <Section 
+        title="Notifications"
+        action={
+          <div className="flex gap-2">
+            <button
+              onClick={() => markAllAsReadMutation.mutate()}
+              disabled={markAllAsReadMutation.isPending || meta.unreadCount === 0}
+              className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {markAllAsReadMutation.isPending ? 'Marking...' : 'Mark All Read'}
+            </button>
+            <button
+              onClick={() => deleteAllReadMutation.mutate()}
+              disabled={deleteAllReadMutation.isPending || (meta.totalNotifications - meta.unreadCount) === 0}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+            >
+              {deleteAllReadMutation.isPending ? "Deleting..." : "Delete All Read"}
+            </button>
+          </div>
+        }
+      >
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="bg-blue-50 rounded-lg p-4">
+            <div className="flex items-center">
+              <Bell className="h-8 w-8 text-blue-600" />
+              <div className="ml-3">
+                <p className="text-sm font-medium text-blue-900">Total</p>
+                <p className="text-2xl font-bold text-blue-900">{meta.totalNotifications}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-orange-50 rounded-lg p-4">
+            <div className="flex items-center">
+              <div className="h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center">
+                <div className="h-3 w-3 bg-orange-600 rounded-full"></div>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-orange-900">Unread</p>
+                <p className="text-2xl font-bold text-orange-900">{meta.unreadCount}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-gray-50 rounded-lg p-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            {/* Search */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search notifications..."
+                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {/* Status Filter */}
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-gray-400" />
+              <select
+                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="all">All Status</option>
+                <option value="Unread">Unread</option>
+                <option value="Read">Read</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Notifications List */}
+        <div className="bg-white rounded-lg border border-gray-200">
+          {isLoading ? (
+            <div className="p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="text-gray-600 mt-2">Loading notifications...</p>
+            </div>
+          ) : error ? (
+            <div className="p-8 text-center">
+              <p className="text-red-600">Error loading notifications. Please try again.</p>
+            </div>
+          ) : filteredNotifications.length === 0 ? (
+            <div className="p-8 text-center">
+              <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-600 text-lg font-medium">No notifications found</p>
+              <p className="text-gray-500 mt-1">
+                {searchQuery ? "Try adjusting your search terms" : "You're all caught up!"}
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200">
+              {filteredNotifications.map((notification: any) => (
+                <div
+                  key={notification.id}
+                  className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
+                    notification.status === "Unread" ? "bg-blue-50" : ""
+                  }`}
+                  onClick={() => {
+                    if (notification.redirect_link) {
+                      router.push(notification.redirect_link);
+                    }
+                  }}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        {notification.status === "Unread" && (
+                          <div className="h-2 w-2 bg-blue-600 rounded-full"></div>
+                        )}
+                        <h3 className="text-sm font-medium text-gray-900 truncate">
+                          {notification.title}
+                        </h3>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">{notification.message}</p>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>{formatDate(notification.createdAt)}</span>
+                        <span className={`px-2 py-1 rounded-full ${
+                          notification.status === "Unread" 
+                            ? "bg-orange-100 text-orange-800" 
+                            : "bg-green-100 text-green-800"
+                        }`}>
+                          {notification.status}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1 ml-4">
+                      {notification.status === "Unread" && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markAsReadMutation.mutate(notification.id);
+                          }}
+                          disabled={markAsReadMutation.isPending}
+                          className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          title="Mark as read"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteNotificationMutation.mutate(notification.id);
+                        }}
+                        disabled={deleteNotificationMutation.isPending}
+                        className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                        title="Delete notification"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {meta.totalPages > 1 && (
+            <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
+              <div className="text-sm text-gray-700">
+                Showing page {meta.currentPage} of {meta.totalPages}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentPage(Math.min(meta.totalPages, currentPage + 1))}
+                  disabled={currentPage === meta.totalPages}
+                  className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </Section>
+    );
+  };
 
   const OrderCard = ({ order }: any) => (
     <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
@@ -294,6 +607,13 @@ const logOutHandler = async ()=> {
                   label="Notifications"
                   isActive={activeTab === "Notifications"}
                   onClick={() => setActiveTab("Notifications")}
+                  badge={unreadCount}
+                />
+                <NavItem
+                  icon={Users}
+                  label="Following"
+                  isActive={activeTab === "Following"}
+                  onClick={() => setActiveTab("Following")}
                 />
                 <NavItem
                   icon={MapPin}
@@ -400,12 +720,11 @@ const logOutHandler = async ()=> {
             )}
 
             {activeTab === "Notifications" && (
-              <Section title="Notifications">
-                <div className="text-center py-8">
-                  <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">No notifications yet</p>
-                </div>
-              </Section>
+              <NotificationsSection />
+            )}
+
+            {activeTab === "Following" && (
+              <FollowingSection />
             )}
 
             {activeTab === "Shipping Address" && (

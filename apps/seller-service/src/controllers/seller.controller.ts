@@ -1416,7 +1416,7 @@ export const trackShopVisitor = async (
 
     const isNewVisitor = !existingVisitor;
 
-    // Track the visitor 
+    
     await prisma.uniqueShopVisitors.upsert({
       where: {
         shopId_userId: {
@@ -1515,14 +1515,14 @@ export const uploadVerificationDocument = async (
       return next(new ValidationError("Invalid document type"));
     }
 
-    // Upload to ImageKit
+    
     const uploadResponse = await imagekit.upload({
       file: imageData,
       fileName: `verification_${documentType}_${sellerId}_${Date.now()}`,
       folder: "/seller_verification",
     });
 
-    // Update seller record with the uploaded image URL
+    
     const updateData: any = {};
     switch (documentType) {
       case "idFront":
@@ -1617,7 +1617,7 @@ export const submitVerification = async (
       return next(new NotFoundError("Seller not found"));
     }
 
-    // Check if all required documents are uploaded and terms are accepted
+    
     if (!seller.idFrontImage || !seller.idBackImage || !seller.personalImage) {
       return next(
         new ValidationError(
@@ -1634,7 +1634,7 @@ export const submitVerification = async (
       );
     }
 
-    // Check if already submitted and pending or approved
+    
     if (seller.verificationStatus === "Pending") {
       return next(
         new ValidationError("Verification already submitted and pending review")
@@ -1645,7 +1645,7 @@ export const submitVerification = async (
       return next(new ValidationError("Verification already approved"));
     }
 
-    // Only allow submission if status is None or RequiresResubmission
+    
     if (
       seller.verificationStatus !== "None" &&
       seller.verificationStatus !== "RequiresResubmission"
@@ -1681,7 +1681,7 @@ export const downloadContract = async (
   next: NextFunction
 ) => {
   try {
-    // Generate a simple contract template
+    
     const contractContent = `
 SELLER VERIFICATION CONTRACT
 
@@ -1717,3 +1717,175 @@ Generated on: ${new Date().toLocaleDateString()}
     return next(error);
   }
 };
+
+// Get all notifications for seller with pagination and filtering
+export const getSellerNotifications = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const sellerId = req.seller.id;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const status = req.query.status as string;
+    const search = req.query.search as string;
+
+    const skip = (page - 1) * limit;
+
+   
+    const whereClause: any = {
+      receiverId: sellerId,
+    };
+
+    if (status && status !== "all") {
+      whereClause.status = status;
+    }
+
+    if (search) {
+      whereClause.OR = [
+        { title: { contains: search, mode: "insensitive" } },
+        { message: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+   
+    const [notifications, totalNotifications] = await Promise.all([
+      prisma.notifications.findMany({
+        where: whereClause,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.notifications.count({ where: whereClause }),
+    ]);
+
+    
+    const unreadCount = await prisma.notifications.count({
+      where: {
+        receiverId: sellerId,
+        status: "Unread",
+      },
+    });
+
+    const totalPages = Math.ceil(totalNotifications / limit);
+
+    res.status(200).json({
+      success: true,
+      data: notifications,
+      meta: {
+        totalNotifications,
+        unreadCount,
+        readCount: totalNotifications - unreadCount,
+        currentPage: page,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching seller notifications:", error);
+    return next(error);
+  }
+};
+
+// Mark a single notification as read
+export const markSellerNotificationAsRead = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const sellerId = req.seller.id;
+    const { notificationId } = req.params;
+
+    const notification = await prisma.notifications.findFirst({
+      where: {
+        id: notificationId,
+        receiverId: sellerId,
+      },
+    });
+
+    if (!notification) {
+      return next(new NotFoundError("Notification not found"));
+    }
+
+    await prisma.notifications.update({
+      where: { id: notificationId },
+      data: { status: "Read" },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Notification marked as read",
+    });
+  } catch (error) {
+    console.error("Error marking notification as read:", error);
+    return next(error);
+  }
+};
+
+// Mark all notifications as read for seller
+export const markAllSellerNotificationsAsRead = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const sellerId = req.seller.id;
+
+    await prisma.notifications.updateMany({
+      where: {
+        receiverId: sellerId,
+        status: "Unread",
+      },
+      data: { status: "Read" },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "All notifications marked as read",
+    });
+  } catch (error) {
+    console.error("Error marking all notifications as read:", error);
+    return next(error);
+  }
+};
+
+// Delete a notification
+export const deleteSellerNotification = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const sellerId = req.seller.id;
+    const { notificationId } = req.params;
+
+    const notification = await prisma.notifications.findFirst({
+      where: {
+        id: notificationId,
+        receiverId: sellerId,
+      },
+    });
+
+    if (!notification) {
+      return next(new NotFoundError("Notification not found"));
+    }
+
+    await prisma.notifications.delete({
+      where: { id: notificationId },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Notification deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting notification:", error);
+    return next(error);
+  }
+};
+
+// Legacy function for backward compatibility
+export const sellerNotifications = getSellerNotifications;

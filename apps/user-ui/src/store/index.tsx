@@ -479,24 +479,23 @@ export const useStore = create<Store>()(
         });
       },
       clearSessionData: () => {
-
+       
         set({ 
           cart: [], 
+          wishlist: [], 
           compare: [],
           showSideCart: false,
           showLoginPrompt: { show: false, action: null },
           showPersonalizationModal: { show: false, type: null, product: null }
         });
         
-
+        
         if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
           try {
-
-            const state = get();
             localStorage.setItem('store-storage', JSON.stringify({
               state: {
                 cart: [],
-                wishlist: state.wishlist, 
+                wishlist: [], 
                 compare: [],
                 showSideCart: false,
                 showLoginPrompt: { show: false, action: null },

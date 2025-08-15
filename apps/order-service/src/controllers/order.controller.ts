@@ -301,7 +301,6 @@ export const createOrder = async (
                 quantity: item.quantity,
                 price: item.sale_price,
                 selectedOptions: item.selectedOptions,
-           
                 personalizationData: item.personalizationData || null,
               })),
             },
@@ -365,7 +364,17 @@ export const createOrder = async (
         }
       }
 
-      const orderId = sessionId;
+      
+      const createdOrders = await prisma.orders.findMany({
+        where: { 
+          userId,
+          createdAt: {
+            gte: new Date(Date.now() - 60000) 
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+      const orderId = createdOrders[0]?.id || sessionId;
       const orderDate = new Date().toLocaleDateString();
       const paymentMethod = "Credit Card";
       let shippingAddress = "N/A";
@@ -391,7 +400,7 @@ export const createOrder = async (
         price: item.sale_price,
         selectedOptions: item.selectedOptions || {},
       }));
-      const orderTrackingUrl = `https://bingo.com/order/${sessionId}`;
+      const orderTrackingUrl = `${process.env.USER_UI_URL || 'http://localhost:3000'}/order/${orderId}`;
 
       await sendEmail(
         email,
@@ -414,6 +423,7 @@ export const createOrder = async (
       );
       const createdShopIds = [...new Set(cart.map((item: any) => item.shopId))];
       const shopIds = createdShopIds as string[];
+      
       const sellerShops = await prisma.shops.findMany({
         where: { id: { in: shopIds } },
         select: {
@@ -423,31 +433,60 @@ export const createOrder = async (
         },
       });
 
-      for (const shop of sellerShops) {
-        const shopItems = cart.filter((item: any) => item.shopId === shop.id);
-        const firstProduct = shopItems[0];
-        const productTitle = firstProduct?.title || "new item";
+     
+      try {
+        for (const shop of sellerShops) {
+          const shopItems = cart.filter((item: any) => item.shopId === shop.id);
+          const firstProduct = shopItems[0];
+          const productTitle = firstProduct?.title || "new item";
 
+         
+          const shopOrder = createdOrders.find(order => order.shopId === shop.id);
+          const shopOrderId = shopOrder?.id || orderId;
+          
+          await prisma.notifications.create({
+            data: {
+              title: "New Order Received",
+              message: `A customer just ordered ${productTitle} from your shop.`,
+              creatorId: userId,
+              receiverId: shop.sellerId,
+              redirect_link: `/order/${shopOrderId}`,
+            },
+          });
+        }
+
+      
+        const adminUser = await prisma.users.findFirst({
+          where: { role: "admin" },
+          select: { id: true }
+        });
+
+        if (adminUser) {
+          await prisma.notifications.create({
+            data: {
+              title: "Platform Order Alert",
+              message: `A new order was placed by ${name}`,
+              creatorId: userId,
+              receiverId: adminUser.id,
+              redirect_link: `/dashboard/orders`,
+            },
+          });
+        }
+
+        
         await prisma.notifications.create({
           data: {
-            title: "New Order Recevied",
-            message: `A customer just ordered ${productTitle} from your shop.`,
-            creatorId: userId,
-            receiverId: shop.sellerId,
-            redirect_link: `https://bingo.com/order/${sessionId}`,
+            title: "Order Placed Successfully",
+            message: `Your order has been placed successfully and is being processed. Order ID: ${orderId}`,
+            creatorId: adminUser?.id || userId,
+            receiverId: userId,
+            redirect_link: `/order/${orderId}`,
           },
         });
+      } catch (notificationError) {
+        console.error("Error creating notifications:", notificationError);
+      
       }
-
-      await prisma.notifications.create({
-        data: {
-          title: "Platform Order Alert",
-          message: `A new order was placed by ${name}`,
-          creatorId: userId,
-          receiverId: "admin",
-          redirect_link: `https://bingo.com/order/${sessionId}`,
-        },
-      });
 
       await redis.del(sessionKey);
     }
@@ -648,7 +687,7 @@ export const getSellerOrders = async (
   }
 };
 
-// get order detaisl
+// get order details
 export const getOrderDetails = async (
   req: any,
   res: Response,
@@ -656,6 +695,14 @@ export const getOrderDetails = async (
 ) => {
   try {
     const orderId = req.params.id;
+    
+    
+    const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(orderId);
+    
+    if (!isValidObjectId) {
+      return next(new NotFoundError("Invalid order ID format. Expected MongoDB ObjectId (24 characters)."));
+    }
+    
     const order = await prisma.orders.findUnique({
       where: { id: orderId },
       include: {
@@ -723,6 +770,13 @@ export const updateDeliveryStatus = async (
       return res
         .status(400)
         .json({ error: "Missing order ID or delivery status." });
+    }
+    
+    
+    const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(orderId);
+    
+    if (!isValidObjectId) {
+      return next(new NotFoundError("Invalid order ID format"));
     }
     const allowedStatuses = [
       "Ordered",
@@ -956,6 +1010,102 @@ export const getAdminOrders = async (
       total,
     });
   } catch (error) {
+    return next(error);
+  }
+};
+
+// get order by session ID
+export const getOrderBySession = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const sessionId = req.params.sessionId;
+    
+    if (!sessionId) {
+      return next(new NotFoundError("Session ID is required"));
+    }
+
+   
+    const directOrder = await prisma.orders.findFirst({
+      where: {
+        createdAt: {
+          gte: new Date(Date.now() - 60 * 60 * 1000) 
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      select: {
+        id: true,
+        createdAt: true,
+        total: true,
+        status: true,
+        userId: true
+      }
+    });
+
+    if (directOrder) {
+      console.log(`Found recent order directly: ${directOrder.id}`);
+      return res.status(200).json({
+        success: true,
+        orderId: directOrder.id,
+        orderDetails: directOrder
+      });
+    }
+
+    
+    const sessionKey = `payment-session:${sessionId}`;
+    const sessionData = await redis.get(sessionKey);
+    
+    if (!sessionData) {
+      console.log(`No session data found for key: ${sessionKey}`);
+      return next(new NotFoundError("Session not found or expired"));
+    }
+
+    
+    const parsedData = JSON.parse(sessionData);
+    const userId = parsedData.userId || parsedData.user?.id;
+    
+    if (!userId) {
+      console.log("Session data structure:", parsedData);
+      return next(new NotFoundError("User ID not found in session"));
+    }
+
+    console.log(`Looking for orders for user ${userId} in last 30 minutes`);
+
+   
+    const recentOrder = await prisma.orders.findFirst({
+      where: {
+        userId: userId,
+        createdAt: {
+          gte: new Date(Date.now() - 30 * 60 * 1000)
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      select: {
+        id: true,
+        createdAt: true,
+        total: true,
+        status: true
+      }
+    });
+
+    if (!recentOrder) {
+      return next(new NotFoundError("No recent order found for this session"));
+    }
+
+    res.status(200).json({
+      success: true,
+      orderId: recentOrder.id,
+      orderDetails: recentOrder
+    });
+
+  } catch (error) {
+    console.error("Error in getOrderBySession:", error);
     return next(error);
   }
 };

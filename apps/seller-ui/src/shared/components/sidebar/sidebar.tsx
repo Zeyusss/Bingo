@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import React, { useEffect } from "react";
 import Link from "next/link";
 import SidebarItem from "./sidebar.item";
+import { useQuery } from "@tanstack/react-query";
+import enhancedAxiosInstance from "apps/seller-ui/src/utils/axiosInstance";
 import HomeIcon from "apps/seller-ui/src/app/assets/icons/home";
 import SidebarMenu from "./sidebar.menu";
 import {
@@ -27,6 +29,18 @@ const SidebarBarWrapper = () => {
   const { activeSidebar, setActiveSidebar } = useSidebar();
   const pathName = usePathname();
   const { seller, logout } = useSeller({ enabled: true });
+  
+ 
+  const { data: notificationsData } = useQuery({
+    queryKey: ["unread-notifications-count"],
+    queryFn: async () => {
+      const res = await enhancedAxiosInstance.get("/seller/api/get-seller-notifications?limit=1&status=Unread");
+      return res.data;
+    },
+    refetchInterval: 30000, 
+  });
+
+  const unreadCount = notificationsData?.meta?.unreadCount || 0;
 
   useEffect(() => {
     setActiveSidebar(pathName);
@@ -129,12 +143,19 @@ const SidebarBarWrapper = () => {
         {/* Management */}
         <div className="space-y-2">
           <SidebarMenu title="Management">
-            <SidebarItem
-              isActive={activeSidebar === "/dashboard/notifications"}
-              title="Notifications"
-              href="/dashboard/notifications"
-              icon={<BellRing size={20} color={getIconColor("/dashboard/notifications")} />}
-            />
+            <div className="relative">
+              <SidebarItem
+                isActive={activeSidebar === "/dashboard/notifications"}
+                title="Notifications"
+                href="/dashboard/notifications"
+                icon={<BellRing size={20} color={getIconColor("/dashboard/notifications")} />}
+              />
+              {unreadCount > 0 && (
+                <span className="absolute top-2 right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </div>
             <SidebarItem
               isActive={activeSidebar === "/dashboard/inbox"}
               title="Inbox"

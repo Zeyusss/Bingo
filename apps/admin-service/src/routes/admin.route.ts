@@ -38,6 +38,16 @@ import {
   reviewVerification,
   getVerificationStats,
   getVerificationHistory,
+  getAllNotifications,
+  getUserNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  deleteNotification,
+  markUserNotificationAsRead,
+  markAllUserNotificationsAsRead,
+  deleteUserNotification,
+  deleteAllReadUserNotifications,
+  deleteAllReadAdminNotifications,
 } from "../controllers/admin.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isAdmin } from "@packages/middleware/authorizeRoles";
@@ -87,6 +97,19 @@ router.patch(
   restoreSeller
 );
 router.get("/get-all", getAllCustomizations);
+// Admin Notification routes
+router.get("/get-all-notifications", isAuthenticated, isAdmin, getAllNotifications);
+router.patch("/notifications/mark-all-read", isAuthenticated, isAdmin, markAllNotificationsAsRead);
+router.delete("/notifications/delete-all-read", isAuthenticated, isAdmin, deleteAllReadAdminNotifications);
+router.patch("/notifications/:notificationId/read", isAuthenticated, isAdmin, markNotificationAsRead);
+router.delete("/notifications/:notificationId", isAuthenticated, isAdmin, deleteNotification);
+
+// User Notification routes
+router.get("/get-user-notifications", isAuthenticated, getUserNotifications);
+router.patch("/user-notifications/mark-all-read", isAuthenticated, markAllUserNotificationsAsRead);
+router.delete("/user-notifications/delete-all-read", isAuthenticated, deleteAllReadUserNotifications);
+router.patch("/user-notifications/:id/read", isAuthenticated, markUserNotificationAsRead);
+router.delete("/user-notifications/:id", isAuthenticated, deleteUserNotification);
 router.post("/users/:userId/block", isAuthenticated, isAdmin, blockUser);
 router.delete("/users/:userId", isAuthenticated, isAdmin, deleteUser);
 router.put("/users/:userId", isAuthenticated, isAdmin, updateUser);
@@ -172,4 +195,5 @@ router.get(
 
 // Cron Jobs Management Routes
 router.use('/cron-jobs', cronJobsRouter);
+
 export default router;
