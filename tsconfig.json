@@ -56,6 +56,9 @@
     },
     {
       "path": "./apps/seller-service"
+    },
+    {
+      "path": "./apps/blog-service"
     }
   ]
 }

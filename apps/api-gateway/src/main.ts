@@ -14,6 +14,7 @@ app.use(
       "http://localhost:3000",
       "http://localhost:3001",
       "http://localhost:3002",
+      "http://localhost:3003",
     ],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -113,6 +114,7 @@ app.use('/admin/api/dashboard', dashboardLimiter, proxy("http://localhost:6005")
 app.use('/order/api/get-recent-orders', dashboardLimiter, proxy("http://localhost:6004", {
   proxyReqPathResolver: (req) => '/api/get-recent-orders'
 })); // high capacity for order dashboard
+app.use("/blogs", apiLimiter, proxy("http://localhost:6009"));
 app.use("/chatting", apiLimiter, proxy("http://localhost:6006")); // standard limits 
 app.use("/admin", apiLimiter, proxy("http://localhost:6005")); // standard limits
 app.use("/order", apiLimiter, proxy("http://localhost:6004")); // standard limits 
