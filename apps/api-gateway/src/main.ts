@@ -115,6 +115,7 @@ app.use('/order/api/get-recent-orders', dashboardLimiter, proxy("http://localhos
   proxyReqPathResolver: (req) => '/api/get-recent-orders'
 })); // high capacity for order dashboard
 app.use("/blogs", apiLimiter, proxy("http://localhost:6009"));
+app.use("/recommendation", proxy("http://localhost:6007"));
 app.use("/chatting", apiLimiter, proxy("http://localhost:6006")); // standard limits 
 app.use("/admin", apiLimiter, proxy("http://localhost:6005")); // standard limits
 app.use("/order", apiLimiter, proxy("http://localhost:6004")); // standard limits 

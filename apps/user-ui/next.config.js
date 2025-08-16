@@ -43,6 +43,10 @@ const nextConfig = {
         source: "/chatting/api/:path*",
         destination: "http://localhost:8080/chatting/api/:path*",
       },
+      {
+        source: "/recommendation/api/:path*",
+        destination: "http://localhost:8080/recommendation/api/:path*",
+      },
     ];
   },
 };
