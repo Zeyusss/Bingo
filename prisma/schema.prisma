@@ -49,6 +49,10 @@ model users {
   isDeleted   Boolean      @default(false)
   deletedAt   DateTime?
   blockedAt   DateTime?
+   blogComments BlogComment[] @relation("UserBlogComments")
+  blogLikes    BlogLike[]   @relation("UserBlogLikes")
+  blogCommentReports BlogCommentReport[] @relation("BlogCommentReporter")
+  reviewedBlogCommentReports BlogCommentReport[] @relation("BlogCommentReviewer")
 }
 
 model shopReviws {
@@ -126,6 +130,7 @@ model sellers {
   deletedAt    DateTime?
   isBlocked    Boolean   @default(false)
   blockedAt    DateTime?
+    blogs        Blog[]    @relation("SellerBlogs")
 }
 
 model site_config {
@@ -401,4 +406,79 @@ model abandoned_carts {
   updatedAt   DateTime  @updatedAt
   
   user        users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Blog {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  content     String
+  coverImage  String?
+  authorId    String        @db.ObjectId
+  author      sellers       @relation("SellerBlogs", fields: [authorId], references: [id])
+  status      BlogStatus    @default(Pending)
+  likes       BlogLike[]
+  comments    BlogComment[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  reviewedBy  String?       @db.ObjectId // adminId
+  reviewedAt  DateTime?
+  isDeleted   Boolean       @default(false)
+  deletedAt   DateTime?
+}
+
+enum BlogStatus {
+  Pending
+  Accepted
+  Rejected
+}
+
+model BlogComment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  blogId    String   @db.ObjectId
+  blog      Blog     @relation(fields: [blogId], references: [id])
+  userId    String   @db.ObjectId
+  user      users    @relation("UserBlogComments", fields: [userId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isDeleted Boolean  @default(false)
+  deletedAt DateTime?
+  reports   BlogCommentReport[] @relation("CommentReports")
+}
+
+model BlogLike {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  blogId    String   @db.ObjectId
+  blog      Blog     @relation(fields: [blogId], references: [id])
+  userId    String   @db.ObjectId
+  user      users    @relation("UserBlogLikes", fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([blogId, userId])
+}
+
+enum BlogCommentReportStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+}
+
+model BlogCommentReport {
+  id          String                   @id @default(auto()) @map("_id") @db.ObjectId
+  commentId   String                   @db.ObjectId
+  comment     BlogComment              @relation("CommentReports", fields: [commentId], references: [id])
+  reporterId  String                   @db.ObjectId
+  reporter    users                    @relation("BlogCommentReporter", fields: [reporterId], references: [id])
+  reason      String
+  description String?
+  status      BlogCommentReportStatus  @default(PENDING)
+  reviewedBy  String?                  @db.ObjectId
+  reviewer    users?                   @relation("BlogCommentReviewer", fields: [reviewedBy], references: [id])
+  reviewedAt  DateTime?
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+
+  @@unique([commentId, reporterId])
+  @@index([status])
+  @@index([commentId])
 }

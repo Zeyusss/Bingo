@@ -395,6 +395,14 @@ export const refreshToken = async (
 //get logged in user info
 export const getUser = async (req: any, res: Response, next: NextFunction) => {
   try {
+    
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated or invalid user type",
+      });
+    }
+
     const user = await prisma.users.findUnique({
       where: { id: req.user.id },
       include: {
