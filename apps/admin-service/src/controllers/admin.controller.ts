@@ -1,4 +1,8 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
+import prisma from "@packages/libs/prisma";
+import { ValidationError } from "@packages/error-handler";
+import { imagekit } from "@packages/libs/imagekit";
+import { Prisma } from "@prisma/client";
 import {
   fetchRevenueData,
   fetchDeviceUsage,
@@ -6,9 +10,6 @@ import {
   fetchSystemStats,
   fetchResourceMonitor,
 } from "../utils/dashboardData";
-import prisma from "@packages/libs/prisma";
-import { ValidationError } from "@packages/error-handler";
-import { Prisma } from "@prisma/client";
 
 export async function getRevenue(
   req: Request,
@@ -1612,7 +1613,7 @@ export const getAllNotifications = async (
     });
   } catch (error) {
     console.error('Error fetching notifications:', error);
-    next(error);
+    return next(error);
   }
 };
 
@@ -1893,5 +1894,308 @@ export const deleteAllReadAdminNotifications = async (
   } catch (error) {
     console.error('Error deleting read admin notifications:', error);
     next(error);
+  }
+};
+
+// SLIDER MANAGEMENT CONTROLLERS
+
+// Get all sliders
+export const getAllSliders = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const sliders = await prisma.sliders.findMany({
+      orderBy: { position: 'asc' },
+    });
+
+    // If no sliders exist, create some sample data
+    if (sliders.length === 0) {
+      console.log("No sliders found, creating sample data...");
+      
+      const sampleSliders = [
+        {
+          title: "Welcome to Our Store",
+          description: "Discover amazing products with great deals",
+          imageUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=400&fit=crop",
+          linkUrl: "/products",
+          position: 0,
+          isActive: true
+        },
+        {
+          title: "Summer Sale",
+          description: "Up to 50% off on selected items",
+          imageUrl: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&h=400&fit=crop",
+          linkUrl: "/sale",
+          position: 1,
+          isActive: true
+        },
+        {
+          title: "New Arrivals",
+          description: "Check out our latest collection",
+          imageUrl: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800&h=400&fit=crop",
+          linkUrl: "/new-arrivals",
+          position: 2,
+          isActive: false
+        }
+      ];
+
+      await prisma.sliders.createMany({
+        data: sampleSliders
+      });
+
+      const newSliders = await prisma.sliders.findMany({
+        orderBy: { position: 'asc' },
+      });
+
+      res.status(200).json({
+        success: true,
+        data: newSliders,
+      });
+    } else {
+      res.status(200).json({
+        success: true,
+        data: sliders,
+      });
+    }
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Create new slider
+export const createSlider = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { 
+      title, 
+      description, 
+      imageUrl, 
+      linkUrl, 
+      isActive, 
+      startDate, 
+      endDate,
+      textColor,
+      textPosition,
+      overlayOpacity,
+      buttonText,
+      buttonColor,
+      buttonUrl,
+      autoplaySpeed
+    } = req.body;
+
+    if (!title || !imageUrl) {
+      return next(new ValidationError("Title and image URL are required"));
+    }
+
+    // Get the highest position to add new slider at the end
+    const lastSlider = await prisma.sliders.findFirst({
+      orderBy: { position: 'desc' },
+    });
+
+    const newPosition = lastSlider ? lastSlider.position + 1 : 0;
+
+    const slider = await prisma.sliders.create({
+      data: {
+        title,
+        description: description || null,
+        imageUrl,
+        linkUrl: linkUrl || null,
+        isActive: isActive !== undefined ? isActive : true,
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
+        textColor: textColor || "#ffffff",
+        textPosition: textPosition || "left",
+        overlayOpacity: overlayOpacity !== undefined ? overlayOpacity : 0.3,
+        buttonText: buttonText || "Learn More",
+        buttonColor: buttonColor || "#000000",
+        buttonUrl: buttonUrl || null,
+        autoplaySpeed: autoplaySpeed || 6000,
+        position: newPosition,
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Slider created successfully",
+      data: slider,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Update slider
+export const updateSlider = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { sliderId } = req.params;
+    const { 
+      title, 
+      description, 
+      imageUrl, 
+      linkUrl, 
+      isActive, 
+      startDate, 
+      endDate,
+      textColor,
+      textPosition,
+      overlayOpacity,
+      buttonText,
+      buttonColor,
+      buttonUrl,
+      autoplaySpeed
+    } = req.body;
+
+    if (!title || !imageUrl) {
+      return next(new ValidationError("Title and image URL are required"));
+    }
+
+    const slider = await prisma.sliders.update({
+      where: { id: sliderId },
+      data: {
+        title,
+        description: description || null,
+        imageUrl,
+        linkUrl: linkUrl || null,
+        isActive: isActive !== undefined ? isActive : true,
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
+        textColor: textColor || "#ffffff",
+        textPosition: textPosition || "left",
+        overlayOpacity: overlayOpacity !== undefined ? overlayOpacity : 0.3,
+        buttonText: buttonText || "Learn More",
+        buttonColor: buttonColor || "#000000",
+        buttonUrl: buttonUrl || null,
+        autoplaySpeed: autoplaySpeed || 6000,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Slider updated successfully",
+      data: slider,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Delete slider
+export const deleteSlider = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { sliderId } = req.params;
+
+    const slider = await prisma.sliders.findUnique({
+      where: { id: sliderId },
+    });
+
+    if (!slider) {
+      return res.status(404).json({
+        success: false,
+        message: "Slider not found",
+      });
+    }
+
+    await prisma.sliders.delete({
+      where: { id: sliderId },
+    });
+
+    // Reorder remaining sliders to fill the gap
+    const remainingSliders = await prisma.sliders.findMany({
+      where: { position: { gt: slider.position } },
+      orderBy: { position: 'asc' },
+    });
+
+    for (let i = 0; i < remainingSliders.length; i++) {
+      await prisma.sliders.update({
+        where: { id: remainingSliders[i].id },
+        data: { position: slider.position + i },
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Slider deleted successfully",
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Reorder sliders
+export const reorderSliders = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { sliderIds } = req.body;
+
+    if (!Array.isArray(sliderIds)) {
+      return next(new ValidationError("sliderIds array is required"));
+    }
+
+    // Update positions based on the new order
+    for (let i = 0; i < sliderIds.length; i++) {
+      await prisma.sliders.update({
+        where: { id: sliderIds[i] },
+        data: { position: i },
+      });
+    }
+
+    const updatedSliders = await prisma.sliders.findMany({
+      orderBy: { position: 'asc' },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Sliders reordered successfully",
+      data: updatedSliders,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Upload slider image
+export const uploadSliderImage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { file, fileName, folder } = req.body;
+    
+    if (!file) {
+      return next(new ValidationError("No image file provided"));
+    }
+
+    // Upload to ImageKit using base64
+    const uploadResponse = await imagekit.upload({
+      file: file,
+      fileName: fileName || `slider_${Date.now()}`,
+      folder: folder || "/sliders",
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Image uploaded successfully",
+      imageUrl: uploadResponse.url,
+      fileId: uploadResponse.fileId,
+    });
+  } catch (error) {
+    return next(error);
   }
 };

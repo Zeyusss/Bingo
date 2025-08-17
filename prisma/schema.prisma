@@ -482,3 +482,24 @@ model BlogCommentReport {
   @@index([status])
   @@index([commentId])
 }
+
+model sliders {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  title          String
+  description    String?
+  imageUrl       String
+  linkUrl        String?
+  position       Int       @default(0)
+  isActive       Boolean   @default(true)
+  startDate      DateTime?
+  endDate        DateTime?
+  textColor      String?   @default("#ffffff")
+  textPosition   String?   @default("left") // Should be: left, center, right
+  overlayOpacity Float?    @default(0.3)
+  buttonText     String?   @default("Learn More")
+  buttonColor    String?   @default("#000000")
+  buttonUrl      String?
+  autoplaySpeed  Int?      @default(6000)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}

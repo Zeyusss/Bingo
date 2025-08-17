@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Slider from "react-slick";
 import Image from "next/image";
 import Link from "next/link";
@@ -35,41 +35,164 @@ const SLIDE_BACKGROUNDS = [
   "/assets/HomeSlider/wd-furniture-slider-3-opt-1.webp",
 ];
 
+interface AdminSlider {
+  id: string;
+  title: string;
+  description?: string;
+  imageUrl: string;
+  linkUrl?: string;
+  position: number;
+  textColor?: string;
+  textPosition?: 'left' | 'center' | 'right';
+  overlayOpacity?: number;
+  buttonText?: string;
+  buttonColor?: string;
+  buttonUrl?: string;
+  autoplaySpeed?: number;
+}
+
 const CustomSlider = ({ products }: { products: any[] }) => {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [adminSliders, setAdminSliders] = useState<AdminSlider[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    const fetchSliders = async () => {
+      try {
+        const response = await fetch('http://localhost:3001/admin/api/sliders/active');
+        const data = await response.json();
+        if (data.success && data.data.length > 0) {
+          setAdminSliders(data.data);
+        }
+      } catch (error) {
+        // Silently fail and use fallback products
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const isSingleProduct = products.length === 1;
+    fetchSliders();
+  }, []);
+
+  const slidesToShow = adminSliders.length > 0 ? adminSliders : (loading ? [] : products);
+  const isSingleSlide = slidesToShow.length === 1;
+
+  if (loading) {
+    return (
+      <div className="relative w-full min-h-[500px] bg-gray-100 rounded-xl animate-pulse">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-gray-400">Loading slides...</div>
+        </div>
+      </div>
+    );
+  }
   
+  const autoplaySpeed = adminSliders.length > 0 && adminSliders[0].autoplaySpeed 
+    ? adminSliders[0].autoplaySpeed 
+    : 6000;
+
   const settings = {
-    dots: !isSingleProduct, 
-    infinite: !isSingleProduct, 
-    autoplay: !isSingleProduct, 
-    autoplaySpeed: 6000,
+    dots: !isSingleSlide, 
+    infinite: !isSingleSlide, 
+    autoplay: !isSingleSlide, 
+    autoplaySpeed: autoplaySpeed,
     speed: 800,
     slidesToShow: 1,
     slidesToScroll: 1,
-    nextArrow: isSingleProduct ? <></> : <NextArrow />, 
-    prevArrow: isSingleProduct ? <></> : <PrevArrow />,
-    beforeChange: (_: number, next: number) => setActiveIndex(next),
+    nextArrow: isSingleSlide ? <></> : <NextArrow />, 
+    prevArrow: isSingleSlide ? <></> : <PrevArrow />,
+    beforeChange: (_: number, next: number) => {}, 
   };
 
   return (
     <div className="relative w-full">
       <Slider {...settings}>
-        {products.map((product, index) => {
-          const bgImage = SLIDE_BACKGROUNDS[index % SLIDE_BACKGROUNDS.length];
+        {slidesToShow.map((item, index) => {
+          const isAdminSlider = 'position' in item;
           
-          const shopAvatar = product?.Shop?.avatar?.url || FALLBACK_AVATAR_URL;
-          const ownerName = product?.Shop?.name || "Unknown Shop";
-          const productName = product?.title || "Unnamed Product";
-          const rawDescription = product?.short_description || product?.description || "Discover this amazing handmade product crafted with care and attention to detail.";
-          const productDescription = rawDescription.length > 120 ? rawDescription.substring(0, 120) + "..." : rawDescription;
-          const category = product?.category || "category";
-          const price = product?.sale_price ? `$${product.sale_price}` : "$N/A";
-          const productSlug = product?.slug || product?._id;
+          if (isAdminSlider) {
+            const slider = item as AdminSlider;
+            const textColor = slider.textColor || "#ffffff";
+            const textPosition = slider.textPosition || "left";
+            const overlayOpacity = slider.overlayOpacity || 0.3;
+            const buttonText = slider.buttonText || "Learn More";
+            const buttonColor = slider.buttonColor || "#000000";
+            const buttonUrl = slider.buttonUrl || slider.linkUrl;
+            
+            return (
+              <div
+                key={slider.id}
+                className="relative min-h-[500px] overflow-hidden rounded-xl animate-wave-fade"
+              >
+                <Image
+                  src={slider.imageUrl}
+                  alt={slider.title}
+                  fill
+                  priority
+                  className="object-cover w-full h-full z-0 transition-all duration-700"
+                />
 
-          return (
+                {/* Overlay */}
+                <div 
+                  className="absolute inset-0 z-10"
+                  style={{ 
+                    backgroundColor: `rgba(0, 0, 0, ${overlayOpacity})` 
+                  }}
+                />
+
+                <div 
+                  className={`relative z-20 max-w-xl px-20 py-20 animate-slide-in-left ${
+                    textPosition === 'center' ? 'mx-auto text-center' :
+                    textPosition === 'right' ? 'ml-auto text-right' :
+                    'text-left'
+                  }`}
+                >
+                  <h2 
+                    className="text-4xl font-bold mt-4 drop-shadow"
+                    style={{ color: textColor }}
+                  >
+                    {slider.title}
+                  </h2>
+
+                  {slider.description && (
+                    <p 
+                      className="text-base mt-3 drop-shadow max-w-md"
+                      style={{ color: textColor }}
+                    >
+                      {slider.description}
+                    </p>
+                  )}
+
+                  <div className="mt-6">
+                    {buttonUrl && buttonText && (
+                      <Link
+                        href={buttonUrl}
+                        className="py-2 px-6 rounded-full text-sm font-semibold hover:opacity-90 transition inline-block"
+                        style={{ 
+                          backgroundColor: buttonColor,
+                          color: '#ffffff'
+                        }}
+                      >
+                        {buttonText}
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          } else {
+            const product = item;
+            const bgImage = SLIDE_BACKGROUNDS[index % SLIDE_BACKGROUNDS.length];
+            
+            const shopAvatar = product?.Shop?.avatar?.url || FALLBACK_AVATAR_URL;
+            const ownerName = product?.Shop?.name || "Unknown Shop";
+            const productName = product?.title || "Unnamed Product";
+            const rawDescription = product?.short_description || product?.description || "Discover this amazing handmade product crafted with care and attention to detail.";
+            const productDescription = rawDescription.length > 120 ? rawDescription.substring(0, 120) + "..." : rawDescription;
+            const category = product?.category || "category";
+            const price = product?.sale_price ? `$${product.sale_price}` : "$N/A";
+            const productSlug = product?.slug || product?._id;
+
+            return (
             <div
               key={product._id || index}
               className="relative min-h-[500px] overflow-hidden rounded-xl animate-wave-fade"
@@ -132,7 +255,8 @@ const CustomSlider = ({ products }: { products: any[] }) => {
                 </div>
               </div>
             </div>
-          );
+            );
+          }
         })}
       </Slider>
     </div>

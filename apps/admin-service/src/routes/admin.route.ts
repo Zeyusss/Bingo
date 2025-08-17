@@ -48,12 +48,19 @@ import {
   deleteUserNotification,
   deleteAllReadUserNotifications,
   deleteAllReadAdminNotifications,
+  getAllSliders,
+  createSlider,
+  updateSlider,
+  deleteSlider,
+  reorderSliders,
+  uploadSliderImage,
 } from "../controllers/admin.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isAdmin } from "@packages/middleware/authorizeRoles";
 import cronJobsRouter from './cronJobs.routes';
 
 const router: Router = express.Router();
+
 
 router.get("/dashboard/revenue", isAuthenticated, isAdmin, getRevenue);
 router.get("/dashboard/device-usage", isAuthenticated, isAdmin, getDeviceUsage);
@@ -192,6 +199,14 @@ router.get(
   isAdmin,
   getVerificationHistory
 );
+
+// Slider Management Routes
+router.get("/sliders", isAuthenticated, isAdmin, getAllSliders);
+router.post("/sliders", isAuthenticated, isAdmin, createSlider);
+router.put("/sliders/:sliderId", isAuthenticated, isAdmin, updateSlider);
+router.delete("/sliders/:sliderId", isAuthenticated, isAdmin, deleteSlider);
+router.put("/sliders/reorder", isAuthenticated, isAdmin, reorderSliders);
+router.post("/sliders/upload-image", isAuthenticated, isAdmin, uploadSliderImage);
 
 // Cron Jobs Management Routes
 router.use('/cron-jobs', cronJobsRouter);

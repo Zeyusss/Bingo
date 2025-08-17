@@ -17,6 +17,7 @@ import {
   TableRow,
 } from "../../shared/components/ui/table";
 import { toast } from "react-hot-toast";
+import SliderManagement from "../../../components/SliderManagement";
 import {
   DndContext,
   closestCenter,
@@ -35,6 +36,7 @@ import {
 } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+
 
 type Category = {
   id: string;
@@ -359,7 +361,7 @@ const CustomizationPage: React.FC = () => {
   );
 
   const handleDragStart = (event: DragStartEvent) => {
-    // Could add visual feedback here if needed
+    // Handle drag start
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -743,14 +745,7 @@ const CustomizationPage: React.FC = () => {
         </DndContext>
       )}
 
-      {activeTab === "slider" && (
-        <div className="bg-white rounded-lg border border-gray-200 p-8">
-          <div className="text-center text-gray-500">
-            <h3 className="text-lg font-medium mb-2">Slider Customization</h3>
-            <p>Slider customization features coming soon...</p>
-          </div>
-        </div>
-      )}
+      {activeTab === "slider" && <SliderManagement />}
 
       {activeTab === "gallery" && (
         <div className="bg-white rounded-lg border border-gray-200 p-8">
