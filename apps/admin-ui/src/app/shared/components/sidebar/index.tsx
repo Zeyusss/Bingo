@@ -24,15 +24,17 @@ import {
   ShieldCheck,
   ShoppingCart,
   Users,
+  FileText,
 } from "lucide-react";
 import PaymentIcon from "../../../assets/icons/payment";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const SidebarWrapper = () => {
   const { activeSidebar, setActiveSidebar } = useSidebar();
   const pathName = usePathname();
   const router = useRouter();
   const { admin } = useAdmin();
+  const queryClient = useQueryClient();
 
  
   const { data: notificationsData } = useQuery({
@@ -49,6 +51,8 @@ const SidebarWrapper = () => {
   const handleLogout = async () => {
     try {
       await axiosInstance.get("/api/logout-user");
+      queryClient.removeQueries({ queryKey: ["admin"] });
+      queryClient.clear();
       toast.success("Logged out successfully!");
       router.push("/");
     } catch (error) {
@@ -229,6 +233,19 @@ const SidebarWrapper = () => {
                 )}
               </div>
             </SidebarMenu>
+            <SidebarMenu title="Content">
+              <SidebarItem
+                isActive={activeSidebar.includes("/dashboard/blog")}
+                title="Blog"
+                href="/dashboard/blog"
+                icon={
+                  <FileText
+                    size={22}
+                    color={getIconColor("/dashboard/blog")}
+                  />
+                }
+              />
+              </SidebarMenu>
             <SidebarMenu title="Customization">
               <SidebarItem
                 isActive={activeSidebar === "/dashboard/customization"}
