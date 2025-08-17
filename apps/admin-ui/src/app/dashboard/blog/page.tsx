@@ -52,7 +52,7 @@ const AdminBlogReviewPage = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6">
+    <div className="mx-auto p-4 md:p-6">
       <h1 className="text-2xl font-bold mb-6 text-gray-800">
         Blog Management
       </h1>

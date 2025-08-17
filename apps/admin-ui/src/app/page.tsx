@@ -23,7 +23,7 @@ const Page = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [showRestrictedModal, setShowRestrictedModal] = useState(false);
   const router = useRouter();
-  const { admin, isLoading } = useAdmin();
+  const { admin, isLoading, refetch } = useAdmin();
 
 
 
@@ -45,7 +45,9 @@ const Page = () => {
     },
     onSuccess: (data) => {
       setServerError(null);
-      router.push("/dashboard");
+      // Manually trigger admin data fetch after successful login
+      refetch();
+      router.replace("/dashboard");
     },
     onError: (error: AxiosError) => {
       const errorMessage =
@@ -58,7 +60,8 @@ const Page = () => {
     },
   });
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit = (data: FormData, event?: React.BaseSyntheticEvent) => {
+    event?.preventDefault();
     loginMutation.mutate(data);
   };
   return (
@@ -95,6 +98,7 @@ const Page = () => {
         <form
           className="w-full space-y-5 mt-2"
           onSubmit={handleSubmit(onSubmit)}
+          method="POST"
         >
           <div>
             <label className="block text-gray-700 mb-1">Email</label>
