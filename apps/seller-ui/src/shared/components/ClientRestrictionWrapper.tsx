@@ -9,7 +9,7 @@ const ClientRestrictionWrapper = ({
 }: {
   children: React.ReactNode;
 }) => {
-  const { seller, isLoading } = useSeller({ enabled: true });
+  const { seller, isLoading } = useSeller();
   const [showModal, setShowModal] = useState(false);
   const router = useRouter();
   const [hasLoggedOut, setHasLoggedOut] = useState(false);

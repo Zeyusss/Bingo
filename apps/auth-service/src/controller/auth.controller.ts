@@ -308,6 +308,7 @@ export const refreshToken = async (
       req.cookies["refresh_token"] ||
       req.cookies["seller-refresh-token"] ||
       req.headers.authorization?.split(" ")[1];
+    
     if (!refreshToken) {
       return next(
         new ValidationError("Unauthorized! No refresh token provided")
@@ -321,13 +322,11 @@ export const refreshToken = async (
         process.env.REFRESH_TOKEN_SECRET as string
       ) as { id: string; role: string };
     } catch (jwtError: any) {
-      console.error('JWT verification failed:', jwtError.message);
       return next(new JsonWebTokenError("Invalid or expired refresh token"));
     }
     
     if (!decoded || !decoded.id || !decoded.role) {
-      console.error('Invalid token structure');
-      return new JsonWebTokenError("Invalid refresh token");
+      return next(new JsonWebTokenError("Invalid refresh token"));
     }
 
     let account;
@@ -363,26 +362,21 @@ export const refreshToken = async (
     }
 
     if (!account) {
-      console.error('Account not found for refresh token');
       return next(new AuthError("Forbidden ! User/Seller not found"));
     }
 
-    console.log('🔑 Generating new access token for role:', decoded.role);
     const newAccessToken = jwt.sign(
       { id: decoded.id, role: decoded.role },
       process.env.ACCESS_TOKEN_SECRET as string,
       { expiresIn: "15m" }
     );
 
-    console.log('Setting access token cookie for role:', decoded.role);
     if (decoded.role === "user") {
       setCookie(res, "access_Token", newAccessToken);
-      console.log('Set access_Token cookie for user');
     } else if (decoded.role === "seller") {
       setCookie(res, "seller-access-token", newAccessToken);
     } else if (decoded.role === "admin") {
       setCookie(res, "access_token", newAccessToken);
-      console.log('Set access_token cookie for admin');
     }
 
     req.role = decoded.role;

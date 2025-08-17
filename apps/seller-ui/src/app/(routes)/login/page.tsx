@@ -21,7 +21,7 @@ const Login = () => {
   const [showRestrictedModal, setShowRestrictedModal] = useState(false);
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { seller, isLoading, refetch } = useSeller();
+  const { seller, isLoading, refetch } = useSeller({ enabled: false });
 
   React.useEffect(() => {
     if (!isLoading && seller) {

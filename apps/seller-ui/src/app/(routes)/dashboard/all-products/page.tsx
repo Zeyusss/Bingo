@@ -284,34 +284,41 @@ const AllProducts = () => {
       },
       {
         header: "Actions",
-        cell: ({ row }: any) => (
-          <div className="flex items-center space-x-2 justify-center">
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-blue-600 hover:text-blue-800 border-blue-200 hover:bg-blue-50"
-              onClick={() => handleViewClick(row.original)}
-            >
-              View
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-yellow-600 hover:text-yellow-800 border-yellow-200 hover:bg-yellow-50"
-              onClick={() => handleEditClick(row.original)}
-            >
-              Edit
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-red-600 hover:text-red-800 border-red-200 hover:bg-red-50"
-              onClick={() => handleDeleteClick(row.original)}
-            >
-              Delete
-            </Button>
-          </div>
-        ),
+        cell: ({ row }: any) => {
+          const isDeleted = row.original.isDeleted;
+          return (
+            <div className="flex items-center space-x-2 justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-blue-600 hover:text-blue-800 border-blue-200 hover:bg-blue-50"
+                onClick={() => handleViewClick(row.original)}
+              >
+                View
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-yellow-600 hover:text-yellow-800 border-yellow-200 hover:bg-yellow-50"
+                onClick={() => handleEditClick(row.original)}
+              >
+                Edit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className={
+                  isDeleted
+                    ? "text-green-600 hover:text-green-800 border-green-200 hover:bg-green-50"
+                    : "text-red-600 hover:text-red-800 border-red-200 hover:bg-red-50"
+                }
+                onClick={() => handleDeleteClick(row.original)}
+              >
+                {isDeleted ? "Restore" : "Delete"}
+              </Button>
+            </div>
+          );
+        },
       },
     ],
     []

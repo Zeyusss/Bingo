@@ -40,21 +40,16 @@ const useSeller = (options: UseSellerOptions = {}) => {
     queryFn: fetchSeller,
     ...criticalConfig,
     enabled: options.enabled !== false,
-    retry: (failureCount: number, error: any) => {
-      
-      if (error?.response?.status === 401 || error?.response?.status === 403) {
-        return false;
-      }
-      if (error?.response?.status === 429) {
-        return false;
-      }
-      return failureCount < 2;
-    },
-    staleTime: 1000 * 60 * 15, 
+    retry: 1,
+    retryDelay: 1000,
+    staleTime: 1000 * 60 * 5, 
     gcTime: 1000 * 60 * 30, 
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false, 
+    refetchOnMount: true,
+    refetchOnReconnect: true,
+    meta: {
+      timeout: 5000
+    }
   });
 
   const logout = async () => {

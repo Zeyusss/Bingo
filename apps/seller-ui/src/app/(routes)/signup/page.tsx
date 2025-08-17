@@ -9,8 +9,9 @@ import axios,{AxiosError} from "axios";
 import { countries } from 'apps/seller-ui/src/utils/countries';
 import CreateShop from 'apps/seller-ui/src/shared/modules/auth/create-shop';
 import StripeSIcon from '../../assets/svg/stripe-logo';
-import useSeller from "../../../hooks/useSeller";
-import { useRouter } from "next/navigation";
+import PhoneNumberInput from '../../../shared/components/forms/PhoneNumberInput';
+import { PhoneNumberResult } from '../../../shared/components/forms/PhoneNumberInput';
+import useRedirectIfAuthenticated from "../../../hooks/useRedirectIfAuthenticated";
 
 
 type FormData = {
@@ -31,15 +32,8 @@ const [otp,setOtp] = useState(["","","",""]);
 const [sellerData,setSellerData] = useState<FormData | null>(null);
 const [sellerId,setSellerId] = useState("");
 const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-const router = useRouter();
-const { seller, isLoading } = useSeller();
-
-
-React.useEffect(() => {
-  if (!isLoading && seller) {
-    router.replace("/dashboard");
-  }
-}, [seller, isLoading, router]);
+useRedirectIfAuthenticated();
+const [phoneValidation, setPhoneValidation] = useState<PhoneNumberResult>({ isValid: false, normalized: '' });
 
 
 
@@ -48,7 +42,11 @@ React.useEffect(() => {
     register,
     handleSubmit,
     formState: { errors },
+    setValue,
+    watch,
   } = useForm<FormData>();
+
+  const phoneValue = watch('phone_number');
 
   const startResendTimer = () => {
     setCanResend(false);
@@ -199,24 +197,24 @@ const connectStripe = async ()=>{
               )}
             </div>
             <div>
-            <label className="block text-gray-700 mb-1">Phone Number</label>
-<input
-                type="tel"
-                placeholder="Mobile Number"
-                className="w-full p-2 border border-gray-300 outline-0 rounded"
+              <PhoneNumberInput
+                label="Phone Number"
+                value={phoneValue}
+                onChange={(normalizedValue, result) => {
+                  setValue('phone_number', normalizedValue);
+                  setPhoneValidation(result);
+                }}
+                error={errors.phone_number?.message as string}
+                required
+                placeholder="Enter your phone number"
+              />
+              <input
+                type="hidden"
                 {...register("phone_number", {
                   required: "Phone Number is required",
-                  pattern: {
-                    value: /^(?:\+?20|0)?1[0-9]{8,9}$/,
-                    message: "Invalid phone number format",
-                  },
-                  minLength: { value:10, message : " Phone number must be at least 10 digits"},
-                  maxLength: { value:15, message : " Phone number must be at most 15 digits"},
+                  validate: () => phoneValidation.isValid || phoneValidation.error || "Invalid phone number format",
                 })}
               />
-              {errors.phone_number && (
-                <p className="text-red-500 text-sm mt-1">{String(errors.phone_number.message)}</p>
-              )}
             </div>
             <div>
             <label className="block text-gray-700 mb-1">Country</label>
