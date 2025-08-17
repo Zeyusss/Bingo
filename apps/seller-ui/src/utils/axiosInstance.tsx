@@ -96,7 +96,10 @@ axiosInstance.interceptors.response.use(
       rateLimitCount = 0;
     }
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const is401 = error.response?.status === 401;
+    const isRetry = originalRequest?._retry;
+    
+    if (is401 && !isRetry) {
       if (error.response?.data?.message?.includes("No refresh token provided")) {
         handleLogout();
         return Promise.reject(error);

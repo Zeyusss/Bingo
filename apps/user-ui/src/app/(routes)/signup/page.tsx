@@ -11,6 +11,8 @@ import { useForm } from "react-hook-form";
 import axios,{AxiosError} from "axios";
 import { useAuthStore } from "../../../store/authStore";
 import useRedirectIfAuthenticated from "../../../hooks/useRedirectIfAuthenticated";
+import PhoneNumberInput from '../../../shared/components/forms/PhoneNumberInput';
+import { PhoneNumberResult } from '../../../utils/phoneUtils';
 
   type FormData = {
     name:string,
@@ -29,6 +31,7 @@ const [timer,setTimer] = useState(60);
 const [otp,setOtp] = useState(["","","",""]);
 const [userData,setUserData] = useState<FormData | null>(null);
 const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+const [phoneValidation, setPhoneValidation] = useState<PhoneNumberResult>({ isValid: false, normalized: '' });
 
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -38,7 +41,11 @@ const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
     register,
     handleSubmit,
     formState: { errors },
+    setValue,
+    watch
   } = useForm<FormData>();
+
+  const phoneValue = watch('phone');
 
   const startResendTimer = () => {
     setCanResend(false);
@@ -185,22 +192,24 @@ const resendOtp = ()=>{
               </div>
 
               <div>
-                <label className="block text-gray-700 mb-1">Phone number</label>
-              <input
-                type="tel"
-                placeholder="+1 (555) 123-4567"
-                className="w-full p-2 border border-gray-300 outline-0 rounded"
-                {...register("phone", {
-                  required: "Phone number is required",
-                  pattern: {
-                    value: /^[\+]?[1-9][\d]{0,15}$/,
-                    message: "Invalid phone number format",
-                  },
-                })}
-              />
-                {errors.phone && (
-                  <p className="text-red-500 text-sm mt-1">{String(errors.phone.message)}</p>
-                )}
+                <PhoneNumberInput
+                  label="Phone number"
+                  value={phoneValue}
+                  onChange={(normalizedValue, result) => {
+                    setValue('phone', normalizedValue);
+                    setPhoneValidation(result);
+                  }}
+                  error={errors.phone?.message as string}
+                  required
+                  placeholder="Enter your phone number"
+                />
+                <input
+                  type="hidden"
+                  {...register("phone", {
+                    required: "Phone number is required",
+                    validate: () => phoneValidation.isValid || phoneValidation.error || "Invalid phone number format",
+                  })}
+                />
               </div>
 
               <div>

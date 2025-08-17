@@ -48,7 +48,7 @@ const useUser = () => {
     refetchOnWindowFocus: false,
     refetchOnMount: true, 
     refetchOnReconnect: true,
-    enabled: true,
+    enabled: false,
 
     meta: {
       timeout: 5000 
