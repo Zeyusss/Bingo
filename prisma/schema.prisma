@@ -39,6 +39,7 @@ model users {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   shopReviews shopReviws[]
+  productReviews productReviews[]
   images      images[]     @relation("UserImages")
   following   followers[]  @relation("user_follows")
   orders      orders[]
@@ -196,6 +197,7 @@ model products {
   totalSales            Int           @default(0)
   cartItems             cart_items[]
   wishlistItems         wishlist_items[]
+  productReviews        productReviews[]
 }
 
 model productAnalytics {
@@ -481,6 +483,23 @@ model BlogCommentReport {
   @@unique([commentId, reporterId])
   @@index([status])
   @@index([commentId])
+}
+
+model productReviews {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId  String   @db.ObjectId
+  product    products @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId     String   @db.ObjectId
+  user       users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating     Float
+  title      String?
+  comment    String?
+  images     String[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([productId])
+  @@unique([productId, userId])
 }
 
 model sliders {

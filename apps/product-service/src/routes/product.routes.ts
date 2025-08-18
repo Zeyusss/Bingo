@@ -32,6 +32,10 @@ import {
   getSearchFilters,
   getTrendingProducts,
   getSellerProductCategories,
+  getProductReviews,
+  createProductReview,
+  updateProductReview,
+  deleteProductReview,
 } from "../controllers/product.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isVerifiedSeller } from "@packages/middleware/authorizeRoles";
@@ -116,4 +120,10 @@ router.get("/best-sellers", getBestSellersByCategory);
 router.get("/brands/showcase", getBrandsShowcase);
 router.get("/get-three-products", getThreeProducts);
 router.get("/get-new-products", getNewProducts);
+
+// Product Reviews
+router.get("/products/:productId/reviews", getProductReviews);
+router.post("/products/:productId/reviews", isAuthenticated, createProductReview);
+router.put("/reviews/:reviewId", isAuthenticated, updateProductReview);
+router.delete("/reviews/:reviewId", isAuthenticated, deleteProductReview);
 export default router;

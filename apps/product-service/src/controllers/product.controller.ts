@@ -34,6 +34,193 @@ export const getCategories = async (
   }
 };
 
+// ==========================
+// Product Reviews Endpoints
+// ==========================
+
+// Helper: recalculate and store product average rating
+const recalcProductAverageRating = async (productId: string) => {
+  const agg = await prisma.productReviews.aggregate({
+    where: { productId },
+    _avg: { rating: true },
+  });
+  const avg = agg._avg?.rating || 0;
+  await prisma.products.update({
+    where: { id: productId },
+    data: { ratings: Number(avg.toFixed(2)) },
+  });
+  return avg;
+};
+
+export const getProductReviews = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { productId } = req.params as { productId: string };
+    const page = parseInt((req.query.page as string) || '1', 10);
+    const limit = parseInt((req.query.limit as string) || '10', 10);
+    const skip = (page - 1) * limit;
+
+    const [items, total, agg] = await Promise.all([
+      prisma.productReviews.findMany({
+        where: { productId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              avatar: { select: { url: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.productReviews.count({ where: { productId } }),
+      prisma.productReviews.aggregate({ where: { productId }, _avg: { rating: true } }),
+    ]);
+
+    // breakdown 1..5
+    const breakdownCounts = await Promise.all(
+      [1, 2, 3, 4, 5].map((star) =>
+        prisma.productReviews.count({ where: { productId, rating: star } })
+      )
+    );
+    const breakdown = {
+      1: breakdownCounts[0],
+      2: breakdownCounts[1],
+      3: breakdownCounts[2],
+      4: breakdownCounts[3],
+      5: breakdownCounts[4],
+    } as Record<number, number>;
+
+    return res.status(200).json({
+      reviews: items,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+      average: agg._avg?.rating || 0,
+      breakdown,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const createProductReview = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { productId } = req.params as { productId: string };
+    const userId = req.user?.id;
+    const { rating, title, comment, images = [] } = req.body || {};
+
+    if (!userId) return next(new AuthError('Not authenticated'));
+    if (!productId) return next(new ValidationError('productId is required'));
+    if (rating == null || Number(rating) < 1 || Number(rating) > 5) {
+      return next(new ValidationError('rating must be between 1 and 5'));
+    }
+
+    // ensure product exists
+    const product = await prisma.products.findUnique({ where: { id: productId } });
+    if (!product) return next(new NotFoundError('Product not found'));
+
+    // create or fail if exists (unique by productId+userId)
+    const existing = await prisma.productReviews.findUnique({
+      where: { productId_userId: { productId, userId } },
+    }).catch(() => null);
+
+    if (existing) {
+      return next(new ValidationError('You have already reviewed this product'));
+    }
+
+    const created = await prisma.productReviews.create({
+      data: {
+        productId,
+        userId,
+        rating: Number(rating),
+        title: title || null,
+        comment: comment || null,
+        images: Array.isArray(images) ? images : [],
+      },
+    });
+
+    const average = await recalcProductAverageRating(productId);
+
+    return res.status(201).json({ success: true, review: created, average });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const updateProductReview = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { reviewId } = req.params as { reviewId: string };
+    const userId = req.user?.id;
+    const { rating, title, comment, images } = req.body || {};
+
+    if (!userId) return next(new AuthError('Not authenticated'));
+
+    const review = await prisma.productReviews.findUnique({ where: { id: reviewId } });
+    if (!review) return next(new NotFoundError('Review not found'));
+    if (review.userId !== userId) return next(new ValidationError('Unauthorized'));
+
+    const updated = await prisma.productReviews.update({
+      where: { id: reviewId },
+      data: {
+        rating: rating != null ? Number(rating) : review.rating,
+        title: title !== undefined ? title : review.title,
+        comment: comment !== undefined ? comment : review.comment,
+        images: Array.isArray(images) ? images : review.images,
+      },
+    });
+
+    const average = await recalcProductAverageRating(review.productId);
+
+    return res.status(200).json({ success: true, review: updated, average });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const deleteProductReview = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { reviewId } = req.params as { reviewId: string };
+    const userId = req.user?.id;
+
+    if (!userId) return next(new AuthError('Not authenticated'));
+
+    const review = await prisma.productReviews.findUnique({ where: { id: reviewId } });
+    if (!review) return next(new NotFoundError('Review not found'));
+    if (review.userId !== userId && req.user?.role !== 'admin') {
+      return next(new ValidationError('Unauthorized'));
+    }
+
+    await prisma.productReviews.delete({ where: { id: reviewId } });
+    const average = await recalcProductAverageRating(review.productId);
+
+    return res.status(200).json({ success: true, message: 'Review deleted', average });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 // create discount code
 export const createDiscountCodes = async (
   req: any,

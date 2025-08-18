@@ -14,6 +14,7 @@ import NewProducts from "../shared/components/homepage/NewProducts";
 import AboutSection from "../shared/components/homepage/AboutSection";
 import Footer from "../shared/components/homepage/Footer";
 import ProuductCollections from "../shared/components/homepage/ProductCollections";
+import RecommendedProducts from "../shared/components/homepage/RecommendedProducts";
 
 const Page = () => {
   const {
@@ -43,6 +44,7 @@ const Page = () => {
         </div>
       <CategoryGrid />
       <NewProducts />
+      <RecommendedProducts />
       <ShopOfTheWeek />
       <BrandShowcase />
       <ProuductCollections />
