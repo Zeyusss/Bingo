@@ -21,21 +21,6 @@ import {
 import { toast } from "react-hot-toast";
 import { useQuery as useReactQuery } from "@tanstack/react-query";
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: "admin" | "seller" | "user";
-  createdAt: string;
-  isBlocked?: boolean;
-}
-
-interface EditUserData {
-  name: string;
-  email: string;
-  role: "admin" | "seller" | "user";
-}
-
 const UsersPage = () => {
   const [showHelpModal, setShowHelpModal] = useState(false);
 
@@ -173,7 +158,6 @@ const UsersPage = () => {
     type: "block" | "delete";
     entity: any;
   }>(null);
-  const [viewEntity, setViewEntity] = useState<any | null>(null);
   const queryClient = useQueryClient();
   const [viewEntityType, setViewEntityType] = useState<
     "user" | "seller" | null
@@ -533,6 +517,9 @@ const UsersPage = () => {
 
   return (
     <div className="p-6 space-y-6">
+
+      <div className="bg-white border-b border-gray-200 mb-6 shadow-sm rounded-md">
+      <div className="px-6 py-4">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Users Management</h1>
@@ -551,6 +538,9 @@ const UsersPage = () => {
           />
         </div>
       </div>
+      </div>
+      </div>
+
 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
@@ -758,29 +748,32 @@ const UsersPage = () => {
         </Table>
       </div>
 
-      <div className="flex justify-center items-center gap-2 mt-4">
-        <button
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-          disabled={page === 1}
-          className="px-3 py-1 border rounded disabled:opacity-50"
-        >
-          Previous
-        </button>
-        <span>
-          Page {meta.currentPage || page} of {meta.totalPages || 1}
-        </span>
-        <button
-          onClick={() =>
-            setPage((p) =>
-              meta.totalPages ? Math.min(meta.totalPages, p + 1) : p + 1
-            )
-          }
-          disabled={meta.totalPages ? page >= meta.totalPages : true}
-          className="px-3 py-1 border rounded disabled:opacity-50"
-        >
-          Next
-        </button>
-      </div>
+      {/* Only show pagination if there are more items than limit */}
+      {(meta.totalUsers > limit || meta.totalSellers > limit || filteredEntities.length > limit) && (
+        <div className="flex justify-center items-center gap-2 mt-4">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span>
+            Page {meta.currentPage || page} of {meta.totalPages || 1}
+          </span>
+          <button
+            onClick={() =>
+              setPage((p) =>
+                meta.totalPages ? Math.min(meta.totalPages, p + 1) : p + 1
+              )
+            }
+            disabled={meta.totalPages ? page >= meta.totalPages : true}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      )}
 
       <Modal
         isOpen={isEditModalOpen}
@@ -1046,6 +1039,9 @@ const UsersPage = () => {
                       <div>
                         <b>Total Shop Product Value:</b> $
                         {totalProductValue.toFixed(2)}
+                      </div>
+                      <div>
+                        <b>Total Purchases Analytics:</b> {totalPurchasesAnalytics}
                       </div>
                     </div>
                     <div className="mb-2">

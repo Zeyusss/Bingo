@@ -35,25 +35,27 @@ const restoreProduct = async (productId: string) => {
 const ProductsPage = () => {
   const [showHelpModal, setShowHelpModal] = useState(false);
 
-
   const helpSections: HelpSection[] = [
     {
       title: "Overview",
-      content: "The Products Management page provides comprehensive oversight of all products listed on your platform. Monitor product catalog, manage inventory, and oversee seller product listings with powerful search and filtering tools.",
+      content:
+        "The Products Management page provides comprehensive oversight of all products listed on your platform. Monitor product catalog, manage inventory, and oversee seller product listings with powerful search and filtering tools.",
       subsections: [
         {
           title: "Product Catalog",
-          content: "View all products across all sellers with detailed information and status"
+          content:
+            "View all products across all sellers with detailed information and status",
         },
         {
           title: "Inventory Management",
-          content: "Monitor stock levels, pricing, and product availability"
+          content: "Monitor stock levels, pricing, and product availability",
         },
         {
           title: "Quality Control",
-          content: "Review product listings, manage approvals, and ensure platform standards"
-        }
-      ]
+          content:
+            "Review product listings, manage approvals, and ensure platform standards",
+        },
+      ],
     },
     {
       title: "Search & Filtering",
@@ -61,17 +63,19 @@ const ProductsPage = () => {
       subsections: [
         {
           title: "Search Function",
-          content: "Search products by name, category, or seller information"
+          content: "Search products by name, category, or seller information",
         },
         {
           title: "Category Filtering",
-          content: "Filter by product categories to focus on specific product types"
+          content:
+            "Filter by product categories to focus on specific product types",
         },
         {
           title: "Advanced Filters",
-          content: "Sort by price, availability, seller, and other product attributes"
-        }
-      ]
+          content:
+            "Sort by price, availability, seller, and other product attributes",
+        },
+      ],
     },
     {
       title: "Product Actions",
@@ -79,21 +83,23 @@ const ProductsPage = () => {
       subsections: [
         {
           title: "View Details",
-          content: "Access complete product information including images, descriptions, and specifications"
+          content:
+            "Access complete product information including images, descriptions, and specifications",
         },
         {
           title: "Edit Products",
-          content: "Modify product details, pricing, and availability status"
+          content: "Modify product details, pricing, and availability status",
         },
         {
           title: "Delete/Restore",
-          content: "Remove products from listings or restore previously deleted items"
+          content:
+            "Remove products from listings or restore previously deleted items",
         },
         {
           title: "Status Management",
-          content: "Approve, reject, or flag products for review"
-        }
-      ]
+          content: "Approve, reject, or flag products for review",
+        },
+      ],
     },
     {
       title: "Product Information",
@@ -101,17 +107,17 @@ const ProductsPage = () => {
       subsections: [
         {
           title: "Basic Details",
-          content: "Product name, category, price, and seller information"
+          content: "Product name, category, price, and seller information",
         },
         {
           title: "Inventory Status",
-          content: "Stock levels, availability, and inventory tracking"
+          content: "Stock levels, availability, and inventory tracking",
         },
         {
           title: "Performance Metrics",
-          content: "Sales data, views, and customer ratings"
-        }
-      ]
+          content: "Sales data, views, and customer ratings",
+        },
+      ],
     },
     {
       title: "Best Practices",
@@ -119,18 +125,21 @@ const ProductsPage = () => {
       subsections: [
         {
           title: "Quality Standards",
-          content: "Maintain consistent product quality and accurate descriptions"
+          content:
+            "Maintain consistent product quality and accurate descriptions",
         },
         {
           title: "Category Organization",
-          content: "Ensure products are properly categorized for better discoverability"
+          content:
+            "Ensure products are properly categorized for better discoverability",
         },
         {
           title: "Regular Reviews",
-          content: "Periodically review product listings for accuracy and compliance"
-        }
-      ]
-    }
+          content:
+            "Periodically review product listings for accuracy and compliance",
+        },
+      ],
+    },
   ];
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -139,14 +148,13 @@ const ProductsPage = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>();
   const [editFormData, setEditFormData] = useState({
-    title: '',
-    detailed_description: '',
-    regular_price: '',
-    sale_price: '',
-    category: '',
-    subCategory: '',
-    stock: '',
-    tags: ''
+    title: "",
+    detailed_description: "",
+    regular_price: "",
+    sale_price: "",
+    category: "",
+    stock: "",
+    tags: "",
   });
   const [page, setPage] = useState(1);
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -197,16 +205,22 @@ const ProductsPage = () => {
 
   const openEditModal = (product: any) => {
     const mappedData = {
-      title: product.title || '',
-      detailed_description: product.detailed_description || product.short_description || '',
-      regular_price: product.regular_price ? product.regular_price.toString() : '',
-      sale_price: product.sale_price ? product.sale_price.toString() : '',
-      category: product.category || '',
-      subCategory: product.subCategory || product.subcategory || '',
-      stock: product.stock ? product.stock.toString() : '0',
-      tags: Array.isArray(product.tags) ? product.tags.join(', ') : (typeof product.tags === 'string' ? product.tags : '')
+      title: product.title || "",
+      detailed_description:
+        product.detailed_description || product.short_description || "",
+      regular_price: product.regular_price
+        ? product.regular_price.toString()
+        : "",
+      sale_price: product.sale_price ? product.sale_price.toString() : "",
+      category: product.category || "",
+      stock: product.stock ? product.stock.toString() : "0",
+      tags: Array.isArray(product.tags)
+        ? product.tags.join(", ")
+        : typeof product.tags === "string"
+        ? product.tags
+        : "",
     };
-    
+
     setSelectedProduct(product);
     setEditFormData(mappedData);
     setShowEditModal(true);
@@ -219,19 +233,24 @@ const ProductsPage = () => {
 
   const updateProductMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await axiosInstance.put(`http://localhost:6002/api/update-product/${selectedProduct?.id}`, {
-        ...data,
-        tags: data.tags ? data.tags.split(',').map((tag: string) => tag.trim()) : [],
-      });
+      const response = await axiosInstance.put(
+        `http://localhost:6002/api/update-product/${selectedProduct?.id}`,
+        {
+          ...data,
+          tags: data.tags
+            ? data.tags.split(",").map((tag: string) => tag.trim())
+            : [],
+        }
+      );
       return response.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['all-products'] });
+      queryClient.invalidateQueries({ queryKey: ["all-products"] });
       setShowEditModal(false);
       setSelectedProduct(null);
     },
     onError: (error) => {
-      console.error('Failed to update product:', error); 
+      console.error("Failed to update product:", error);
     },
   });
 
@@ -240,21 +259,25 @@ const ProductsPage = () => {
   };
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Products Management
-          </h1>
-          <p className="text-gray-600 mt-1">Manage all products</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-500">
-            {filteredProducts.length} products
+      <div className="bg-white border-b border-gray-200 mb-6 shadow-sm rounded-md">
+        <div className="px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Products Management
+              </h1>
+              <p className="text-gray-600 mt-1">Manage all products</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-gray-500">
+                {filteredProducts.length} products
+              </div>
+              <HelpButton
+                onClick={() => setShowHelpModal(true)}
+                text="Products Help"
+              />
+            </div>
           </div>
-          <HelpButton
-            onClick={() => setShowHelpModal(true)}
-            text="Products Help"
-          />
         </div>
       </div>
       <div className="flex flex-col sm:flex-row gap-4">
@@ -449,32 +472,35 @@ const ProductsPage = () => {
           onClose={() => setShowViewModal(false)}
         />
       </div>
-      <div className="flex justify-center items-center gap-2 mt-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-          disabled={page === 1}
-          className="px-3 py-1 border rounded disabled:opacity-50"
-        >
-          Previous
-        </Button>
-        <span>
-          Page {products.currentPage || 1} of {products.totalPages || 1}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            setPage((p) => Math.min(products.totalPages || 1, p + 1))
-          }
-          disabled={page >= (products.totalPages || 1)}
-          className="px-3 py-1 border rounded disabled:opacity-50"
-        >
-          Next
-        </Button>
-      </div>
-      
+      {/* Only show pagination if there are more products than limit */}
+      {(products.data?.length > limit) && (
+        <div className="flex justify-center items-center gap-2 mt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            Previous
+          </Button>
+          <span>
+            Page {products.currentPage || 1} of {products.totalPages || 1}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setPage((p) => Math.min(products.totalPages || 1, p + 1))
+            }
+            disabled={page >= (products.totalPages || 1)}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            Next
+          </Button>
+        </div>
+      )}
+
       {/* Products Management Help Modal */}
       <HelpModal
         isOpen={showHelpModal}

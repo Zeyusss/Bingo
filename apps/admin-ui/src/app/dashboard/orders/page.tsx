@@ -150,7 +150,9 @@ const OrdersPage = () => {
   );
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="bg-white border-b border-gray-200 mb-6 shadow-sm rounded-md">
+       <div className="px-6 py-4">
+       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
             Orders Management
@@ -166,6 +168,8 @@ const OrdersPage = () => {
             text="Orders Help"
           />
         </div>
+      </div>
+       </div>
       </div>
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
@@ -298,29 +302,32 @@ const OrdersPage = () => {
           </TableBody>
         </Table>
       </div>
-      <div className="flex justify-center items-center gap-2 mt-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-          disabled={page === 1}
-          className="px-3 py-1 border rounded disabled:opacity-50"
-        >
-          Previous
-        </Button>
-        <span>
-          Page {safeData.currentPage} of {safeData.totalPages}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPage((p) => Math.min(safeData.totalPages, p + 1))}
-          disabled={page >= safeData.totalPages}
-          className="px-3 py-1 border rounded disabled:opacity-50"
-        >
-          Next
-        </Button>
-      </div>
+      {/* Only show pagination if there are more orders than limit */}
+      {orders.length > limit && (
+        <div className="flex justify-center items-center gap-2 mt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            Previous
+          </Button>
+          <span>
+            Page {safeData.currentPage} of {safeData.totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => Math.min(safeData.totalPages, p + 1))}
+            disabled={page >= safeData.totalPages}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            Next
+          </Button>
+        </div>
+      )}
       {/* Modals for delete/restore can be added here if needed */}
       
       {/* Orders Management Help Modal */}

@@ -27,13 +27,19 @@ let isRefreshing = false;
 let refreshSubscribers: (() => void)[] = [];
 let rateLimitCount = 0;
 let lastRateLimitTime = 0;
+let isLoggingOut = false;
 
 
 const handleLogout = () => {
+  isLoggingOut = true;
   if (window.location.pathname !== "/") {
     requestManager.clear();
     window.location.href = "/";
   }
+};
+
+export const setLoggingOut = (value: boolean) => {
+  isLoggingOut = value;
 };
 
 
@@ -93,7 +99,7 @@ axiosInstance.interceptors.response.use(
       rateLimitCount = 0;
     }
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry && !isLoggingOut) {
       if (isRefreshing) {
         return new Promise((resolve) => {
           subscribeTokenRefresh(() => resolve(axiosInstance(originalRequest)));
@@ -120,6 +126,11 @@ axiosInstance.interceptors.response.use(
         handleLogout();
         return Promise.reject(refreshError);
       }
+    }
+    
+    // If we're logging out, just reject the request without refresh attempts
+    if (error.response?.status === 401 && isLoggingOut) {
+      return Promise.reject(error);
     }
 
 

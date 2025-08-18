@@ -123,7 +123,7 @@ export default function AbandonedCartsPage() {
           duration: 4000,
           position: "top-right",
         });
-        fetchAbandonedCarts(); // Refresh data
+        fetchAbandonedCarts(); 
       } else {
         toast.error("Failed to send recovery email", {
           duration: 4000,
@@ -166,7 +166,6 @@ export default function AbandonedCartsPage() {
     setPagination(prev => ({ ...prev, currentPage: 1 }));
   };
 
-  // Help content
   const helpSections: HelpSection[] = [
     {
       title: "Overview",
@@ -251,13 +250,14 @@ export default function AbandonedCartsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
    
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 mb-6 shadow-sm rounded-md">
+        <div className="px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3 font-Poppins">
-              <ShoppingCart className="h-6 w-6 text-red-600" />
+              
               Abandoned Cart Recovery
             </h1>
             <p className="text-sm text-gray-600 mt-1 font-Roboto">
@@ -265,6 +265,7 @@ export default function AbandonedCartsPage() {
             </p>
           </div>
           <HelpButton onClick={() => setShowHelpModal(true)} />
+        </div>
         </div>
       </div>
 
@@ -446,50 +447,53 @@ export default function AbandonedCartsPage() {
                 </table>
               </div>
 
-              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-                <div className="text-sm text-gray-700">
-                  Showing {((pagination.currentPage - 1) * pagination.itemsPerPage) + 1} to{' '}
-                  {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} of{' '}
-                  {pagination.totalItems} results
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => handlePageChange(pagination.currentPage - 1)}
-                    disabled={pagination.currentPage === 1}
-                    className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                  
-               
-                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                    const pageNum = Math.max(1, pagination.currentPage - 2) + i;
-                    if (pageNum > pagination.totalPages) return null;
+              {/* Only show pagination if there are more items than itemsPerPage */}
+              {pagination.totalItems > pagination.itemsPerPage && (
+                <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                  <div className="text-sm text-gray-700">
+                    Showing {((pagination.currentPage - 1) * pagination.itemsPerPage) + 1} to{' '}
+                    {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} of{' '}
+                    {pagination.totalItems} results
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handlePageChange(pagination.currentPage - 1)}
+                      disabled={pagination.currentPage === 1}
+                      className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
                     
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        className={`px-3 py-1 rounded-lg ${
-                          pageNum === pagination.currentPage
-                            ? 'bg-red-600 text-white'
-                            : 'border border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                  
-                  <button
-                    onClick={() => handlePageChange(pagination.currentPage + 1)}
-                    disabled={pagination.currentPage === pagination.totalPages}
-                    className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
+                 
+                    {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                      const pageNum = Math.max(1, pagination.currentPage - 2) + i;
+                      if (pageNum > pagination.totalPages) return null;
+                      
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`px-3 py-1 rounded-lg ${
+                            pageNum === pagination.currentPage
+                              ? 'bg-red-600 text-white'
+                              : 'border border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                    
+                    <button
+                      onClick={() => handlePageChange(pagination.currentPage + 1)}
+                      disabled={pagination.currentPage === pagination.totalPages}
+                      className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           )}
         </div>

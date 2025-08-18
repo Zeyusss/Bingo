@@ -224,16 +224,21 @@ export default function CronJobsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen">
+      <div >
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="bg-white border-b border-gray-200 mb-6 shadow-sm rounded-md">
+        <div className="px-6 py-4">
+        <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Cron Jobs Management</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Cron Jobs Management</h1>
             <p className="text-gray-600 mt-2">Monitor and manage scheduled tasks across all services</p>
           </div>
           <HelpButton onClick={() => setShowHelpModal(true)} />
         </div>
+        </div>
+        </div>
+
 
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -422,7 +427,8 @@ export default function CronJobsPage() {
           </div>
 
           
-          {pagination.totalPages > 1 && (
+          {/* Only show pagination if there are more items than itemsPerPage */}
+          {pagination.totalItems > pagination.itemsPerPage && (
             <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
               <div className="flex-1 flex justify-between sm:hidden">
                 <button

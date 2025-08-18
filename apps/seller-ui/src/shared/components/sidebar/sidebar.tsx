@@ -22,6 +22,7 @@ import {
   SquarePlus,
   TicketPercent,
   Store,
+  FileText,
 } from "lucide-react";
 import PaymentIcon from "apps/seller-ui/src/app/assets/icons/payment";
 
@@ -169,6 +170,19 @@ const SidebarBarWrapper = () => {
               icon={<Settings size={20} color={getIconColor("/dashboard/settings")} />}
             />
           </SidebarMenu>
+          <SidebarMenu title="Content">
+              <SidebarItem
+                isActive={activeSidebar.includes("/dashboard/blog")}
+                title="Blog"
+                href="/dashboard/blog"
+                icon={
+                  <FileText
+                    size={22}
+                    color={getIconColor("/dashboard/blog")}
+                  />
+                }
+              />
+              </SidebarMenu>
         </div>
 
         {/* Extras */}

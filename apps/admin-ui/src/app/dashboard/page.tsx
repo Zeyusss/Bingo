@@ -5,7 +5,7 @@ import RevenueChart from "./components/RevenueChart";
 import RecentOrdersTable from "./components/RecentOrdersTable";
 import ResourceMonitor from "./components/ResourceMonitor";
 
-import { Activity, BarChart3, TrendingUp } from "lucide-react";
+import { BarChart3} from "lucide-react";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
 import HelpModal, { HelpSection } from "../shared/components/HelpModal";
 import HelpButton from "../shared/components/HelpButton";
@@ -116,15 +116,12 @@ function DashboardContent() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
    
-      <div className="bg-white border-b border-gray-200 mb-6 shadow-sm">
+      <div className="bg-white border-b border-gray-200 mb-6 shadow-sm rounded-md">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <Activity className="h-6 w-6 text-red-600" />
-              </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 font-Poppins">
                   Admin Dashboard

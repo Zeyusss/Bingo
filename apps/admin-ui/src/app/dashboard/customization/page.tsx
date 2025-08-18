@@ -37,7 +37,6 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-
 type Category = {
   id: string;
   name: string;
@@ -606,23 +605,30 @@ const CustomizationPage: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Customization</h1>
-          <p className="text-gray-600 mt-1">
-            Manage your store's categories, slider, and gallery
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-500">
-            {filteredCategories.length} categories
+      <div className="bg-white border-b border-gray-200 mb-6 shadow-sm rounded-md">
+        <div className="px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Customization
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Manage your store's categories, slider, and gallery
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-gray-500">
+                {filteredCategories.length} categories
+              </div>
+              <HelpButton
+                onClick={() => setShowHelpModal(true)}
+                text="Customization Help"
+              />
+            </div>
           </div>
-          <HelpButton
-            onClick={() => setShowHelpModal(true)}
-            text="Customization Help"
-          />
         </div>
       </div>
+
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search

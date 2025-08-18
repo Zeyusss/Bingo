@@ -2319,7 +2319,7 @@ export const getTrendingProducts = async (
         },
         order: {
           status: {
-            in: ["completed", "delivered", "shipped"],
+            in: ["Paid", "completed", "delivered", "shipped"],
           },
         },
       },

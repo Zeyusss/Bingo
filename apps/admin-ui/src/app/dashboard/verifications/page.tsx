@@ -61,7 +61,7 @@ const VerificationManagementPage = () => {
   const [reviewNotes, setReviewNotes] = useState("");
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage] = useState(1);
 
   // Fetch pending verifications
   const {
@@ -77,7 +77,6 @@ const VerificationManagementPage = () => {
   // Fetch verification details
   const {
     data: verificationDetails,
-    isLoading: isLoadingDetails,
     error: detailsError,
   } = useQuery({
     queryKey: ["verification-details", selectedVerification],
@@ -149,12 +148,14 @@ const VerificationManagementPage = () => {
     ) || [];
 
   return (
-    <div className="p-6 bg-white min-h-screen">
+    <div className="p-6 min-h-screen">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="bg-white border-b border-gray-200 mb-6 shadow-sm rounded-md">
+        <div className="px-6 py-4">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-gray-900">
               Seller Verification Management
             </h1>
             <p className="text-gray-600 mt-2">
@@ -168,6 +169,9 @@ const VerificationManagementPage = () => {
             </span>
           </div>
         </div>
+        </div>
+        </div>
+
 
         {/* Search */}
         <div className="mb-6">

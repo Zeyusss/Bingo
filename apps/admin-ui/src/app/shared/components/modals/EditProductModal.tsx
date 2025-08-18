@@ -42,8 +42,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
   const [hasChanges, setHasChanges] = useState(false);
   const [originalData, setOriginalData] = useState<any>(null);
   const [categories, setCategories] = useState<string[]>([]);
-  const [subCategories, setSubCategories] = useState<string[]>([]);
-  const [availableSubCategories, setAvailableSubCategories] = useState<string[]>([]);
 
  
   useEffect(() => {
@@ -57,17 +55,12 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
         
   
         const safeCategories = Array.isArray(data.categories) ? data.categories : [];
-        const safeSubCategories = Array.isArray(data.subCategories) ? data.subCategories : [];
         
         setCategories(safeCategories);
-        setSubCategories(safeSubCategories);
-        setAvailableSubCategories(safeSubCategories);
       } catch (error) {
         console.error('Failed to fetch categories:', error);
 
         setCategories([]);
-        setSubCategories([]);
-        setAvailableSubCategories([]);
       }
     };
     
@@ -76,33 +69,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
     }
   }, [isOpen]);
 
- 
-  useEffect(() => {
-    if (editFormData.category && subCategories) {
-    
-      if (typeof subCategories === 'object' && !Array.isArray(subCategories)) {
-        const categorySubcategories = subCategories[editFormData.category];
-        if (Array.isArray(categorySubcategories)) {
-          setAvailableSubCategories(categorySubcategories);
-        } else {
-          setAvailableSubCategories([]);
-        }
-      } else if (Array.isArray(subCategories)) {
-   
-        const filtered = subCategories.filter(sub => 
-          sub && typeof sub === 'string' && (
-            sub.toLowerCase().includes(editFormData.category.toLowerCase()) ||
-            editFormData.category.toLowerCase().includes(sub.toLowerCase())
-          )
-        );
-        setAvailableSubCategories(filtered.length > 0 ? filtered : subCategories);
-      } else {
-        setAvailableSubCategories([]);
-      }
-    } else {
-      setAvailableSubCategories([]);
-    }
-  }, [editFormData.category, subCategories]);
 
   useEffect(() => {
     if (isOpen && product) {
@@ -113,7 +79,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
         regular_price: product.regular_price ? product.regular_price.toString() : '',
         sale_price: product.sale_price ? product.sale_price.toString() : '',
         category: product.category || '',
-        subCategory: product.subCategory || product.subcategory || '', 
+ 
         stock: product.stock ? product.stock.toString() : '0',
         tags: Array.isArray(product.tags) ? product.tags.join(', ') : (typeof product.tags === 'string' ? product.tags : '')
       };
@@ -273,7 +239,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                     )}
                   </div>
 
-                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Tags

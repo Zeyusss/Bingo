@@ -212,6 +212,9 @@ const NotificationsPage = () => {
 
   return (
     <div className="p-6 space-y-6">
+
+      <div className="bg-white border-b border-gray-200 mb-6 shadow-sm rounded-md">
+      <div className="px-6 py-4">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
@@ -224,6 +227,9 @@ const NotificationsPage = () => {
           text="Notifications Help"
         />
       </div>
+      </div>
+      </div>
+
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -388,8 +394,8 @@ const NotificationsPage = () => {
           </div>
         )}
 
-        {/* Pagination */}
-        {meta.totalPages > 1 && (
+        {/* Only show pagination if there are more notifications than page size */}
+        {(meta.totalNotifications > 10) && (
           <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
             <div className="text-sm text-gray-700">
               Showing page {meta.currentPage} of {meta.totalPages}

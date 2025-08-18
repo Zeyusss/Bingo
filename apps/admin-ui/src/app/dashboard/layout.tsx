@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import SidebarWrapper from "../shared/components/sidebar";
 import { QueryProvider } from "../shared/components/providers/QueryProvider";
@@ -8,18 +8,15 @@ import useAdmin from "../../hooks/useAdmin";
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { admin, isLoading, isError } = useAdmin();
   const router = useRouter();
-
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
-       if (!isLoading && isError && !admin) {
+    if (!isLoading && isError && !admin && !isRedirecting) {
       console.log('Admin authentication failed, redirecting to login...');
-      const timer = setTimeout(() => {
-        router.replace('/');
-      }, 1000);
-      return () => clearTimeout(timer);
+      setIsRedirecting(true);
+      router.replace('/');
     }
-  }, [admin, isLoading, isError, router]);
-
+  }, [admin, isLoading, isError, router, isRedirecting]);
 
   if (isLoading) {
     return (
@@ -32,8 +29,18 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
- 
-  if (!admin || isError) {
+  if (isRedirecting) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+          <p className="text-gray-600">Redirecting to login...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!admin && !isLoading) {
     return null;
   }
 

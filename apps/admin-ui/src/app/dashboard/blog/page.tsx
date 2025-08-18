@@ -52,10 +52,24 @@ const AdminBlogReviewPage = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6">
-      <h1 className="text-2xl font-bold mb-6 text-gray-800">
-        Blog Management
-      </h1>
+    <div className="mx-auto p-4 md:p-6">
+      <div className="bg-white border-b border-gray-200 mb-6 shadow-sm rounded-md">
+      <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 font-Poppins">
+                  Blog
+                </h1>
+                <p className="text-sm text-gray-500 font-Roboto">
+                  Monitor your Blog's activity
+                </p>
+              </div>
+            </div>
+          </div>
+      </div>
+      </div>
+
 
       {/* Tab Navigation */}
       <div className="mb-6 border-b border-gray-200">
