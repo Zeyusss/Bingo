@@ -303,10 +303,11 @@ export const refreshToken = async (
   next: NextFunction
 ) => {
   try {
+    // Check for refresh tokens in order: user, admin, seller, header
     const refreshToken =
-      req.cookies["refresh_Token"] ||
-      req.cookies["refresh_token"] ||
-      req.cookies["seller-refresh-token"] ||
+      req.cookies["refresh_Token"] ||    // User refresh token
+      req.cookies["refresh_token"] ||    // Admin refresh token  
+      req.cookies["seller-refresh-token"] ||  // Seller refresh token
       req.headers.authorization?.split(" ")[1];
     
     if (!refreshToken) {
@@ -371,12 +372,22 @@ export const refreshToken = async (
       { expiresIn: "15m" }
     );
 
+    // Generate new refresh token for security (token rotation)
+    const newRefreshToken = jwt.sign(
+      { id: decoded.id, role: decoded.role },
+      process.env.REFRESH_TOKEN_SECRET as string,
+      { expiresIn: "7d" }
+    );
+
     if (decoded.role === "user") {
       setCookie(res, "access_Token", newAccessToken);
+      setCookie(res, "refresh_Token", newRefreshToken);
     } else if (decoded.role === "seller") {
       setCookie(res, "seller-access-token", newAccessToken);
+      setCookie(res, "seller-refresh-token", newRefreshToken);
     } else if (decoded.role === "admin") {
       setCookie(res, "access_token", newAccessToken);
+      setCookie(res, "refresh_token", newRefreshToken);
     }
 
     req.role = decoded.role;
@@ -1084,6 +1095,10 @@ export const loginAdmin = async (
     const user = await prisma.users.findUnique({ where: { email } });
 
     if (!user) return next(new AuthError("User doesn't exists!"));
+   
+    if (user.role !== "admin") {
+      return next(new AuthError("Access denied. Admin privileges required."));
+    }
     if (user.isBlocked || user.isDeleted) {
       return res.status(403).json({
         message:

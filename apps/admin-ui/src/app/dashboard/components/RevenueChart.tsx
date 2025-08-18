@@ -9,7 +9,7 @@ import {
 } from "./ui/Card";
 import { Skeleton } from "./ui/Skeleton";
 import { useRevenueData } from "../../../hooks/useDashboardData";
-import { TrendingUp, DollarSign, AlertCircle, RefreshCw } from "lucide-react";
+import { DollarSign, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "./ui/Button";
 
 const RevenueChart: React.FC = () => {
@@ -156,13 +156,6 @@ const RevenueChart: React.FC = () => {
             <CardDescription className="font-Roboto">
               Last 6 months • Total: ${totalRevenue.toLocaleString()}
             </CardDescription>
-          </div>
-          <div className="flex items-center gap-1 text-sm text-red-600">
-            <TrendingUp className="h-4 w-4" />
-            <span className="font-medium font-Roboto">
-              {growth > 0 ? "+" : ""}
-              {growth.toFixed(1)}%
-            </span>
           </div>
         </div>
       </CardHeader>
