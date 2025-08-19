@@ -68,7 +68,7 @@ const TopBar = () => {
           </div>
 
           <span className="text-gray-300">|</span>
-          <Link href="#" className="hover:text-orange-500 transition-colors font-medium">
+          <Link href="/policies" className="hover:text-orange-500 transition-colors font-medium">
           Policies
           </Link>
           <Link href="/about-us" className="hover:text-orange-500 transition-colors font-medium">

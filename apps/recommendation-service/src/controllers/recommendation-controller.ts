@@ -39,7 +39,7 @@ export const getRecommendedProducts = async (
         ? (now.getTime() - lastTrainedTime.getTime()) / (1000 * 60 * 60)
         : Infinity;
 
-      if (actions.length < 50) {
+      if (actions.length < 10) {
         recommendedProducts = products.slice(-10);
       } else if (hoursDiff < 3 && recommendations.length > 0) {
         recommendedProducts = products.filter((product:any) =>
@@ -70,3 +70,4 @@ export const getRecommendedProducts = async (
     return next(error);
   }
 };
+

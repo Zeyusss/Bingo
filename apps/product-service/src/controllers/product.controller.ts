@@ -1030,7 +1030,6 @@ export const getTodaysDeals = async (
     const skip = (parsedPage - 1) * parsedLimit;
 
     const baseQuery: any = {
-      starting_date: null,
       isDeleted: false,
     };
 
@@ -1188,7 +1187,7 @@ export const getFilteredShops = async (
       filters.country = { in: country };
     }
 
-    // Add notFollowed filter if userId is provided
+   
     if (notFollowed === 'true' && userId) {
       filters.followers = {
         none: {
@@ -1565,7 +1564,7 @@ export const getColorsWithCount = async (
   }
 };
 
-//  color name generation from hex codes
+
 const getColorName = (hexCode: string): string => {
   if (!hexCode.startsWith("#")) {
     return hexCode;
@@ -2342,7 +2341,6 @@ export const getTrendingProducts = async (
 
     const filterConditions: any = {
       isDeleted: false,
-      starting_date: null,
     };
 
     if (categories) {

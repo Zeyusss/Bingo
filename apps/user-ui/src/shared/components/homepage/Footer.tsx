@@ -22,94 +22,108 @@ const Footer = () => {
     fetchCategories();
   }, []);
   return (
-    <footer className="bg-black text-white pt-12 pb-4 px-4">
-      <div className="max-w-screen-xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+    <footer className="bg-gradient-to-br from-gray-900 via-black to-gray-800 text-white pt-16 pb-6 px-4 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500 opacity-5 rounded-full -translate-y-32 translate-x-32"></div>
+      <div className="absolute bottom-0 left-0 w-48 h-48 bg-red-500 opacity-5 rounded-full translate-y-24 -translate-x-24"></div>
+      
+      <div className="max-w-screen-xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 relative z-10">
         {/* Logo & Socials */}
-        <div>
-          <Link href="/" className="text-2xl font-bold flex items-center gap-2">
-            <Image
-              src="/logo-white.svg"
-              alt="Logo"
-              width={36}
-              height={36}
-              className="invert"
-            />
-            BINGO.
+        <div className="space-y-6">
+          <Link href="/" className="text-3xl font-bold flex items-center gap-3 group">
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+              <span className="text-white font-bold text-lg">B</span>
+            </div>
+            <span className="bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">BINGO</span>
           </Link>
-          <div className="mt-6">
-            <h4 className="text-lg font-semibold mb-2">Subscribe us:</h4>
-            <div className="flex gap-4 mt-2">
+          <p className="text-gray-400 text-sm leading-relaxed">
+            Discover unique handcrafted treasures from talented artisans worldwide. Quality, creativity, and passion in every piece.
+          </p>
+          <div>
+            <h4 className="text-lg font-semibold mb-4 text-orange-400">Follow Us:</h4>
+            <div className="flex gap-3">
               <Link
                 href="https://facebook.com"
                 target="_blank"
                 rel="noopener noreferrer"
+                className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-all duration-300 group"
               >
-                <Facebook className="w-5 h-5 text-blue-500 hover:scale-110 transition" />
+                <Facebook className="w-5 h-5 group-hover:scale-110 transition-transform" />
               </Link>
               <Link
                 href="https://x.com"
                 target="_blank"
                 rel="noopener noreferrer"
+                className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-600 transition-all duration-300 group"
               >
-                <X className="w-5 h-5 hover:scale-110 transition" />
+                <X className="w-5 h-5 group-hover:scale-110 transition-transform" />
               </Link>
               <Link
                 href="https://instagram.com"
                 target="_blank"
                 rel="noopener noreferrer"
+                className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-500 transition-all duration-300 group"
               >
-                <Instagram className="w-5 h-5 text-pink-500 hover:scale-110 transition" />
+                <Instagram className="w-5 h-5 group-hover:scale-110 transition-transform" />
               </Link>
               <Link
                 href="https://youtube.com"
                 target="_blank"
                 rel="noopener noreferrer"
+                className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-600 transition-all duration-300 group"
               >
-                <Youtube className="w-5 h-5 text-red-500 hover:scale-110 transition" />
+                <Youtube className="w-5 h-5 group-hover:scale-110 transition-transform" />
               </Link>
             </div>
           </div>
         </div>
 
         {/* Useful Links */}
-        <div>
-          <h4 className="text-lg font-semibold mb-4">Useful links</h4>
-          <ul className="space-y-2 text-sm text-gray-300">
+        <div className="space-y-4">
+          <h4 className="text-lg font-semibold mb-4 text-orange-400">Quick Links</h4>
+          <ul className="space-y-3 text-sm">
             <li>
-              <Link href="/about">About Us</Link>
+              <Link href="/about-us" className="text-gray-300 hover:text-orange-400 transition-colors duration-200 flex items-center group">
+                <span className="w-1 h-1 bg-orange-400 rounded-full mr-3 group-hover:w-2 transition-all duration-200"></span>
+                About Us
+              </Link>
             </li>
             <li>
-              <Link href="/contact">Contact Us</Link>
+              <Link href="/contact" className="text-gray-300 hover:text-orange-400 transition-colors duration-200 flex items-center group">
+                <span className="w-1 h-1 bg-orange-400 rounded-full mr-3 group-hover:w-2 transition-all duration-200"></span>
+                Contact Us
+              </Link>
             </li>
             <li>
-              <Link href="/showrooms">Showrooms</Link>
+              <Link href="/our-team" className="text-gray-300 hover:text-orange-400 transition-colors duration-200 flex items-center group">
+                <span className="w-1 h-1 bg-orange-400 rounded-full mr-3 group-hover:w-2 transition-all duration-200"></span>
+                Our Team
+              </Link>
             </li>
             <li>
-              <Link href="/blog">Blog</Link>
+              <Link href="/blogs" className="text-gray-300 hover:text-orange-400 transition-colors duration-200 flex items-center group">
+                <span className="w-1 h-1 bg-orange-400 rounded-full mr-3 group-hover:w-2 transition-all duration-200"></span>
+                Blog
+              </Link>
             </li>
             <li>
-              <Link href="/gift-cards">Gift Cards</Link>
+              <Link href="/policies" className="text-gray-300 hover:text-orange-400 transition-colors duration-200 flex items-center group">
+                <span className="w-1 h-1 bg-orange-400 rounded-full mr-3 group-hover:w-2 transition-all duration-200"></span>
+                Policies
+              </Link>
             </li>
           </ul>
         </div>
 
-        {/* Categories with filter */}
-        <div>
-          <h4 className="text-lg font-semibold mb-4">Categories</h4>
-          <div className="grid grid-cols-2 gap-x-8 text-sm text-gray-300">
-            <ul className="space-y-2">
-              {categories.slice(0, Math.ceil(categories.length / 2)).map((category) => (
+        {/* Categories */}
+        <div className="space-y-4">
+          <h4 className="text-lg font-semibold mb-4 text-orange-400">Shop Categories</h4>
+          <div className="grid grid-cols-1 gap-y-3 text-sm">
+            <ul className="space-y-3">
+              {categories.slice(0, 6).map((category) => (
                 <li key={category}>
-                  <Link href={`/products?categories=${encodeURIComponent(category)}`}>
-                    {category}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <ul className="space-y-2">
-              {categories.slice(Math.ceil(categories.length / 2)).map((category) => (
-                <li key={category}>
-                  <Link href={`/products?categories=${encodeURIComponent(category)}`}>
+                  <Link href={`/products?categories=${encodeURIComponent(category)}`} className="text-gray-300 hover:text-orange-400 transition-colors duration-200 flex items-center group">
+                    <span className="w-1 h-1 bg-orange-400 rounded-full mr-3 group-hover:w-2 transition-all duration-200"></span>
                     {category}
                   </Link>
                 </li>
@@ -118,57 +132,78 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Mobile App */}
-        <div>
-          <h4 className="text-lg font-semibold mb-4">
-            Download App on Mobile:
-          </h4>
-          <p className="text-sm text-gray-300 mb-4">
-            15% discount on your first purchase
-          </p>
-          <div className="flex gap-4 mb-4">
-            <Link
-              href="https://play.google.com/store/apps"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Image
-                src="/assets/Footer/google-play.svg"
-                alt="Google Play"
-                width={130}
-                height={40}
-              />
-            </Link>
-            <Link
-              href="https://apps.apple.com"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Image
-                src="/assets/Footer/app-store.svg"
-                alt="App Store"
-                width={130}
-                height={40}
-              />
-            </Link>
+        {/* Contact & App */}
+        <div className="space-y-6">
+          <div>
+            <h4 className="text-lg font-semibold mb-4 text-orange-400">Contact Info</h4>
+            <div className="space-y-2 text-sm text-gray-300">
+              <p>📧 support@bingo-awaken.com</p>
+              <p>📞 +20 123 456 7890</p>
+              <p>📍 Cairo, Egypt</p>
+            </div>
+          </div>
+          
+          <div>
+            <h4 className="text-lg font-semibold mb-4 text-orange-400">
+              Download Our App
+            </h4>
+            <p className="text-sm text-gray-300 mb-4">
+              Get 15% off your first purchase
+            </p>
+            <div className="flex flex-col gap-3">
+              <Link
+                href="https://play.google.com/store/apps"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:scale-105 transition-transform duration-200"
+              >
+                <Image
+                  src="/assets/Footer/google-play.svg"
+                  alt="Google Play"
+                  width={140}
+                  height={42}
+                />
+              </Link>
+              <Link
+                href="https://apps.apple.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:scale-105 transition-transform duration-200"
+              >
+                <Image
+                  src="/assets/Footer/app-store.svg"
+                  alt="App Store"
+                  width={140}
+                  height={42}
+                />
+              </Link>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Bottom Bar */}
-      <div className="border-t border-gray-700 mt-10 pt-6 flex flex-col md:flex-row justify-between items-center  mx-auto">
-        <p className="text-sm text-gray-400">
-          Bingo © 2025 CREATED BY{" "}
-          <span className="font-semibold text-white">BINGO TEAM</span>. PREMIUM
-          E-COMMERCE SOLUTIONS.
-        </p>
-        <Image
-          src="/assets/Footer/payments.png"
-          alt="Payments"
-          width={250}
-          height={24}
-          className="mt-4 md:mt-0"
-        />
+      <div className="border-t border-gray-800 mt-12 pt-8 relative z-10">
+        <div className="flex flex-col md:flex-row justify-between items-center max-w-screen-xl mx-auto">
+          <div className="text-center md:text-left mb-4 md:mb-0">
+            <p className="text-sm text-gray-400">
+              © 2025 <span className="font-semibold text-orange-400">BINGO</span> - Handcrafted with ❤️
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Premium E-commerce Solutions by BINGO TEAM
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-gray-500">Secure Payments:</span>
+            <Image
+              src="/assets/Footer/payments.png"
+              alt="Payment Methods"
+              width={200}
+              height={20}
+              className="opacity-80 hover:opacity-100 transition-opacity"
+            />
+          </div>
+        </div>
       </div>
     </footer>
   );

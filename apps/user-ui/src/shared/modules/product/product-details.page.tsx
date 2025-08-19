@@ -26,7 +26,7 @@ import { isProtected } from "apps/user-ui/src/utils/protected";
 import { useRouter } from "next/navigation";
 
 const ProductDetails = ({ productDetails }: { productDetails: any }) => {
-  const { user, isLoading } = useUser();
+  const { user} = useUser();
   const location = useLocationTracking();
   const deviceInfo = useDeviceTracking();
   const router = useRouter();
@@ -73,6 +73,29 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
       fetchReviews();
     }
   }, [productDetails?.id]);
+
+  
+  useEffect(() => {
+    if (!user?.id) return;
+    if (!productDetails?.id) return;
+    if (!location || !deviceInfo) return;
+
+    fetch("/api/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: user.id,
+        productId: productDetails.id,
+        shopId: productDetails?.Shop?.id,
+        action: "product_view",
+        country: location?.country || "Unknown",
+        city: location?.city || "Unknown",
+        device: deviceInfo || "Unknown Device",
+      }),
+    }).catch((err) => {
+      console.warn("Analytics tracking (product_view) failed:", err);
+    });
+  }, [user?.id, productDetails?.id, productDetails?.Shop?.id, location, deviceInfo]);
 
   const prevImage = () => {
     if (currentIndex > 0) {

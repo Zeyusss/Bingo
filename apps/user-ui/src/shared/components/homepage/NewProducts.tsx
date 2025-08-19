@@ -87,13 +87,13 @@ const NewProducts = () => {
       ) : products.length > 0 ? (
         <>
           <ProductListAnimator
-            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-6"
+            className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-6"
             listKey={`new-products-${selectedCategory}`}
             layout="grid"
             staggerDelay={0.08}
             animationDuration={0.4}
           >
-            {products.slice(0, 10).map((product: any) => (
+            {products.slice(0, 8).map((product: any) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </ProductListAnimator>

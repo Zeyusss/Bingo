@@ -34,7 +34,7 @@ const RecommendedProducts = () => {
     }
   }, [user, userLoading]);
 
-  // Don't render if user is not logged in
+  
   if (!user || userLoading) {
     return null;
   }
@@ -70,13 +70,13 @@ const RecommendedProducts = () => {
       ) : products.length > 0 ? (
         <>
           <ProductListAnimator
-            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-6"
+            className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-6"
             listKey="recommended-products"
             layout="grid"
             staggerDelay={0.08}
             animationDuration={0.4}
           >
-            {products.slice(0, 10).map((product: any) => (
+            {products.slice(0, 8).map((product: any) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </ProductListAnimator>
@@ -85,8 +85,6 @@ const RecommendedProducts = () => {
             <div className="mt-8 flex justify-center">
               <button
                 onClick={() => {
-                  // You can implement a "See More" functionality here
-                  // For now, we'll just show all products
                   setProducts(products);
                 }}
                 className="inline-block px-6 py-2 text-white bg-[#ff8a00] hover:bg-[#e17800] rounded-full text-sm font-semibold transition"

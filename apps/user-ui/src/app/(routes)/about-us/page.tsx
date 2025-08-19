@@ -4,6 +4,7 @@ import React from "react";
 import { FaFacebookF, FaLinkedinIn, FaInstagram, FaTwitter } from 'react-icons/fa';
 // import { HeartIcon } from '@heroicons/react/24/outline'; // Commented out - not used and missing dependency
 import { FaPlay } from 'react-icons/fa';
+import Footer from "apps/user-ui/src/shared/components/homepage/Footer";
 
 type TeamMember = {
   id: number;
@@ -63,17 +64,7 @@ const teamMembers: TeamMember[] = [
     instagram: "https://www.instagram.com/zeyad",
     twitter: "https://twitter.com/zeyad",
   },
-  {
-    id: 5,
-    name: "Alshimaa Salah",
-    role: "Flutter Developer",
-    photo: "/assets/zeyad.jpg",
-    bio: "3+ years of experience in Mobile Development.",
-    facebook: "https://www.facebook.com/zeyad",
-    linkedin: "https://www.linkedin.com/in/zeyad",
-    instagram: "https://www.instagram.com/zeyad",
-    twitter: "https://twitter.com/zeyad",
-  },
+ 
 ];
 
 const About: React.FC = () => {
@@ -92,8 +83,7 @@ const About: React.FC = () => {
   const [count6, setCount6] = useState<number>(0);
   const [started, setStarted] = useState(false);
    const [showVideo, setShowVideo] = useState(false);
-    const scrollYRef = useRef(0);
-
+  
   const sectionRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     function handleScroll() {
@@ -180,31 +170,13 @@ const About: React.FC = () => {
    
   
     useEffect(() => {
-      if (!showVideo) return;
-  
-    
-      scrollYRef.current = window.scrollY;
-  
-      const { style } = document.body;
-      const prev = {
-        overflow: style.overflow,
-        position: style.position,
-        top: style.top,
-        width: style.width,
-      };
-  
-      style.overflow = "hidden";
-      style.position = "fixed";
-      style.top = `-${scrollYRef.current}px`;
-      style.width = "100%";
-  
+      if (showVideo) {
+        document.body.style.overflow = "hidden";
+      } else {
+        document.body.style.overflow = "auto";
+      }
       return () => {
-        
-        style.overflow = prev.overflow;
-        style.position = prev.position;
-        style.top = prev.top;
-        style.width = prev.width;
-        window.scrollTo(0, scrollYRef.current);
+        document.body.style.overflow = "auto";
       };
     }, [showVideo]);
 
@@ -216,9 +188,19 @@ const About: React.FC = () => {
 
         <section className="mb-20 text-gray-700 text-lg w-[100%] ">
 
-<div className="bg-[url('/assets/w-our-team-top-opt.jpg')] bg-cover bg-center w-[100%] h-96 rounded-lg shadow-lg mb-8 flex flex-col items-start justify-center gap-10">
-  <h1 className="text-[80px] text-white font-bold drop-shadow-lg ml-20">About Us</h1> 
- <div> <p className="text-gray-400 ml-20 ">Home<span className="text-white">/About Us</span></p></div>
+<div className="bg-[url('/assets/w-our-team-top-opt.jpg')] bg-cover bg-center w-[100%] h-96 rounded-lg shadow-lg mb-8 relative">
+  <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+  <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-center px-4">
+    <div className="text-center text-white px-4">
+      <h1 className="text-5xl font-bold mb-4">About Us</h1>
+      <p className="text-lg mb-6">Learn more about our handcrafted journey</p>
+      <nav className="text-sm">
+        <span className="hover:underline opacity-80">Home</span>
+        <span className="mx-2 opacity-60">/</span>
+        <span className="font-medium">About Us</span>
+      </nav>
+    </div>
+  </div>
 </div>
 
         </section>
@@ -364,7 +346,7 @@ const About: React.FC = () => {
 
         </section>
 
-<section className="flex flex-col md:flex-row items-center justify-center gap-10 px-8 py-10  w-[100%] mx-auto min-h-screen">
+<section className="flex flex-col md:flex-row items-center justify-center gap-10 px-8 py-10  w-[100%] mx-auto ">
    <div className="relative overflow-hidden rounded-[40px] w-full md:w-1/2">
     <img
       src="/assets/whychoosehandmade/choosing-video.webp"
@@ -373,15 +355,16 @@ const About: React.FC = () => {
       height={675}
       className="w-full h-auto object-cover rounded-[40px]"
     />
-    <div className="absolute inset-0 bg-black/40 flex flex-col justify-center items-center text-white text-center px-4 rounded-[40px]">
-      <h3 className="text-3xl font-bold mb-4">
-        How we start our business
+    <div className="absolute inset-0 bg-black/30 flex flex-col justify-center items-center text-white text-center px-4 rounded-[40px]">
+      <p className="text-sm">How we start our business</p>
+      <h3 className="text-2xl font-bold">
+        Bingo HandMade collection
       </h3>
       <button
         onClick={() => setShowVideo(true)}
-        className="p-4 bg-white rounded-full shadow text-black hover:scale-110 transition"
+        className="mt-4 p-3 bg-white rounded-full shadow text-black hover:scale-105 transition"
       >
-        <FaPlay className="w-8 h-8" />
+        <FaPlay className="w-6 h-6" />
       </button>
     </div>
   </div>
@@ -453,15 +436,34 @@ const About: React.FC = () => {
           </div>
         </section>
 
+      <Footer />
+
+      {showVideo && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[1000]">
+          <div className="relative w-full max-w-4xl mx-4">
+            <div className="relative pb-[56.25%] h-0 overflow-hidden rounded-lg">
+              <iframe
+                src="https://www.youtube.com/embed/cJ61qnMgX4c?autoplay=1"
+                title="YouTube video"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="absolute top-0 left-0 w-full h-full"
+              />
+            </div>
+            <button
+              onClick={() => setShowVideo(false)}
+              className="absolute -top-12 right-0 text-white hover:bg-black/70 rounded-full p-2 text-2xl leading-none"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+      )}
 
         <section>
-          <div className="w-full min-h-screen flex items-center   text-gray-800 dark:bg-gray-50 dark:text-black ">
+          <div className="w-full  flex items-center   text-gray-800 dark:bg-gray-50 dark:text-black ">
             <div className="max-w-full py-5 mt-10 mb-20 mx-auto overflow-hidden">
-              {/* <div className="w-full flex items-center flex-col gap-1 justify-center mb-16 px-4">
-                <p className="text-sm sm:text-lg font-semibold text-rose-600">Words That Matter</p>
-                <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-center font-semibold">See Why Clients Keep Coming
-                  Back</h3>
-              </div> */}
               <div className="flex flex-col gap-3">
                 
                 <div style={{ maskImage: "linear-gradient(to left, transparent 0%, black 20%, black 80%, transparent 95%)" }}>

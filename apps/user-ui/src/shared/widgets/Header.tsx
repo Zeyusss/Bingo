@@ -88,8 +88,9 @@ const Header = () => {
         }`}
       >
         <Menu className="cursor-pointer" onClick={() => setIsSidebarOpen(true)} />
-        <Link href="/" className="text-xl font-bold text-black">
-          Bingo
+        <Link href="/" className="text-xl font-bold text-orange-500 flex items-center gap-1">
+          <span>Bingo</span>
+          <span className="text-sm text-gray-600">Handmade</span>
         </Link>
         {user?.id && (
           <div className="flex items-center gap-3">
@@ -111,8 +112,14 @@ const Header = () => {
 
 
       <div className="w-[88%] m-auto items-center justify-between py-4 hidden lg:flex">
-        <Link href={"/"}>
-          <span className="text-2xl font-semibold text-black">Bingo</span>
+        <Link href={"/"} className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <span className="text-3xl">✨</span>
+            <div className="flex flex-col">
+              <span className="text-2xl font-bold text-orange-500">Bingo</span>
+              <span className="text-xs text-gray-500 -mt-1">Handmade Marketplace</span>
+            </div>
+          </div>
         </Link>
 
         <div className="w-[50%] relative">

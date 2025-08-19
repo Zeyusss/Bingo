@@ -1,6 +1,6 @@
 "use client";
 import React from 'react'
-import { useEffect,  useRef,useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaFacebookF, FaLinkedinIn, FaInstagram, FaTwitter } from 'react-icons/fa';
 import { FaPlay } from 'react-icons/fa';
 
@@ -63,52 +63,22 @@ const teamMembers: TeamMember[] = [
     instagram: "https://www.instagram.com/zeyad",
     twitter: "https://twitter.com/zeyad",
   },
-  {
-    id: 5,
-    name: "Alshimaa Salah",
-    role: "Flutter Developer",
-    photo: "/assets/zeyad.jpg",
-    bio: "3+ years of experience in Mobile Development.",
-    facebook: "https://www.facebook.com/zeyad",
-    linkedin: "https://www.linkedin.com/in/zeyad",
-    instagram: "https://www.instagram.com/zeyad",
-    twitter: "https://twitter.com/zeyad",
-  },
 ];
 
 
 export default function page() {
    const [showVideo, setShowVideo] = useState(false);
-      const scrollYRef = useRef(0);
 
-   useEffect(() => {
-        if (!showVideo) return;
-    
-      
-        scrollYRef.current = window.scrollY;
-    
-        const { style } = document.body;
-        const prev = {
-          overflow: style.overflow,
-          position: style.position,
-          top: style.top,
-          width: style.width,
-        };
-    
-        style.overflow = "hidden";
-        style.position = "fixed";
-        style.top = `-${scrollYRef.current}px`;
-        style.width = "100%";
-    
-        return () => {
-          
-          style.overflow = prev.overflow;
-          style.position = prev.position;
-          style.top = prev.top;
-          style.width = prev.width;
-          window.scrollTo(0, scrollYRef.current);
-        };
-      }, [showVideo]);
+    useEffect(() => {
+      if (showVideo) {
+        document.body.style.overflow = "hidden";
+      } else {
+        document.body.style.overflow = "auto";
+      }
+      return () => {
+        document.body.style.overflow = "auto";
+      };
+    }, [showVideo]);
   return (
 
 
@@ -155,19 +125,10 @@ SEEMINGLY ELEGANT DESIGN</p>
               convallis condimentum.
 
             </p>
-          
-
-                
-            
-
-
-
-              
-            
           </div>
         </section>
 
-        <section className='mt-16 w-[80%] mx-auto'>
+        <section className='mt-16 mx-auto'>
           <h4 className='text-red-400 text-center'>DEPENDING ON THE STATE</h4>
           <div className="flex items-center ">
   <hr className="flex-grow border-t border-gray-300" />
@@ -248,7 +209,7 @@ SEEMINGLY ELEGANT DESIGN</p>
 
 
         </section>
-        <section className="flex flex-col md:flex-row items-center justify-center gap-10 px-8 py-10  w-[100%] mx-auto min-h-screen">
+        <section className="flex flex-col md:flex-row items-center justify-center gap-10 px-8 py-10  w-[100%] mx-auto ">
            <div className="relative overflow-hidden rounded-[40px] w-full md:w-1/2">
             <img
               src="/assets/w-our-team-video-bg-opt.jpg.webp"
@@ -257,15 +218,16 @@ SEEMINGLY ELEGANT DESIGN</p>
               height={675}
               className="w-full h-auto object-cover rounded-[40px]"
             />
-            <div className="absolute inset-0 bg-black/40 flex flex-col justify-center items-center text-white text-center px-4 rounded-[40px]">
-              {/* <h3 className="text-3xl font-bold mb-4">
-                How we start our business
-              </h3> */}
+            <div className="absolute inset-0 bg-black/30 flex flex-col justify-center items-center text-white text-center px-4 rounded-[40px]">
+              <p className="text-sm">How we start our business</p>
+              <h3 className="text-2xl font-bold">
+                Bingo HandMade collection
+              </h3>
               <button
                 onClick={() => setShowVideo(true)}
-                className="p-4 bg-white rounded-full shadow text-black hover:scale-110 transition"
+                className="mt-4 p-3 bg-white rounded-full shadow text-black hover:scale-105 transition"
               >
-                <FaPlay className="w-8 h-8" />
+                <FaPlay className="w-6 h-6" />
               </button>
             </div>
           </div>
@@ -452,8 +414,28 @@ SEEMINGLY ELEGANT DESIGN</p>
           </div>
 
         </section>
-        
+      {showVideo && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[1000]">
+          <div className="relative w-full max-w-4xl mx-4">
+            <div className="relative pb-[56.25%] h-0 overflow-hidden rounded-lg">
+              <iframe
+                src="https://www.youtube.com/embed/cJ61qnMgX4c?autoplay=1"
+                title="YouTube video"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="absolute top-0 left-0 w-full h-full"
+              />
+            </div>
+            <button
+              onClick={() => setShowVideo(false)}
+              className="absolute -top-12 right-0 text-white hover:bg-black/70 rounded-full p-2 text-2xl leading-none"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+      )}
 </div>
-
-  )
-}
+  );
+};
