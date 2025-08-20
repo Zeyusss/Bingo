@@ -153,7 +153,7 @@ export default function OrderActivity() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Globe2 className="h-5 w-5 text-purple-600" />
+                <Globe2 className="h-6 w-6 text-orange-600" />
                 Customer Orders Distribution
               </CardTitle>
               <p className="text-sm text-gray-600">

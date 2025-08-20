@@ -114,7 +114,6 @@ const Header = () => {
       <div className="w-[88%] m-auto items-center justify-between py-4 hidden lg:flex">
         <Link href={"/"} className="flex items-center gap-2">
           <div className="flex items-center gap-1">
-            <span className="text-3xl">✨</span>
             <div className="flex flex-col">
               <span className="text-2xl font-bold text-orange-500">Bingo</span>
               <span className="text-xs text-gray-500 -mt-1">Handmade Marketplace</span>

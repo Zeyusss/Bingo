@@ -22,7 +22,7 @@ const page = () => {
   const [message, setMessage] = useState("");
   const [hasMore, setHasMore] = useState(false);
   const [page, setPage] = useState(1);
-  const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
+  const [markedAsSeenConversations, setMarkedAsSeenConversations] = useState<Set<string>>(new Set());
   const conversationId = searchParams.get("conversationId");
   const webSocketContext = useWebSocket();
   const { ws } = webSocketContext || { ws: null };
@@ -30,14 +30,13 @@ const page = () => {
   const { data: messages = [] } = useQuery({
     queryKey: ["messages", conversationId],
     queryFn: async () => {
-      if (!conversationId || hasFetchedOnce) return [];
+      if (!conversationId) return [];
       const res = await axiosInstance.get(
         `/chatting/api/get-messages/${conversationId}?page=1`,
         isProtected
       );
       setPage(1);
       setHasMore(res.data.hasMore);
-      setHasFetchedOnce(true);
       return res.data.messages.reverse();
     },
     enabled: !!conversationId,
@@ -132,6 +131,22 @@ const page = () => {
           )
         );
       }
+      if (data.type === "SELLER_ONLINE_STATUS") {
+        const { userId, isOnline } = data.payload;
+        setChats((prevChats) =>
+          prevChats.map((chat) =>
+            chat.seller?.id === userId
+              ? { ...chat, seller: { ...chat.seller, isOnline } }
+              : chat
+          )
+        );
+        if (selectedChat?.seller?.id === userId) {
+          setSelectedChat((prev: any) => prev ? {
+            ...prev,
+            seller: { ...prev.seller, isOnline }
+          } : null);
+        }
+      }
     };
     
     ws.onmessage = handleMessage;
@@ -149,11 +164,26 @@ const page = () => {
     if (conversationId && chats.length > 0) {
       const chat = chats.find((c) => c.conversationId === conversationId);
       setSelectedChat(chat || null);
+      
+      // Mark as seen when conversation is loaded from URL (e.g., after refresh)
+      if (chat && ws && !markedAsSeenConversations.has(conversationId)) {
+        setChats((prev) =>
+          prev.map((c) =>
+            c.conversationId === conversationId ? { ...c, unreadCount: 0 } : c
+          )
+        );
+        ws.send(
+          JSON.stringify({
+            type: "MARK_AS_SEEN",
+            conversationId: conversationId,
+          })
+        );
+        setMarkedAsSeenConversations(prev => new Set(prev).add(conversationId));
+      }
     }
-  }, [conversationId, chats]);
+  }, [conversationId, chats, ws, markedAsSeenConversations]);
 
   const handleChatSelect = (chat: any) => {
-    setHasFetchedOnce(false);
     setChats((prev) =>
       prev.map((c) =>
         c.conversationId === chat.conversationId ? { ...c, unreadCount: 0 } : c
@@ -161,12 +191,15 @@ const page = () => {
     );
     router.push(`?conversationId=${chat.conversationId}`);
 
-    ws?.send(
-      JSON.stringify({
-        type: "MARK_AS_SEEN",
-        conversationId: chat.conversationId,
-      })
-    );
+    if (ws) {
+      ws.send(
+        JSON.stringify({
+          type: "MARK_AS_SEEN",
+          conversationId: chat.conversationId,
+        })
+      );
+      setMarkedAsSeenConversations(prev => new Set(prev).add(chat.conversationId));
+    }
   };
 
   const scrollToBottom = () => {
@@ -204,13 +237,22 @@ const page = () => {
 
     ws?.send(JSON.stringify(payload));
     
+    // Mark as seen when sending a message
+    ws?.send(
+      JSON.stringify({
+        type: "MARK_AS_SEEN",
+        conversationId: selectedChat.conversationId,
+      })
+    );
+    
     setChats((prevChats) =>
       prevChats.map((chat) =>
         chat.conversationId === selectedChat.conversationId
-          ? { ...chat, lastMessage: payload.messageBody }
+          ? { ...chat, lastMessage: payload.messageBody, unreadCount: 0 }
           : chat
       )
     );
+    setMarkedAsSeenConversations(prev => new Set(prev).add(selectedChat.conversationId));
     setMessage("");
     scrollToBottom();
   };
@@ -243,13 +285,22 @@ const page = () => {
 
     ws.send(JSON.stringify(payload));
 
+    // Mark as seen when sending an image
+    ws.send(
+      JSON.stringify({
+        type: "MARK_AS_SEEN",
+        conversationId: selectedChat.conversationId,
+      })
+    );
+
     setChats((prevChats) =>
       prevChats.map((chat) =>
         chat.conversationId === selectedChat.conversationId
-          ? { ...chat, lastMessage: "📷 Image" }
+          ? { ...chat, lastMessage: "📷 Image", unreadCount: 0 }
           : chat
       )
     );
+    setMarkedAsSeenConversations(prev => new Set(prev).add(selectedChat.conversationId));
 
     scrollToBottom();
   };

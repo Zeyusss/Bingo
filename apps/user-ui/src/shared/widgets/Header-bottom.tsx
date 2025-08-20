@@ -6,7 +6,6 @@ import { useStore } from "../../store";
 import ProfileIcon from "../../assets/svgs/profile-icon";
 import HeartIcon from "../../assets/svgs/heart-icon";
 import CompareIcon from "../../assets/svgs/compare-icon";
-import axiosInstance from "../../utils/axiosInstance";
 import { useState } from "react";
 
 const HeaderMain = () => {
@@ -24,19 +23,7 @@ const HeaderMain = () => {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
-  const handleSearchClick = async () => {
-    if (!searchQuery.trim()) return;
-    setLoadingSuggestions(true);
-    try {
-      const res = await axiosInstance.get(`/api/search?query=${searchQuery}`);
-      setSuggestions(res.data);
-    } catch (error) {
-      console.error("Search failed:", error);
-    } finally {
-      setLoadingSuggestions(false);
-    }
-  };
-
+ 
   return (
     <div className="w-[80%] mx-auto hidden lg:flex items-center justify-between py-4">
       <Link href={"/"}>

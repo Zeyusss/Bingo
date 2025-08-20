@@ -401,6 +401,11 @@ We built a platform that:
 - Maintains high performance with smart caching
 - Offers professional user experience throughout
 
+## 📎 Further Reading & Internal Docs
+- AI Recommendation System: `AI_RECOMMENDATIONS.md`
+- Kafka & Events Architecture: `KAFKA_AND_EVENTS.md`
+- Interview Preparation Cheatsheet: `INTERVIEW_PREP.md`
+
 ---
 
 ## 🎉 Conclusion

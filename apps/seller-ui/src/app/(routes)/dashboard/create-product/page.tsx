@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { ChevronRight, Wand, X } from "lucide-react";
+import {  Wand, X } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import ImagePlaceHolder from "apps/seller-ui/src/shared/components/image-placeholder";
 import Input from "packages/components/inputs";
@@ -16,7 +16,7 @@ const RichTextEditor = dynamic(
   () => import("packages/components/rich-text-editor"),
   { ssr: false }
 );
-import Link from "next/link";
+
 import Image from "next/image";
 import { enhancements } from "apps/seller-ui/src/utils/AI.Enhancements";
 import { useRouter } from "next/navigation";
@@ -38,7 +38,6 @@ const Page = () => {
   } = useForm();
   const [openImageModal, setOpenImageModal] = useState(false);
   const [activeEffect, setActiveEffect] = useState<string | null>(null);
-  const [isChanged] = useState(true);
   const [selectedImage, setSelectedImage] = useState("");
   const [pictureUploadingLoader, setPictureUploadingLoader] = useState(false);
   const [images, setImages] = useState<(UploadedImage | null)[]>([null]);
@@ -228,10 +227,6 @@ const Page = () => {
     }
   };
 
-  const handleSaveDraft = () => {
-    toast.success("Draft saved (mocked)");
-  };
-
   return (
     <div
       className="min-h-screen bg-[#F4F2EF]"
@@ -248,20 +243,6 @@ const Page = () => {
             Create Product
           </h1>
           <div className="h-1 w-16 bg-orange-500 mb-4 rounded"></div>
-          <p className="text-lg text-gray-600 font-[Work Sans]">
-            Add a new product to your shop
-          </p>
-
-          <div className="flex items-center text-sm text-gray-600 mt-4 font-[Work Sans]">
-            <Link
-              href="/dashboard"
-              className="text-orange-600 hover:text-orange-800 font-medium"
-            >
-              Dashboard
-            </Link>
-            <ChevronRight className="mx-2 text-gray-400" size={16} />
-            <span>Create Product</span>
-          </div>
         </div>
 
         <form
@@ -895,15 +876,6 @@ const Page = () => {
 
               {/* Action Buttons */}
               <div className="flex justify-end gap-4 pt-6">
-                {isChanged && (
-                  <button
-                    type="button"
-                    onClick={handleSaveDraft}
-                    className="px-5 py-2 rounded-md bg-gray-500 hover:bg-gray-600 text-white font-[Work Sans] transition"
-                  >
-                    Save Draft
-                  </button>
-                )}
                 <button
                   type="submit"
                   disabled={loading}

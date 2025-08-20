@@ -1887,5 +1887,33 @@ export const deleteSellerNotification = async (
   }
 };
 
+// Bulk delete read notifications
+export const bulkDeleteReadNotifications = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const sellerId = req.seller.id;
+
+    // Delete all read notifications for the seller
+    const deletedNotifications = await prisma.notifications.deleteMany({
+      where: {
+        receiverId: sellerId,
+        status: "Read",
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `${deletedNotifications.count} read notifications deleted successfully`,
+      deletedCount: deletedNotifications.count,
+    });
+  } catch (error) {
+    console.error("Error deleting read notifications:", error);
+    return next(error);
+  }
+};
+
 // Legacy function for backward compatibility
 export const sellerNotifications = getSellerNotifications;

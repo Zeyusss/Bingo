@@ -25,7 +25,7 @@ export const navItems:NavItemsTypes[]= [
     },
     {
         title:"Blog",
-        href:"/blog",
+        href:"/blogs",
     },
     {
         title:"Become A Seller",

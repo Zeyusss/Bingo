@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import React, { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
+import { Shield, Mail, Lock, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 type FormData = {
   email: string;
@@ -142,35 +144,54 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="w-full py-10 min-h-[85vh] bg-[#f1f1f1]">
-      <h1 className="text-4xl font-semibold text-black text-center">
-        Forgot Password
-      </h1>
-      <p className="text-center text-lg font-medium py-3 text-[#00000099]">
-        Home . Forgot Password
-      </p>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-blue-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md mx-auto">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              {step === "email" && <Mail className="w-8 h-8 text-white" />}
+              {step === "otp" && <Shield className="w-8 h-8 text-white" />}
+              {step === "reset" && <Lock className="w-8 h-8 text-white" />}
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              {step === "email" && "Reset Password"}
+              {step === "otp" && "Verify Code"}
+              {step === "reset" && "New Password"}
+            </h1>
+            <p className="text-gray-600">
+              {step === "email" && "Enter your email to receive a reset code"}
+              {step === "otp" && "Enter the 4-digit code sent to your email"}
+              {step === "reset" && "Create a new secure password"}
+            </p>
+          </div>
 
-      <div className="w-full flex justify-center">
-        <div className="md:w-[480px] p-8 bg-white shadow rounded-lg space-y-4">
+          {/* Back to Login Link */}
+          <div className="text-center mb-6">
+            <Link href="/login" className="inline-flex items-center gap-2 text-sm text-orange-600 hover:text-orange-700 font-medium transition-colors">
+              <ArrowLeft size={16} />
+              Back to Login
+            </Link>
+          </div>
           {step === "email" && (
-            <form onSubmit={handleSubmit(onSubmitEmail)} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmitEmail)} className="space-y-6">
               <div>
-                <label className="block text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
                 <input
                   type="email"
-                  placeholder="zeyus@example.com"
-                  className="w-full p-2 border border-gray-300 outline-0 rounded"
+                  placeholder="Enter your email"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors outline-none"
                   {...register("email", {
                     required: "Email is required",
                     pattern: {
-                      value:
-                        /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
+                      value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
                       message: "Invalid email address",
                     },
                   })}
                 />
                 {errors.email && (
-                  <p className="text-red-500 text-sm mt-1">
+                  <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                    <span className="w-4 h-4 text-red-500">⚠</span>
                     {String(errors.email.message)}
                   </p>
                 )}
@@ -178,22 +199,31 @@ const ForgotPassword = () => {
               <button
                 type="submit"
                 disabled={requestOtp.isPending}
-                className="w-full bg-black text-white p-2 rounded"
+                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 px-4 rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl"
               >
-                {requestOtp.isPending ? "Submitting..." : "Submit"}
+                {requestOtp.isPending ? (
+                  <>
+                    <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Sending Code...
+                  </>
+                ) : (
+                  "Send Reset Code"
+                )}
               </button>
               {serverError && (
-                <p className="text-red-500 text-sm">{serverError}</p>
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-700 text-sm flex items-center gap-2">
+                    <span className="w-5 h-5 text-red-500">⚠</span>
+                    {serverError}
+                  </p>
+                </div>
               )}
             </form>
           )}
 
           {step === "otp" && (
-            <>
-              <h3 className="text-xl font-semibold text-center mb-2">
-                Enter OTP
-              </h3>
-              <div className="flex justify-center gap-4 mb-4">
+            <div className="space-y-6">
+              <div className='flex justify-center gap-4 mb-8'>
                 {otp.map((digit, index) => (
                   <input
                     key={index}
@@ -202,7 +232,7 @@ const ForgotPassword = () => {
                       if (el) inputRefs.current[index] = el;
                     }}
                     maxLength={1}
-                    className="w-12 h-12 text-center border border-gray-300 outline-none rounded"
+                    className='w-14 h-14 text-center text-xl font-bold border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none transition-colors'
                     value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(index, e)}
@@ -210,43 +240,54 @@ const ForgotPassword = () => {
                 ))}
               </div>
               <button
-                className="w-full text-lg bg-black text-white py-2 rounded-lg"
+                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 px-4 rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl"
                 disabled={verifyOtpMutation.isPending}
                 onClick={() => verifyOtpMutation.mutate()}
               >
-                {verifyOtpMutation.isPending ? "Verifying..." : "Verify OTP"}
+                {verifyOtpMutation.isPending ? (
+                  <>
+                    <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Verifying...
+                  </>
+                ) : (
+                  "Verify Code"
+                )}
               </button>
-              {canResend ? (
-                <button
-                  onClick={() => {
-                    if (userEmail) requestOtp.mutate({ email: userEmail });
-                  }}
-                  className="text-black font-medium cursor-pointer mt-4"
-                >
-                  Resend OTP
-                </button>
-              ) : (
-                <p className="text-gray-500 text-sm mt-2">
-                  Resend OTP in {timer} seconds
-                </p>
-              )}
+              
+              <p className='text-center text-sm'>
+                {canResend ? (
+                  <button
+                    onClick={() => {
+                      if (userEmail) requestOtp.mutate({ email: userEmail });
+                    }}
+                    className="text-orange-600 hover:text-orange-700 font-medium transition-colors"
+                  >
+                    Resend Code
+                  </button>
+                ) : (
+                  <span className="text-gray-500">Resend code in {timer}s</span>
+                )}
+              </p>
+
               {serverError && (
-                <p className="text-red-500 text-sm mt-2">{serverError}</p>
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-700 text-sm flex items-center gap-2">
+                    <span className="w-5 h-5 text-red-500">⚠</span>
+                    {serverError}
+                  </p>
+                </div>
               )}
-            </>
+            </div>
           )}
 
           {step === "reset" && (
-            <form onSubmit={handleSubmit(onSubmitPassword)} className="space-y-4">
-              <h3 className="text-xl font-semibold text-center mb-2">
-                Reset Password
-              </h3>
+            <form onSubmit={handleSubmit(onSubmitPassword)} className="space-y-6">
               <div>
-                <label className="block text-gray-700 mb-1">New Password</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
                 <input
                   type="password"
-                  placeholder="Enter new password"
-                  className="w-full p-2 border border-gray-300 outline-0 rounded"
+                  placeholder="Create a new password"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors outline-none"
                   {...register("password", {
                     required: "Password is required",
                     minLength: {
@@ -256,7 +297,8 @@ const ForgotPassword = () => {
                   })}
                 />
                 {errors.password && (
-                  <p className="text-red-500 text-sm mt-1">
+                  <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                    <span className="w-4 h-4 text-red-500">⚠</span>
                     {String(errors.password.message)}
                   </p>
                 )}
@@ -264,12 +306,24 @@ const ForgotPassword = () => {
               <button
                 type="submit"
                 disabled={resetPasswordMutation.isPending}
-                className="w-full bg-black text-white p-2 rounded"
+                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 px-4 rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl"
               >
-                {resetPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
+                {resetPasswordMutation.isPending ? (
+                  <>
+                    <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Updating Password...
+                  </>
+                ) : (
+                  "Update Password"
+                )}
               </button>
               {serverError && (
-                <p className="text-red-500 text-sm">{serverError}</p>
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-700 text-sm flex items-center gap-2">
+                    <span className="w-5 h-5 text-red-500">⚠</span>
+                    {serverError}
+                  </p>
+                </div>
               )}
             </form>
           )}

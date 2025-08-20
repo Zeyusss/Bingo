@@ -62,7 +62,7 @@ const ProductListAnimator: React.FC<ProductListAnimatorProps> = ({
 
   return (
     <motion.div
-      className={`${className} ${layout === "grid" ? "grid" : "flex"}`}
+      className={`${className} ${layout === "grid" ? "grid" : "flex flex-col"}`}
       variants={containerVariants}
       initial="hidden"
       animate="visible"

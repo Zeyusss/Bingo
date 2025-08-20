@@ -36,6 +36,21 @@ export async function createWebSocketServer(server: HttpServer) {
             : `online:user:${registeredUserId}`;
           await redis.set(redisKey, "1");
           await redis.expire(redisKey, 300);
+          
+          // Broadcast online status to all connected users
+          const statusMessage = JSON.stringify({
+            type: isSeller ? "SELLER_ONLINE_STATUS" : "USER_ONLINE_STATUS",
+            payload: {
+              userId: isSeller ? registeredUserId.replace("seller_", "") : registeredUserId,
+              isOnline: true
+            }
+          });
+          
+          connectedUsers.forEach((socket, userId) => {
+            if (socket.readyState === WebSocket.OPEN && userId !== registeredUserId) {
+              socket.send(statusMessage);
+            }
+          });
           return;
         }
         const data: IncomingMessage = JSON.parse(messageStr);
@@ -43,6 +58,13 @@ export async function createWebSocketServer(server: HttpServer) {
         if (data.type === "MARK_AS_SEEN" && registeredUserId) {
           const seenKey = `${registeredUserId}_${data.conversationId}`;
           unseenCounts.set(seenKey, 0);
+          
+          // Also clear from Redis permanently
+          const isSeller = registeredUserId.startsWith("seller_");
+          const receiverType = isSeller ? "seller" : "user";
+          const redisKey = `unseen:${receiverType}_${data.conversationId}`;
+          await redis.del(redisKey);
+          
           return;
         }
 
@@ -79,6 +101,11 @@ export async function createWebSocketServer(server: HttpServer) {
         const unseenKey = `${receiverKey}_${conversationId}`;
         const prevCount = unseenCounts.get(unseenKey) || 0;
         unseenCounts.set(unseenKey, prevCount + 1);
+
+        // Also increment in Redis
+        const receiverType = senderType === "user" ? "seller" : "user";
+        const redisKey = `unseen:${receiverType}_${conversationId}`;
+        await redis.incr(redisKey);
 
         const receiverSocket = connectedUsers.get(receiverKey);
         if (receiverSocket && receiverSocket.readyState === WebSocket.OPEN) {
@@ -129,6 +156,21 @@ export async function createWebSocketServer(server: HttpServer) {
           ? `online:seller:${registeredUserId.replace("seller_", "")}`
           : `online:user:${registeredUserId}`;
         await redis.del(redisKey);
+        
+        // Broadcast offline status to all connected users
+        const statusMessage = JSON.stringify({
+          type: isSeller ? "SELLER_ONLINE_STATUS" : "USER_ONLINE_STATUS",
+          payload: {
+            userId: isSeller ? registeredUserId.replace("seller_", "") : registeredUserId,
+            isOnline: false
+          }
+        });
+        
+        connectedUsers.forEach((socket, userId) => {
+          if (socket.readyState === WebSocket.OPEN) {
+            socket.send(statusMessage);
+          }
+        });
       }
     });
     ws.on("error", (err) => {

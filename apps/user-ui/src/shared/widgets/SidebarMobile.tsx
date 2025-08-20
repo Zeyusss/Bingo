@@ -21,7 +21,7 @@ const categories = [
 const menuItems = [
   { label: "Home", path: "/" },
   { label: "Demos", path: "/demos" },
-  { label: "Blog", path: "/blog" },
+  { label: "Blog", path: "/blogs" },
   { label: "About Us", path: "/about" },
   { label: "Contact Us", path: "/contact" },
   { label: "Showrooms", path: "/showrooms" },

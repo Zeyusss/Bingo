@@ -21,6 +21,6 @@ export const clearUnseenCount = async (
   receiverType: "user" | "seller",
   conversationId: string
 ) => {
-  const key = `unssen:${receiverType}_${conversationId}`;
+  const key = `unseen:${receiverType}_${conversationId}`;
   await redis.del(key);
 };

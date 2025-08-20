@@ -20,16 +20,15 @@ const ChatPage = () => {
   const [chats, setChats] = useState<any[]>([]);
   const [selectedChat, setSelectedChat] = useState<any | null>(null);
   const [message, setMessage] = useState("");
-  const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
+  const [markedAsSeenConversations, setMarkedAsSeenConversations] = useState<Set<string>>(new Set());
 
   const { data: messages = [] } = useQuery({
     queryKey: ["messages", conversationId],
     queryFn: async () => {
-      if (!conversationId || hasFetchedOnce) return [];
+      if (!conversationId) return [];
       const res = await axiosInstance.get(
         `/chatting/api/get-seller-messages/${conversationId}?page=1`
       );
-      setHasFetchedOnce(true);
       return res.data.messages.reverse();
     },
     enabled: !!conversationId,
@@ -45,8 +44,24 @@ const ChatPage = () => {
     if (conversationId && chats.length > 0) {
       const chat = chats.find((c) => c.conversationId === conversationId);
       setSelectedChat(chat || null);
+      
+      // Mark as seen when conversation is loaded from URL (e.g., after refresh)
+      if (chat && ws && ws.readyState === WebSocket.OPEN && !markedAsSeenConversations.has(conversationId)) {
+        setChats((prev) =>
+          prev.map((c) =>
+            c.conversationId === conversationId ? { ...c, unreadCount: 0 } : c
+          )
+        );
+        ws.send(
+          JSON.stringify({
+            type: "MARK_AS_SEEN",
+            conversationId: conversationId,
+          })
+        );
+        setMarkedAsSeenConversations(prev => new Set(prev).add(conversationId));
+      }
     }
-  }, [conversationId, chats]);
+  }, [conversationId, chats, ws, markedAsSeenConversations]);
 
   const scrollToBottom = () => {
     requestAnimationFrame(() => {
@@ -135,6 +150,22 @@ const ChatPage = () => {
           )
         );
       }
+      if (data.type === "USER_ONLINE_STATUS") {
+        const { userId, isOnline } = data.payload;
+        setChats((prevChats) =>
+          prevChats.map((chat) =>
+            chat.user?.id === userId
+              ? { ...chat, user: { ...chat.user, isOnline } }
+              : chat
+          )
+        );
+        if (selectedChat?.user?.id === userId) {
+          setSelectedChat((prev: any) => prev ? {
+            ...prev,
+            user: { ...prev.user, isOnline }
+          } : null);
+        }
+      }
     };
 
     ws.onmessage = handleMessage;
@@ -145,7 +176,6 @@ const ChatPage = () => {
   }, [ws, conversationId, queryClient]);
 
   const handleChatSelect = (chat: any) => {
-    setHasFetchedOnce(false);
     setChats((prev) =>
       prev.map((c) =>
         c.conversationId === chat.conversationId ? { ...c, unreadCount: 0 } : c
@@ -160,6 +190,7 @@ const ChatPage = () => {
           conversationId: chat.conversationId,
         })
       );
+      setMarkedAsSeenConversations(prev => new Set(prev).add(chat.conversationId));
     }
   };
 
@@ -197,16 +228,26 @@ const ChatPage = () => {
       (old: any = []) => [...old, optimisticMessage]
     );
 
-    ws.send(JSON.stringify(payload));
-
+    ws?.send(JSON.stringify(payload));
+    
+    // Mark as seen when sending a message
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(
+        JSON.stringify({
+          type: "MARK_AS_SEEN",
+          conversationId: selectedChat.conversationId,
+        })
+      );
+    }
+    
     setChats((prevChats) =>
       prevChats.map((chat) =>
         chat.conversationId === selectedChat.conversationId
-          ? { ...chat, lastMessage: message }
+          ? { ...chat, lastMessage: payload.messageBody, unreadCount: 0 }
           : chat
       )
     );
-
+    setMarkedAsSeenConversations(prev => new Set(prev).add(selectedChat.conversationId));
     setMessage("");
     scrollToBottom();
   };

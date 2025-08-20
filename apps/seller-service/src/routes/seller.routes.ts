@@ -37,6 +37,7 @@ import {
   markSellerNotificationAsRead,
   markAllSellerNotificationsAsRead,
   deleteSellerNotification,
+  bulkDeleteReadNotifications,
 } from "../controllers/seller.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isSeller } from "@packages/middleware/authorizeRoles";
@@ -54,6 +55,7 @@ router.get("/get-seller-events/:id", getSellerEvents);
 router.get("/seller-notifications",isAuthenticated,isSeller,sellerNotifications);
 router.get("/get-seller-notifications", isAuthenticated, isSeller, getSellerNotifications);
 router.patch("/notifications/mark-all-read", isAuthenticated, isSeller, markAllSellerNotificationsAsRead);
+router.delete("/notifications/bulk-delete-read", isAuthenticated, isSeller, bulkDeleteReadNotifications);
 router.patch("/notifications/:notificationId/read", isAuthenticated, isSeller, markSellerNotificationAsRead);
 router.delete("/notifications/:notificationId", isAuthenticated, isSeller, deleteSellerNotification);
 router.post("/create-event/:id", isAuthenticated, isSeller, createEvent);

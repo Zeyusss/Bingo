@@ -4,24 +4,21 @@ import axiosInstance from "../utils/axiosInstance";
 import { useAuthStore } from "../store/authStore";
 import { isProtected } from "../utils/protected";
 
-const fetchUser = async () => {
+const fetchUser = async ({ signal }: { signal?: AbortSignal } = {}) => {
   try {
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); 
-    
     const response = await axiosInstance.get("/api/logged-in-user", {
       ...isProtected,
-      signal: controller.signal
+      signal
     });
     
-    clearTimeout(timeoutId);
     return response.data.user ?? null;
   } catch (error: any) {
-   
-    if (error.name === 'AbortError') {
-      console.warn("User fetch timed out - backend may be unavailable");
-    } else if (error.code === 'ECONNREFUSED' || error.code === 'NETWORK_ERROR') {
+    // Handle cancellation gracefully without logging
+    if (error.name === 'AbortError' || error.name === 'CanceledError') {
+      return null;
+    }
+    
+    if (error.code === 'ECONNREFUSED' || error.code === 'NETWORK_ERROR') {
       console.warn("Backend connection failed - running in offline mode");
     } else if (error?.response?.status !== 401 && error?.response?.status !== 400) {
       console.error("Failed to fetch user data:", error);
@@ -40,7 +37,7 @@ const useUser = () => {
     isError,
   } = useQuery({
     queryKey: ["user"],
-    queryFn: fetchUser,
+    queryFn: ({ signal }) => fetchUser({ signal }),
     staleTime: 1000 * 60 * 5, 
     gcTime: 1000 * 60 * 30, 
     retry: 1,
@@ -48,11 +45,7 @@ const useUser = () => {
     refetchOnWindowFocus: false,
     refetchOnMount: true, 
     refetchOnReconnect: true,
-    enabled: true,
-
-    meta: {
-      timeout: 5000 
-    }
+    enabled: true
   });
 
   React.useEffect(() => {

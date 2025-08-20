@@ -103,7 +103,7 @@ const SellerPayments = () => {
         },
       },
       {
-        header: 'Admin Fee',
+        header: 'Admin Fee (10%)',
         cell: ({ row }: any) => {
           const adminFee = row.original.total * 0.1;
           return (

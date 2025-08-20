@@ -192,6 +192,240 @@ const ProductCard = ({
     return () => {};
   }, [isEvent, product?.ending_date]);
 
+  // Different layouts for list vs grid view
+  if (view === "list") {
+    return (
+      <div className="w-full bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-all duration-300 overflow-hidden group hover:shadow-lg">
+        <div className="flex flex-row gap-6 p-6">
+          {/* Image Section - Fixed width for list view */}
+          <div className="relative flex-shrink-0 w-48 h-48">
+            {isNew && (
+              <span className="absolute top-2 left-2 bg-green-600 text-white text-xs font-semibold px-2 py-1 rounded-full z-10">
+                NEW
+              </span>
+            )}
+
+            {!isWishlist && (
+              <button
+                className="absolute top-2 right-2 z-10 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white hover:shadow-md transition-all duration-200"
+                onClick={() =>
+                  isWishlisted
+                    ? removeFromWishlist(product.id, user, location, deviceInfo)
+                    : addToWishlist(
+                        { ...product, quantity: 1, price: product.sale_price || product.regular_price },
+                        user,
+                        location,
+                        deviceInfo
+                      )
+                }
+              >
+                <Heart
+                  size={16}
+                  fill={isWishlisted ? "red" : "transparent"}
+                  stroke={isWishlisted ? "red" : "#666"}
+                  className={`transition-colors duration-200 ${
+                    isWishlisted ? "text-red-500" : "text-gray-600 hover:text-red-500"
+                  }`}
+                />
+              </button>
+            )}
+
+            <Link href={`/product/${product?.slug}`} className="block h-full">
+              <div className="w-full h-full bg-gray-50 flex items-center justify-center rounded-lg overflow-hidden border border-gray-100">
+                <img
+                  src={
+                    product?.images?.[0]?.url ||
+                    "https://images.unsplash.com/photo-1610513320995-1ad4bbf25e55?q=80&w=1470&auto=format&fit=crop"
+                  }
+                  alt={product?.title}
+                  className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105"
+                  loading="lazy"
+                />
+              </div>
+            </Link>
+          </div>
+
+          {/* Content Section - Takes remaining width */}
+          <div className="flex-1 flex flex-col justify-between min-h-[192px]">
+            {/* Product Info */}
+            <div className="flex-1">
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex-1 pr-4">
+                  <Link href={`/product/${product.slug}`}>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2 hover:text-blue-600 line-clamp-2 transition-colors leading-tight">
+                      {product.title}
+                    </h3>
+                  </Link>
+                  <p className="text-sm text-gray-500 capitalize mb-3">
+                    {product.category || product.Shop?.name}
+                  </p>
+                </div>
+                
+                {/* Price and Rating */}
+                <div className="text-right">
+                  <div className="flex gap-2 items-baseline justify-end mb-2">
+                    <span className="text-2xl font-bold text-orange-600">
+                      ${product.sale_price || product.regular_price}
+                    </span>
+                    {hasDiscount && (
+                      <span className="text-lg line-through text-gray-400">
+                        ${product.regular_price}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm text-yellow-500 font-semibold flex items-center gap-1 justify-end">
+                    {typeof product.ratings === "number" ? product.ratings : "4.5"} ★
+                  </div>
+                </div>
+              </div>
+
+              {/* Timer for events */}
+              {(isEvent || isLimitedEvent) && timeleft && (
+                <div className="mb-4 flex items-center gap-2 text-sm text-orange-600 font-medium">
+                  {isLimitedEvent && (
+                    <span className="bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">
+                      LIMITED
+                    </span>
+                  )}
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                  </svg>
+                  <span>{timeleft}</span>
+                </div>
+              )}
+
+              {/* Colors */}
+              {product.colors && product.colors.length > 0 && (
+                <div className="flex gap-2 mb-4 flex-wrap items-center">
+                  <span className="text-sm text-gray-600 font-medium mr-2">Colors:</span>
+                  {product.colors.slice(0, 10).map((color: string, idx: number) => {
+                    const colorCode = getColorCode(color);
+                    const colorName = getColorDisplayName(color);
+                    return (
+                      <div key={`color-${idx}-${color}`} className="relative">
+                        <div
+                          className="w-6 h-6 rounded-full border-2 border-gray-300 hover:border-gray-500 transition-all duration-200 cursor-pointer hover:scale-110 shadow-sm"
+                          style={{ backgroundColor: colorCode }}
+                          onMouseEnter={(e) => {
+                            const tooltip = document.createElement('div');
+                            tooltip.className = 'fixed bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg z-[9999] pointer-events-none';
+                            tooltip.textContent = colorName;
+                            tooltip.id = `tooltip-${idx}`;
+                            document.body.appendChild(tooltip);
+                            
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            tooltip.style.left = `${rect.left + rect.width / 2 - tooltip.offsetWidth / 2}px`;
+                            tooltip.style.top = `${rect.top - tooltip.offsetHeight - 8}px`;
+                          }}
+                          onMouseLeave={() => {
+                            const tooltip = document.getElementById(`tooltip-${idx}`);
+                            if (tooltip) {
+                              tooltip.remove();
+                            }
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+                  {product.colors.length > 10 && (
+                    <span className="text-sm text-gray-500 font-medium ml-1">
+                      +{product.colors.length - 10} more
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+              <button
+                onClick={() => {
+                  if (product.personalizationEnabled && product.personalizationRequired) {
+                    showPersonalizationPrompt('required', product);
+                    return;
+                  }
+                  
+                  if (product.personalizationEnabled && !product.personalizationRequired) {
+                    showPersonalizationPrompt('optional', product);
+                    return;
+                  }
+                  
+                  const cartProduct = { ...product, quantity: 1, price: product.sale_price || product.regular_price };
+                  addToCart(cartProduct, user, location, deviceInfo);
+                }}
+                className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 flex items-center justify-center relative overflow-hidden group/addtocart shadow-sm hover:shadow-md"
+              >
+                <span className="group-hover/addtocart:opacity-0 transition-opacity duration-300">
+                  Add to Cart
+                </span>
+                <ShoppingCart
+                  size={20}
+                  className="absolute opacity-0 group-hover/addtocart:opacity-100 transition-opacity duration-300"
+                />
+              </button>
+
+              <div className="flex gap-3">
+                <button
+                  className="p-3 rounded-lg bg-gray-100 hover:bg-blue-100 transition-all duration-200 hover:shadow-sm"
+                  onClick={() => setOpen(true)}
+                  title="Quick View"
+                >
+                  <Eye size={20} className="text-gray-600" />
+                </button>
+                <button 
+                  onClick={() => {
+                    if (isInComparison) {
+                      removeProduct(product.id);
+                    } else if (canAddMore()) {
+                      addProduct({
+                        id: product.id,
+                        title: product.title,
+                        slug: product.slug,
+                        sale_price: product.sale_price || product.regular_price,
+                        regular_price: product.regular_price,
+                        images: product.images || [],
+                        Shop: product.Shop || { id: '', name: '', avatar: null },
+                        ratings: product.ratings || 0,
+                        stock: product.stock || 0,
+                        category: product.category || '',
+                        tags: product.tags || [],
+                        specifications: product.specifications || {},
+                        customProperties: product.customProperties || {},
+                        personalizationEnabled: product.personalizationEnabled || false,
+                        personalizationRequired: product.personalizationRequired || false,
+                        personalizationInstructions: product.personalizationInstructions || '',
+                        addedAt: Date.now(),
+                        lastViewed: Date.now(),
+                        source
+                      }, source);
+                    }
+                  }}
+                  disabled={!canAddMore() && !isInComparison}
+                  className={`p-3 rounded-lg transition-all duration-200 hover:shadow-sm ${
+                    isInComparison 
+                      ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                      : canAddMore() 
+                        ? 'bg-gray-100 hover:bg-blue-100 text-gray-600' 
+                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  }`}
+                  title={isInComparison ? 'Remove from comparison' : canAddMore() ? 'Add to comparison' : 'Comparison limit reached (4 max)'}
+                >
+                  <BarChart3 size={20} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {open && typeof window !== 'undefined' && createPortal(
+          <ProductDetailsCard data={product} setOpen={setOpen} />,
+          document.body
+        )}
+      </div>
+    );
+  }
+
+  // Grid view (default)
   return (
     <div className="relative bg-white rounded-xl p-4 group shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden h-full flex flex-col justify-between">
       <div className="transition-transform duration-500 ease-in-out group-hover:-translate-y-2 relative">

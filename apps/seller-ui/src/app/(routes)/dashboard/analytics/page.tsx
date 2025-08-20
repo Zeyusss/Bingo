@@ -19,50 +19,23 @@ function AnalyticsContent() {
     <p className="text-lg text-gray-600 font-[Work Sans]">Track your shop's performance and customer insights</p>
   </div>
 
-  {/* 🟢 Customer Activity */}
+  {/* Customer Activity */}
   <div className="mb-8">
     <div className="bg-white rounded-2xl shadow-lg p-6 border border-orange-100">
-      <div className="mb-6">
-        <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2 font-[Poppins]">
-          <Globe className="h-6 w-6 text-orange-600" />
-          Customer Activity
-        </h3>
-        <p className="text-base text-gray-600 font-[Work Sans] mt-2">
-          Global order distribution and customer insights
-        </p>
-      </div>
       <OrderActivity />
     </div>
   </div>
   
-  {/* 💰 Revenue Trends */}
+  {/* Revenue Trends */}
   <div className="mb-8">
     <div className="bg-white rounded-2xl shadow-lg p-6 border border-orange-100">
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2 font-[Poppins]">
-          <DollarSign className="h-6 w-6 text-orange-600" />
-          Revenue Trends
-        </h2>
-        <p className="text-base text-gray-600 mt-2 font-[Work Sans]">
-          Track your earnings and growth over time
-        </p>
-      </div>
       <RevenueChart />
     </div>
   </div>
   
-  {/* 👁️ Visitor Analytics */}
+  {/* Visitor Analytics */}
   <div className="mb-8">
     <div className="bg-white rounded-2xl shadow-lg p-6 border border-orange-100">
-      <div className="mb-6">
-        <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2 font-[Poppins]">
-          <Eye className="h-6 w-6 text-orange-600" />
-          Visitor Analytics
-        </h3>
-        <p className="text-base text-gray-600 font-[Work Sans] mt-2">
-          Track visitor behavior and engagement patterns
-        </p>
-      </div>
       <VisitorAnalytics />
     </div>
   </div>
