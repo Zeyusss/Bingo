@@ -56,3 +56,8 @@ test-output
 # Next.js
 .next
 out
+# Per-app Next.js env (secrets); keep .env.example committable
+apps/*/.env
+apps/*/.env.local
+apps/*/.env.*.local
+!apps/*/.env.example
