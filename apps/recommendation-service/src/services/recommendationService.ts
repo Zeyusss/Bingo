@@ -1,4 +1,4 @@
-import * as tf from "@tensorflow/tfjs-node";
+import * as tf from "@tensorflow/tfjs";
 import { getUserActivity } from "./fetch-user-activity";
 import { preProcessData } from "../utils/preProcessData";
 

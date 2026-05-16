@@ -6,7 +6,9 @@ declare global {
   }
 }
 
-const prisma = new PrismaClient();
+const runtimeDatasources = { db: { url: process.env.DATABASE_URL } };
+
+const prisma = new PrismaClient({ datasources: runtimeDatasources as any });
 
 if (process.env.NODE_ENV !== "production") global.prismadb = prisma;
 

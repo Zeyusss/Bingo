@@ -63,7 +63,7 @@ Capabilities reflected in **routes, services, and schema** (not marketing copy):
 | **Catalog & engagement** (`product-service`) | Product and wishlist routes, abandoned-cart logic with email hooks, Swagger UI at `/api-docs`. |
 | **Commerce** (`order-service`) | Stripe SDK usage, webhook secret verification, transactional email utilities. |
 | **Real-time** | WebSocket URIs consumed from env in customer/seller UIs; chatting service behind `/chatting` on the gateway. |
-| **Recommendations** (`recommendation-service`) | HTTP API mounted at `/recommendation` on the gateway; service depends on `@tensorflow/tfjs-node`. |
+| **Recommendations** (`recommendation-service`) | HTTP API mounted at `/recommendation` on the gateway; service depends on `@tensorflow/tfjs` (pure JS). |
 | **Events & analytics** | `kafka-service` consumes topic `users-events` and updates user/shop analytics services; shared Kafka client in `packages/utils/kafka`. |
 | **Cross-cutting packages** | Shared Prisma client, Redis client, ImageKit wrapper, auth middleware (`ACCESS_TOKEN_SECRET`), structured logging utilities, reusable UI components under `packages/components`. |
 
