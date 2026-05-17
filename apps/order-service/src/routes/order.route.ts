@@ -29,11 +29,11 @@ router.get("/get-order-by-session/:sessionId", getOrderBySession);
 router.put(
   "/update-status/:orderId",
   isAuthenticated,
-  updateDeliveryStatus,
-  isSeller
+  isSeller,
+  updateDeliveryStatus
 );
 router.put("/verify-coupon", isAuthenticated, verifyCouponCode);
 router.get("/get-user-orders", isAuthenticated, getUserOrders);
-router.get("/get-recent-orders", getRecentOrders);
+router.get("/get-recent-orders", isAuthenticated, isAdmin, getRecentOrders);
 router.get ("/get-admin-orders",isAuthenticated,isAdmin,getAdminOrders)
 export default router;

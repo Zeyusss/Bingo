@@ -239,7 +239,9 @@ const logOutHandler = async ()=> {
         await axiosInstance.patch('/admin/api/user-notifications/mark-all-read');
       },
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['userNotifications'] });
+        queryClient.invalidateQueries({ queryKey: ['user-notifications'] });
+        queryClient.invalidateQueries({ queryKey: ['unread-notifications'] });
+        queryClient.invalidateQueries({ queryKey: ['recent-notifications'] });
       },
     });
 
@@ -249,17 +251,21 @@ const logOutHandler = async ()=> {
         await axiosInstance.delete(`/admin/api/user-notifications/${notificationId}`);
       },
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['userNotifications'] });
+        queryClient.invalidateQueries({ queryKey: ['user-notifications'] });
+        queryClient.invalidateQueries({ queryKey: ['unread-notifications'] });
+        queryClient.invalidateQueries({ queryKey: ['recent-notifications'] });
       },
     });
 
-   
+    
     const deleteAllReadMutation = useMutation({
       mutationFn: async () => {
         await axiosInstance.delete('/admin/api/user-notifications/delete-all-read');
       },
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['userNotifications'] });
+        queryClient.invalidateQueries({ queryKey: ['user-notifications'] });
+        queryClient.invalidateQueries({ queryKey: ['unread-notifications'] });
+        queryClient.invalidateQueries({ queryKey: ['recent-notifications'] });
       },
     });
 
@@ -300,13 +306,6 @@ const logOutHandler = async ()=> {
       totalPages: 0, 
       unreadCount: 0 
     };
-
-    
-    useEffect(() => {
-      if (meta.unreadCount > 0) {
-        markAllAsReadMutation.mutate();
-      }
-    }, [meta.unreadCount, markAllAsReadMutation]);
 
     const filteredNotifications = notifications.filter((notification: any) => {
       const matchesSearch = searchQuery === "" || 
@@ -433,6 +432,9 @@ const logOutHandler = async ()=> {
                     notification.status === "Unread" ? "bg-blue-50" : ""
                   }`}
                   onClick={() => {
+                    if (notification.status === "Unread") {
+                      markAsReadMutation.mutate(notification.id);
+                    }
                     if (notification.redirect_link) {
                       router.push(notification.redirect_link);
                     }

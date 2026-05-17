@@ -7,6 +7,12 @@ import {
 } from "@packages/error-handler";
 import { imagekit } from "@packages/libs/imagekit";
 import prisma from "@packages/libs/prisma";
+import { isValidImageBase64 } from "@packages/libs/validateImageBase64";
+import { sendZodValidationError } from "@packages/libs/zodValidation";
+import {
+  createEventSchema,
+  updateEventSchema,
+} from "../schemas/event.schemas";
 
 const DEFAULT_PROFILE_IMAGE =
   "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756";
@@ -149,6 +155,13 @@ export const uploadImage = async (
       return res
         .status(400)
         .json({ success: false, message: "Missing required fields." });
+    }
+
+    if (!isValidImageBase64(file)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid image file. Only JPEG, PNG, and WebP are allowed.",
+      });
     }
 
     const uploadResponse = await imagekit.upload({
@@ -413,12 +426,13 @@ export const getSellerProducts = async (
 ) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
     const skip = (page - 1) * limit;
 
     const [products, total] = await Promise.all([
       prisma.products.findMany({
         where: {
+          isDeleted: { not: true },
           starting_date: null,
           shopId: req.params.id!,
         },
@@ -444,6 +458,7 @@ export const getSellerProducts = async (
       }),
       prisma.products.count({
         where: {
+          isDeleted: { not: true },
           starting_date: null,
           shopId: req.params.id!,
         },
@@ -495,6 +510,7 @@ export const getSellerEvents = async (
 
 
     const whereClause: any = {
+      isDeleted: { not: true },
       starting_date: {
         not: null,
       },
@@ -650,34 +666,35 @@ export const createEvent = async (
   next: NextFunction
 ) => {
   try {
-    const { productId, starting_date, ending_date, discount_percentage } = req.body;
-
-
-    if (!productId || !starting_date || !ending_date) {
-      return next(new ValidationError("Product ID, start date, and end date are required!"));
+    const parsed = createEventSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return sendZodValidationError(res, parsed.error);
     }
+    const { productId, starting_date, ending_date, discount_percentage } =
+      parsed.data;
+    const startDate = starting_date;
+    const endDate = ending_date;
 
-    const startDate = new Date(starting_date);
-    const endDate = new Date(ending_date);
-    const now = new Date();
-
-    if (startDate < now) {
-      return next(new ValidationError("Start date cannot be in the past"));
+    const shopId = req.seller?.shop?.id;
+    if (!shopId) {
+      return next(new AuthError("Shop not found for this seller"));
     }
-
-    if (endDate <= startDate) {
-      return next(new ValidationError("End date must be after start date"));
-    }
-
 
     const existingProduct = await prisma.products.findFirst({
       where: {
         id: productId,
-        shopId: req.params.id,
+        shopId,
       },
     });
 
     if (!existingProduct) {
+      const productExists = await prisma.products.findUnique({
+        where: { id: productId },
+        select: { id: true },
+      });
+      if (productExists) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
       return next(new ValidationError("Product not found or doesn't belong to this seller"));
     }
 
@@ -685,13 +702,11 @@ export const createEvent = async (
       return next(new ValidationError("Product is already set as an event"));
     }
 
-
     const updateData: any = {
       starting_date: startDate,
       ending_date: endDate,
     };
 
-    
     if (discount_percentage && discount_percentage > 0 && discount_percentage <= 100) {
       const discountedPrice = existingProduct.regular_price * (1 - discount_percentage / 100);
       updateData.sale_price = Math.round(discountedPrice * 100) / 100;
@@ -726,44 +741,46 @@ export const updateEvent = async (
   next: NextFunction
 ) => {
   try {
-    const { productId, starting_date, ending_date, discount_percentage } = req.body;
-
-
-    if (!productId || !starting_date || !ending_date) {
-      return next(new ValidationError("Product ID, start date, and end date are required!"));
+    const parsed = updateEventSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return sendZodValidationError(res, parsed.error);
     }
+    const { productId, starting_date, ending_date, discount_percentage } =
+      parsed.data;
+    const startDate = starting_date;
+    const endDate = ending_date;
 
-
-    const startDate = new Date(starting_date);
-    const endDate = new Date(ending_date);
-
-    if (endDate <= startDate) {
-      return next(new ValidationError("End date must be after start date"));
+    const shopId = req.seller?.shop?.id;
+    if (!shopId) {
+      return next(new AuthError("Shop not found for this seller"));
     }
-
 
     const existingProduct = await prisma.products.findFirst({
       where: {
         id: productId,
-        shopId: req.params.id, 
+        shopId,
       },
     });
 
     if (!existingProduct) {
+      const productExists = await prisma.products.findUnique({
+        where: { id: productId },
+        select: { id: true },
+      });
+      if (productExists) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
       return next(new ValidationError("Product not found or doesn't belong to this seller"));
     }
-
 
     if (!existingProduct.starting_date) {
       return next(new ValidationError("Product is not set as an event"));
     }
 
-
     const updateData: any = {
       starting_date: startDate,
       ending_date: endDate,
     };
-
 
     if (discount_percentage && discount_percentage > 0 && discount_percentage <= 100) {
       const originalPrice = existingProduct.regular_price;
@@ -808,23 +825,32 @@ export const removeEvent = async (
       return next(new ValidationError("Product ID is required!"));
     }
 
+    const shopId = req.seller?.shop?.id;
+    if (!shopId) {
+      return next(new AuthError("Shop not found for this seller"));
+    }
 
     const existingProduct = await prisma.products.findFirst({
       where: {
         id: productId,
-        shopId: req.params.id, 
+        shopId,
       },
     });
 
     if (!existingProduct) {
+      const productExists = await prisma.products.findUnique({
+        where: { id: productId },
+        select: { id: true },
+      });
+      if (productExists) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
       return next(new ValidationError("Product not found or doesn't belong to this seller"));
     }
-
 
     if (!existingProduct.starting_date) {
       return next(new ValidationError("Product is not set as an event"));
     }
-
 
     const updatedProduct = await prisma.products.update({
       where: {
@@ -1515,7 +1541,13 @@ export const uploadVerificationDocument = async (
       return next(new ValidationError("Invalid document type"));
     }
 
-    
+    if (!isValidImageBase64(imageData)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid image file. Only JPEG, PNG, and WebP are allowed.",
+      });
+    }
+
     const uploadResponse = await imagekit.upload({
       file: imageData,
       fileName: `verification_${documentType}_${sellerId}_${Date.now()}`,

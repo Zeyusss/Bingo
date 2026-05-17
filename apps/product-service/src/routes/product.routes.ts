@@ -50,7 +50,7 @@ router.post(
   isVerifiedSeller,
   createDiscountCodes
 );
-router.get("/get-discount-codes", isAuthenticated, getDiscountCodes);
+router.get("/get-discount-codes", isAuthenticated, isVerifiedSeller, getDiscountCodes);
 router.delete(
   "/delete-discount-code/:id",
   isAuthenticated,
@@ -75,7 +75,7 @@ router.post(
   isVerifiedSeller,
   createProduct
 );
-router.get("/get-shop-products", isAuthenticated, getShopProducts);
+router.get("/get-shop-products", isAuthenticated, isVerifiedSeller, getShopProducts);
 
 router.delete(
   "/delete-product/:productId",

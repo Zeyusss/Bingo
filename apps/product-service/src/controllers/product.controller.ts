@@ -5,7 +5,13 @@ import {
 } from "@packages/error-handler";
 import { imagekit } from "@packages/libs/imagekit";
 import prisma from "@packages/libs/prisma";
+import { isValidImageBase64 } from "@packages/libs/validateImageBase64";
+import { sendZodValidationError } from "@packages/libs/zodValidation";
 import { NextFunction, Request, Response } from "express";
+import {
+  createDiscountCodesSchema,
+  createProductSchema,
+} from "../schemas/product.schemas";
 import { Prisma } from "@prisma/client";
 
 const DEFAULT_PROFILE_IMAGE =
@@ -41,7 +47,13 @@ export const createDiscountCodes = async (
   next: NextFunction
 ) => {
   try {
-    const { public_name, discountType, discountValue, discountCode } = req.body;
+    const parsed = createDiscountCodesSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return sendZodValidationError(res, parsed.error);
+    }
+    const { public_name, discountType, discountValue, discountCode } =
+      parsed.data;
+
     const isDiscountCodeExist = await prisma.discount_codes.findUnique({
       where: {
         discountCode,
@@ -59,7 +71,7 @@ export const createDiscountCodes = async (
       data: {
         public_name,
         discountType,
-        discountValue: parseFloat(discountValue),
+        discountValue,
         discountCode,
         sellerId: req.seller.id,
       },
@@ -101,6 +113,10 @@ export const deleteDiscountCode = async (
   next: NextFunction
 ) => {
   try {
+    if (!req.seller) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
     const { id } = req.params;
     const sellerId = req.seller?.id;
 
@@ -134,6 +150,15 @@ export const uploadProductImage = async (
 ) => {
   try {
     const { fileName } = req.body;
+
+    // fileName holds the base64 image payload (not a display name); product UI sends it this way.
+    if (!fileName || !isValidImageBase64(fileName)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid image file. Only JPEG, PNG, and WebP are allowed.",
+      });
+    }
+
     const response = await imagekit.upload({
       file: fileName,
       fileName: `product-${Date.now()}.jpg`,
@@ -175,6 +200,17 @@ export const createProduct = async (
   next: NextFunction
 ) => {
   try {
+    if (!req.seller?.shop?.id) {
+      return res.status(400).json({
+        message: "Seller shop is required to create a product",
+      });
+    }
+
+    const parsed = createProductSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return sendZodValidationError(res, parsed.error);
+    }
+
     const {
       title,
       short_description,
@@ -187,35 +223,22 @@ export const createProduct = async (
       brand,
       video_url,
       category,
-      colors = [],
-      sizes = [],
-      discountCodes = [],
+      colors,
+      sizes,
+      discountCodes,
       stock,
       sale_price,
       regular_price,
       subCategory,
-      customProperties = {},
-      images = [],
-      starting_date = null,
-      ending_date = null,
-      personalizationEnabled = false,
-      personalizationInstructions = "",
-      personalizationRequired = false,
-    } = req.body;
+      customProperties,
+      images,
+      starting_date,
+      ending_date,
+      personalizationEnabled,
+      personalizationInstructions,
+      personalizationRequired,
+    } = parsed.data;
 
-    if (
-      !title ||
-      !slug ||
-      !short_description ||
-      !category ||
-      !subCategory ||
-      !images ||
-      !tags ||
-      !stock ||
-      !regular_price
-    ) {
-      return next(new ValidationError("Missing required fields"));
-    }
     if (!req.seller.id) {
       return next(new AuthError("Only seller can create products"));
     }
@@ -237,37 +260,36 @@ export const createProduct = async (
         short_description,
         detailed_description,
         warranty,
-        cashOnDelivery: cash_on_delivery,
+        cashOnDelivery:
+          cash_on_delivery === undefined
+            ? undefined
+            : String(cash_on_delivery),
         slug,
         shopId: req.seller?.shop?.id,
-        tags: Array.isArray(tags) ? tags : tags.split(","),
+        tags,
         brand,
-        video_url,
+        video_url: video_url || undefined,
         category,
         subCategory,
-        colors: colors || [],
+        colors,
         starting_date,
         ending_date,
-        discount_codes: discountCodes.map((codeId: string) => codeId),
-        sizes: sizes || [],
-        stock: parseInt(stock),
-        sale_price: sale_price
-          ? parseFloat(sale_price)
-          : parseFloat(regular_price),
-        regular_price: parseFloat(regular_price),
-        custom_properties: customProperties || {},
-        custom_specifications: custom_specifications || {},
-        deletedAt: null, 
+        discount_codes: discountCodes,
+        sizes,
+        stock,
+        sale_price: sale_price ?? regular_price,
+        regular_price,
+        custom_properties: (customProperties ?? {}) as Prisma.InputJsonValue,
+        custom_specifications: (custom_specifications ?? {}) as Prisma.InputJsonValue,
+        deletedAt: null,
         personalizationEnabled: Boolean(personalizationEnabled),
-        personalizationInstructions: personalizationInstructions || "",
+        personalizationInstructions,
         personalizationRequired: Boolean(personalizationRequired),
         images: {
-          create: images
-            .filter((img: any) => img && img.fileId && img.file_url)
-            .map((img: any) => ({
-              file_id: img.fileId,
-              url: img.file_url,
-            })),
+          create: images.map((img) => ({
+            file_id: img.fileId,
+            url: img.file_url,
+          })),
         },
       },
       include: { images: true },
@@ -334,8 +356,8 @@ export const getShopProducts = async (
       stockStatus = "all",
     } = req.query;
 
-    const pageNum = parseInt(page as string);
-    const limitNum = parseInt(limit as string);
+    const pageNum = parseInt(page as string) || 1;
+    const limitNum = Math.min(parseInt(limit as string) || 10, 100);
     const skip = (pageNum - 1) * limitNum;
 
     const whereClause: any = {
@@ -518,7 +540,7 @@ export const deleteProduct = async (
       return next(new ValidationError("Product not found"));
     }
     if (product.shopId !== sellerId) {
-      return next(new ValidationError("Unauthorized action"));
+      return res.status(403).json({ message: "Forbidden" });
     }
     if (product.isDeleted) {
       return next(new ValidationError("Product is already deleted"));
@@ -537,7 +559,9 @@ export const deleteProduct = async (
         "Product is scheduled for deletion in 24 hours. You can restore it within this period before it is permanently deleted.",
       deletedAt: deletedProduct.deletedAt,
     });
-  } catch (error) {}
+  } catch (error) {
+    return next(error);
+  }
 };
 
 // update product
@@ -561,19 +585,25 @@ export const updateProduct = async (
       ending_date,
     } = req.body;
 
-    let whereCondition: any = { id: productId };
-
-    if (req.user?.role === "seller") {
-      whereCondition.Shop = {
-        sellerId: req.user.id,
-      };
-    }
+    const whereCondition = {
+      id: productId,
+      Shop: {
+        sellerId: req.seller.id,
+      },
+    };
 
     const existingProduct = await prisma.products.findFirst({
       where: whereCondition,
     });
 
     if (!existingProduct) {
+      const productExists = await prisma.products.findUnique({
+        where: { id: productId },
+        select: { id: true },
+      });
+      if (productExists) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
       return next(
         new NotFoundError(
           "Product not found or you don't have permission to update it"
@@ -645,7 +675,7 @@ export const restoreProduct = async (
     }
 
     if (product.shopId !== sellerId) {
-      return next(new ValidationError("Unauthorized action"));
+      return res.status(403).json({ message: "Forbidden" });
     }
 
     if (!product.isDeleted) {
@@ -673,7 +703,7 @@ export const getAllProducts = async (
 ) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
     const skip = (page - 1) * limit;
     const type = req.query.type;
 
@@ -752,11 +782,15 @@ export const getAllEvents = async (
 ) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
     const skip = (page - 1) * limit;
 
     const baseFilter = {
-      AND: [{ starting_date: { not: null } }, { ending_date: { not: null } }],
+      AND: [
+        { starting_date: { not: null } },
+        { ending_date: { not: null } },
+        { isDeleted: { not: true } },
+      ],
     };
 
     const [events, total, top10BySales] = await Promise.all([
@@ -808,8 +842,8 @@ export const getProductDetails = async (
     if (!slug) {
       return res.status(400).json({ message: "Product slug is required" });
     }
-    const product = await prisma.products.findUnique({
-      where: { slug },
+    const product = await prisma.products.findFirst({
+      where: { slug, isDeleted: { not: true } },
       include: {
         images: true,
         Shop: {
@@ -849,7 +883,7 @@ export const getFilteredProducts = async (
         ? priceRange.split(",").map(Number)
         : [0, 10000];
     const parsedPage = Number(page);
-    const parsedLimit = Number(limit);
+    const parsedLimit = Math.min(Number(limit) || 12, 100);
 
     const skip = (parsedPage - 1) * parsedLimit;
 
@@ -937,11 +971,12 @@ export const getFilteredEvents = async (
         ? priceRange.split(",").map(Number)
         : [0, 10000];
     const parsedPage = Number(page);
-    const parsedLimit = Number(limit);
+    const parsedLimit = Math.min(Number(limit) || 12, 100);
 
     const skip = (parsedPage - 1) * parsedLimit;
 
     const filters: Record<string, any> = {
+      isDeleted: { not: true },
       sale_price: {
         gte: parsedPriceRange[0],
         lte: parsedPriceRange[1],
@@ -1298,12 +1333,14 @@ export const searchProducts = async (
 ) => {
   try {
     const query = req.query.q as string;
+    const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
 
     if (!query || query.trim().length === 0) {
       return res.status(400).json({ message: "Search query is required." });
     }
     const products = await prisma.products.findMany({
       where: {
+        isDeleted: { not: true },
         OR: [
           {
             title: {
@@ -1324,7 +1361,7 @@ export const searchProducts = async (
         title: true,
         slug: true,
       },
-      take: 10,
+      take: limit,
       orderBy: {
         createdAt: "desc",
       },
@@ -1795,8 +1832,8 @@ export const searchAdvanced = async (
     } = req.query;
 
     const searchQuery = query as string;
-    const pageNum = parseInt(page as string);
-    const limitNum = parseInt(limit as string);
+    const pageNum = parseInt(page as string) || 1;
+    const limitNum = Math.min(parseInt(limit as string) || 20, 100);
     const skip = (pageNum - 1) * limitNum;
 
     const whereClause: any = {
@@ -2298,7 +2335,7 @@ export const getTrendingProducts = async (
     } = req.query;
 
     const pageNum = parseInt(page as string) || 1;
-    const limitNum = parseInt(limit as string) || 12;
+    const limitNum = Math.min(parseInt(limit as string) || 12, 100);
     const offset = (pageNum - 1) * limitNum;
 
     const now = new Date();
@@ -2396,25 +2433,91 @@ export const getTrendingProducts = async (
       }
     }
 
-    const allProducts = await prisma.products.findMany({
-      where: filterConditions,
-      include: {
-        images: true,
-        Shop: {
-          include: {
-            avatar: true,
-            sellers: {
-              select: {
-                id: true,
-                name: true,
-              },
+    const productInclude = {
+      images: true,
+      Shop: {
+        include: {
+          avatar: true,
+          sellers: {
+            select: {
+              id: true,
+              name: true,
             },
           },
         },
       },
+    } as const;
+
+    const totalProducts = await prisma.products.count({
+      where: filterConditions,
     });
 
-    const productsWithDefaults = allProducts.map((product: any) => ({
+    const isTrendingSort = sort === "trending" || sort === "popular";
+    let pageProducts: Awaited<ReturnType<typeof prisma.products.findMany>>;
+
+    if (isTrendingSort) {
+      const matching = await prisma.products.findMany({
+        where: filterConditions,
+        select: {
+          id: true,
+          createdAt: true,
+        },
+      });
+
+      const sortedIds = [...matching]
+        .sort((a, b) => {
+          const aSales = salesMap.get(a.id) || 0;
+          const bSales = salesMap.get(b.id) || 0;
+          if (aSales !== bSales) return bSales - aSales;
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        })
+        .map((p) => p.id);
+
+      const pageIds = sortedIds.slice(offset, offset + limitNum);
+      const fetched =
+        pageIds.length > 0
+          ? await prisma.products.findMany({
+              where: { id: { in: pageIds } },
+              include: productInclude,
+            })
+          : [];
+      const byId = new Map(fetched.map((p) => [p.id, p]));
+      pageProducts = pageIds
+        .map((id) => byId.get(id))
+        .filter((p): p is NonNullable<typeof p> => p != null);
+    } else {
+      let orderBy: Prisma.productsOrderByWithRelationInput = {
+        createdAt: "desc",
+      };
+      switch (sort) {
+        case "price-low":
+          orderBy = { sale_price: "asc" };
+          break;
+        case "price-high":
+          orderBy = { sale_price: "desc" };
+          break;
+        case "newest":
+          orderBy = { createdAt: "desc" };
+          break;
+        case "average":
+          orderBy = { ratings: "desc" };
+          break;
+        default:
+          orderBy = { createdAt: "desc" };
+      }
+
+      pageProducts = await prisma.products.findMany({
+        where: filterConditions,
+        include: productInclude,
+        skip: offset,
+        take: limitNum,
+        orderBy,
+      });
+    }
+
+    const productsWithDefaults = pageProducts.map((product: any) => ({
       ...product,
       Shop: {
         ...product.Shop,
@@ -2424,80 +2527,56 @@ export const getTrendingProducts = async (
       },
     }));
 
-    let sortedProducts = [...productsWithDefaults];
-
-    if (sort === "trending" || sort === "popular") {
-      sortedProducts.sort((a, b) => {
-        const aSales = salesMap.get(a.id) || 0;
-        const bSales = salesMap.get(b.id) || 0;
-
-        if (aSales !== bSales) {
-          return bSales - aSales;
-        }
-
-        return (
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-      });
-    } else {
-      switch (sort) {
-        case "price-low":
-          sortedProducts.sort((a, b) => {
-            const aPrice = a.sale_price || a.regular_price;
-            const bPrice = b.sale_price || b.regular_price;
-            return aPrice - bPrice;
-          });
-          break;
-        case "price-high":
-          sortedProducts.sort((a, b) => {
-            const aPrice = a.sale_price || a.regular_price;
-            const bPrice = b.sale_price || b.regular_price;
-            return bPrice - aPrice;
-          });
-          break;
-        case "newest":
-          sortedProducts.sort(
-            (a, b) =>
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-          break;
-        case "average":
-          sortedProducts.sort(
-            (a, b) => (b.averageRating || 0) - (a.averageRating || 0)
-          );
-          break;
-        default:
-          sortedProducts.sort((a, b) => {
-            const aSales = salesMap.get(a.id) || 0;
-            const bSales = salesMap.get(b.id) || 0;
-            return bSales - aSales;
-          });
-      }
-    }
-
-    const productsWithTrendingData = sortedProducts.map((product) => ({
+    const productsWithTrendingData = productsWithDefaults.map((product) => ({
       ...product,
       weeklySales: salesMap.get(product.id) || 0,
       isTrending: (salesMap.get(product.id) || 0) > 0,
     }));
 
-    const paginatedProducts = productsWithTrendingData.slice(
-      offset,
-      offset + limitNum
-    );
-    const totalProducts = productsWithTrendingData.length;
     const totalPages = Math.ceil(totalProducts / limitNum);
 
-    const trendingCount = productsWithTrendingData.filter(
-      (p) => p.isTrending
+    const matchingIds = await prisma.products.findMany({
+      where: filterConditions,
+      select: { id: true },
+    });
+    const trendingCount = matchingIds.filter(
+      (p) => (salesMap.get(p.id) || 0) > 0,
     ).length;
     const totalWeeklySales = Array.from(salesMap.values()).reduce(
       (sum, sales) => sum + sales,
-      0
+      0,
     );
 
+    const topTrendingIds = [...salesMap.entries()]
+      .filter(([, qty]) => qty > 0)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([id]) => id);
+
+    const topTrendingRows =
+      topTrendingIds.length > 0
+        ? await prisma.products.findMany({
+            where: {
+              AND: [filterConditions, { id: { in: topTrendingIds } }],
+            },
+            select: { id: true, title: true },
+          })
+        : [];
+
+    const topTrendingProducts = topTrendingIds
+      .map((id) => {
+        const row = topTrendingRows.find((p) => p.id === id);
+        if (!row) return null;
+        return {
+          id: row.id,
+          title: row.title,
+          weeklySales: salesMap.get(id) || 0,
+        };
+      })
+      .filter((p): p is NonNullable<typeof p> => p != null);
+
     return res.status(200).json({
-      products: paginatedProducts,
+      products: productsWithTrendingData,
       pagination: {
         currentPage: pageNum,
         totalPages,
@@ -2510,14 +2589,7 @@ export const getTrendingProducts = async (
         weekStart: startOfWeek.toISOString(),
         trendingProductsCount: trendingCount,
         totalWeeklySales,
-        topTrendingProducts: productsWithTrendingData
-          .filter((p) => p.isTrending)
-          .slice(0, 10)
-          .map((p) => ({
-            id: p.id,
-            title: p.title,
-            weeklySales: p.weeklySales,
-          })),
+        topTrendingProducts,
       },
     });
   } catch (error) {

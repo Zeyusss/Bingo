@@ -104,20 +104,55 @@ export const handleForgetPassword = async (req: any, res: any, next: NextFunctio
     }
 };
 
+const RESET_ALLOWED_TTL_SECONDS = 600; // 10 minutes
 
-export const verifyForgetPasswordOtp = async (req: Request , res: Response, next: NextFunction) => {
-    try {
-        const { email, otp } = req.body;
-        if (!email || !otp) {
-            throw new ValidationError('Email and OTP are required');
-        }
-        await verifyUserRegistrationOtp(email, otp);
-        await redis.del(`otp:${email}`);
-        res.status(200).json({
-            status: 'success',
-            message: 'OTP verified successfully',
-        });
-    } catch (error) {
-        next(error);
+export const getResetAllowedKey = (
+  userType: "user" | "seller",
+  email: string,
+) => `reset_allowed:${userType}:${email.toLowerCase()}`;
+
+export const grantPasswordReset = async (
+  userType: "user" | "seller",
+  email: string,
+) => {
+  await redis.set(
+    getResetAllowedKey(userType, email),
+    "1",
+    "EX",
+    RESET_ALLOWED_TTL_SECONDS,
+  );
+};
+
+export const isPasswordResetAllowed = async (
+  userType: "user" | "seller",
+  email: string,
+) => !!(await redis.get(getResetAllowedKey(userType, email)));
+
+export const consumePasswordResetGrant = async (
+  userType: "user" | "seller",
+  email: string,
+) => {
+  await redis.del(getResetAllowedKey(userType, email));
+};
+
+export const verifyForgetPasswordOtp = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+  userType: "user" | "seller",
+) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      throw new ValidationError("Email and OTP are required");
     }
-}
+    await verifyUserRegistrationOtp(email, otp);
+    await grantPasswordReset(userType, email);
+    res.status(200).json({
+      status: "success",
+      message: "OTP verified successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};

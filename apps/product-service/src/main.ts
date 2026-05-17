@@ -7,6 +7,7 @@ import cors from 'cors';
 import { errorMiddleware } from '@packages/error-handler/error-middleware';
 import { createLoggingMiddleware, createErrorLoggingMiddleware } from '@packages/middleware/logging.middleware';
 import cookieParser from 'cookie-parser';
+import { globalRateLimiter } from './middleware/rateLimiter';
 import router from './routes/product.routes';
 import cartRouter from './routes/cart.routes';
 import wishlistRouter from './routes/wishlist.routes';
@@ -26,7 +27,7 @@ credentials: true ,
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ limit: '5mb', extended: true }));
 app.use(cookieParser());
-
+app.use(globalRateLimiter);
 
 app.use(createLoggingMiddleware('product-service'));
 

@@ -11,12 +11,15 @@ import {
   trackOtpRequests,
   validateRegistrationData,
   verifyForgetPasswordOtp,
+  isPasswordResetAllowed,
+  consumePasswordResetGrant,
   verifyUserRegistrationOtp as verifyOtp,
 } from "../utils/auth.helper";
 import prisma from "@packages/libs/prisma";
+import { isValidImageBase64 } from "@packages/libs/validateImageBase64";
 import bcrypt from "bcryptjs";
 import jwt, { JsonWebTokenError } from "jsonwebtoken";
-import { setCookie } from "../utils/cookies/setCookie";
+import { clearAuthCookies, setCookie } from "../utils/cookies/setCookie";
 import Stripe from "stripe";
 import { createLogger } from "@packages/utils/logs/structured-logger";
 
@@ -24,60 +27,74 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-06-30.basil",
 });
 
-
-const logger = createLogger('auth-service');
+const logger = createLogger("auth-service");
 
 // Register a new user
 export const userRegistration = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
-  const requestId = req.headers['x-request-id'] as string || `reg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const requestId =
+    (req.headers["x-request-id"] as string) ||
+    `reg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const requestLogger = logger.forRequest(requestId, undefined, {
     ip: req.ip || req.connection?.remoteAddress,
-    userAgent: req.headers['user-agent']
+    userAgent: req.headers["user-agent"],
   });
 
   try {
     const { email, name, phone } = req.body;
-    
-    await requestLogger.info('User registration attempt started', {
-      metadata: { email, name, phone, registrationType: 'user' }
+
+    await requestLogger.info("User registration attempt started", {
+      metadata: { email, name, phone, registrationType: "user" },
     });
 
     validateRegistrationData(req.body, "user");
-    
+
     const startTime = Date.now();
     const existiongUser = await prisma.users.findUnique({
       where: { email },
     });
     const dbQueryTime = Date.now() - startTime;
-    
-    await requestLogger.dbQuery('SELECT * FROM users WHERE email = ?', dbQueryTime, {
-      metadata: { operation: 'check_existing_user' }
-    });
+
+    await requestLogger.dbQuery(
+      "SELECT * FROM users WHERE email = ?",
+      dbQueryTime,
+      {
+        metadata: { operation: "check_existing_user" },
+      },
+    );
 
     if (existiongUser) {
-      await requestLogger.warning('User registration failed: Email already exists', {
-        metadata: { email, reason: 'duplicate_email' }
-      });
+      await requestLogger.warning(
+        "User registration failed: Email already exists",
+        {
+          metadata: { email, reason: "duplicate_email" },
+        },
+      );
       return next(new ValidationError("User already exists with this email"));
     }
 
     await checkOtpRestrictions(email);
     await trackOtpRequests(email);
-    
+
     const otpStartTime = Date.now();
     await sendOtp(email, name, "user-activation-mail");
     const otpDuration = Date.now() - otpStartTime;
-    
-    await requestLogger.externalApiCall('email-service', '/send-otp', otpDuration, 200, {
-      metadata: { email, otpType: 'user-activation-mail' }
-    });
-    
-    await requestLogger.success('User registration OTP sent successfully', {
-      metadata: { email, name }
+
+    await requestLogger.externalApiCall(
+      "email-service",
+      "/send-otp",
+      otpDuration,
+      200,
+      {
+        metadata: { email, otpType: "user-activation-mail" },
+      },
+    );
+
+    await requestLogger.success("User registration OTP sent successfully", {
+      metadata: { email, name },
     });
 
     return res.status(200).json({
@@ -86,11 +103,11 @@ export const userRegistration = async (
     });
   } catch (error: any) {
     await requestLogger.error(`User registration failed: ${error.message}`, {
-      metadata: { 
+      metadata: {
         error: error.name,
         stack: error.stack,
-        email: req.body?.email
-      }
+        email: req.body?.email,
+      },
     });
     return next(error);
   }
@@ -100,13 +117,15 @@ export const userRegistration = async (
 export const verifyUserRegistrationOtp = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { email, otp, password, name, phone } = req.body;
     if (!email || !otp || !password || !name || !phone) {
       return next(
-        new ValidationError("Email, OTP, password, name, and phone are required")
+        new ValidationError(
+          "Email, OTP, password, name, and phone are required",
+        ),
       );
     }
     const user = await prisma.users.findUnique({
@@ -142,24 +161,30 @@ export const verifyUserRegistrationOtp = async (
 export const userLogin = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
-  const requestId = req.headers['x-request-id'] as string || `login_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const requestId =
+    (req.headers["x-request-id"] as string) ||
+    `login_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const requestLogger = logger.forRequest(requestId, undefined, {
     ip: req.ip || req.connection?.remoteAddress,
-    userAgent: req.headers['user-agent']
+    userAgent: req.headers["user-agent"],
   });
 
   try {
     const { email, password } = req.body;
-    
-    await requestLogger.info('User login attempt started', {
-      metadata: { email, loginType: 'user' }
+
+    await requestLogger.info("User login attempt started", {
+      metadata: { email, loginType: "user" },
     });
 
     if (!email || !password) {
-      await requestLogger.warning('Login failed: Missing credentials', {
-        metadata: { reason: 'missing_credentials', hasEmail: !!email, hasPassword: !!password }
+      await requestLogger.warning("Login failed: Missing credentials", {
+        metadata: {
+          reason: "missing_credentials",
+          hasEmail: !!email,
+          hasPassword: !!password,
+        },
       });
       return next(new ValidationError("Email and password are required"));
     }
@@ -169,26 +194,34 @@ export const userLogin = async (
       where: { email },
     });
     const dbQueryTime = Date.now() - dbStartTime;
-    
-    await requestLogger.dbQuery('SELECT * FROM users WHERE email = ?', dbQueryTime, {
-      metadata: { operation: 'user_lookup' }
-    });
+
+    await requestLogger.dbQuery(
+      "SELECT * FROM users WHERE email = ?",
+      dbQueryTime,
+      {
+        metadata: { operation: "user_lookup" },
+      },
+    );
 
     if (!user) {
-      await requestLogger.authFailure('User not found', {
-        metadata: { email, reason: 'user_not_found' }
+      await requestLogger.authFailure("User not found", {
+        metadata: { email, reason: "user_not_found" },
       });
       return next(new AuthError("User not found"));
     }
 
     if (user.isBlocked || user.isDeleted) {
       await requestLogger.securityEvent(
-        `Login attempt on restricted account: ${user.isBlocked ? 'blocked' : 'deleted'}`,
-        'medium',
+        `Login attempt on restricted account: ${user.isBlocked ? "blocked" : "deleted"}`,
+        "medium",
         {
           userId: user.id,
-          metadata: { email, isBlocked: user.isBlocked, isDeleted: user.isDeleted }
-        }
+          metadata: {
+            email,
+            isBlocked: user.isBlocked,
+            isDeleted: user.isDeleted,
+          },
+        },
       );
       return res.status(403).json({
         message:
@@ -200,83 +233,56 @@ export const userLogin = async (
     const passwordCheckStart = Date.now();
     const isMatch = await bcrypt.compare(password, user.password!);
     const passwordCheckTime = Date.now() - passwordCheckStart;
-    
-    await requestLogger.performanceMetric('password_check_duration', passwordCheckTime, 'ms');
+
+    await requestLogger.performanceMetric(
+      "password_check_duration",
+      passwordCheckTime,
+      "ms",
+    );
 
     if (!isMatch) {
-      await requestLogger.authFailure('Invalid password', {
+      await requestLogger.authFailure("Invalid password", {
         userId: user.id,
-        metadata: { email, reason: 'invalid_password' }
+        metadata: { email, reason: "invalid_password" },
       });
       return next(new AuthError("Invalid email or password"));
     }
 
-   
-    await requestLogger.debug('Clearing existing authentication cookies');
-    res.clearCookie("access_Token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("refresh_Token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("access_token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("refresh_token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("seller-access-token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("seller-refresh-token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
+    await requestLogger.debug("Clearing existing authentication cookies");
+    clearAuthCookies(res);
 
     const tokenStartTime = Date.now();
     const accessToken = jwt.sign(
       { id: user.id, role: "user" },
       process.env.ACCESS_TOKEN_SECRET as string,
-      { expiresIn: "15m" }
+      { expiresIn: "15m" },
     );
     const refreshToken = jwt.sign(
       { id: user.id, role: "user" },
       process.env.REFRESH_TOKEN_SECRET as string,
-      { expiresIn: "7d" }
+      { expiresIn: "7d" },
     );
     const tokenGenerationTime = Date.now() - tokenStartTime;
-    
-    await requestLogger.performanceMetric('token_generation_duration', tokenGenerationTime, 'ms', {
-      userId: user.id
-    });
 
-    setCookie(res, "access_Token", accessToken);
-    setCookie(res, "refresh_Token", refreshToken);
+    await requestLogger.performanceMetric(
+      "token_generation_duration",
+      tokenGenerationTime,
+      "ms",
+      {
+        userId: user.id,
+      },
+    );
+
+    setCookie(res, "access_token", accessToken);
+    setCookie(res, "refresh_token", refreshToken);
 
     await requestLogger.authSuccess(user.id, {
-      metadata: { 
+      metadata: {
         email,
-        loginMethod: 'email_password',
-        tokenExpiry: '15m',
-        refreshTokenExpiry: '7d'
-      }
+        loginMethod: "email_password",
+        tokenExpiry: "15m",
+        refreshTokenExpiry: "7d",
+      },
     });
 
     return res.status(200).json({
@@ -286,11 +292,11 @@ export const userLogin = async (
     });
   } catch (error: any) {
     await requestLogger.error(`User login failed: ${error.message}`, {
-      metadata: { 
+      metadata: {
         error: error.name,
         stack: error.stack,
-        email: req.body?.email
-      }
+        email: req.body?.email,
+      },
     });
     return next(error);
   }
@@ -300,64 +306,69 @@ export const userLogin = async (
 export const refreshToken = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
-    // Check for refresh tokens in order: user, admin, seller, header
-    const refreshToken =
-      req.cookies["refresh_Token"] ||    // User refresh token
-      req.cookies["refresh_token"] ||    // Admin refresh token  
-      req.cookies["seller-refresh-token"] ||  // Seller refresh token
-      req.headers.authorization?.split(" ")[1];
-    
-    if (!refreshToken) {
+    const refreshSecret = process.env.REFRESH_TOKEN_SECRET as string;
+    const bearerToken = req.headers.authorization?.split(" ")[1];
+    const refreshCandidates = [
+      req.cookies["admin_refresh_token"],
+      req.cookies["refresh_token"],
+      req.cookies["seller_refresh_token"],
+      bearerToken,
+    ].filter((value): value is string => Boolean(value));
+
+    let decoded: { id: string; role: string } | null = null;
+
+    for (const refreshToken of refreshCandidates) {
+      try {
+        const payload = jwt.verify(refreshToken, refreshSecret) as {
+          id: string;
+          role: string;
+        };
+        if (payload?.id && payload?.role) {
+          decoded = payload;
+          break;
+        }
+      } catch {
+        // Try next refresh cookie
+      }
+    }
+
+    if (!decoded) {
       return next(
-        new ValidationError("Unauthorized! No refresh token provided")
+        new ValidationError("Unauthorized! No refresh token provided"),
       );
-    }
-    
-    let decoded;
-    try {
-      decoded = jwt.verify(
-        refreshToken,
-        process.env.REFRESH_TOKEN_SECRET as string
-      ) as { id: string; role: string };
-    } catch (jwtError: any) {
-      return next(new JsonWebTokenError("Invalid or expired refresh token"));
-    }
-    
-    if (!decoded || !decoded.id || !decoded.role) {
-      return next(new JsonWebTokenError("Invalid refresh token"));
     }
 
     let account;
 
     if (decoded.role === "user" || decoded.role === "admin") {
-      account = await prisma.users.findUnique({ 
+      account = await prisma.users.findUnique({
         where: { id: decoded.id },
         include: {
           avatar: {
             select: {
               id: true,
-              url: true
-            }
-          }
-        }
+              url: true,
+            },
+          },
+        },
       });
     } else if (decoded.role === "seller") {
       account = await prisma.sellers.findUnique({
         where: { id: decoded.id },
-        include: { 
+        include: {
           shop: {
             include: {
               avatar: {
                 select: {
                   id: true,
-                  url: true
-                }
-              }
-            }
-          }
+                  url: true,
+                },
+              },
+            },
+          },
         },
       });
     }
@@ -366,28 +377,36 @@ export const refreshToken = async (
       return next(new AuthError("Forbidden ! User/Seller not found"));
     }
 
+    if (account.isBlocked || account.isDeleted) {
+      return res.status(401).json({
+        message:
+          "Your account is currently restricted. Please contact support or the site administration for assistance.",
+        restricted: true,
+      });
+    }
+
     const newAccessToken = jwt.sign(
       { id: decoded.id, role: decoded.role },
       process.env.ACCESS_TOKEN_SECRET as string,
-      { expiresIn: "15m" }
+      { expiresIn: "15m" },
     );
 
     // Generate new refresh token for security (token rotation)
     const newRefreshToken = jwt.sign(
       { id: decoded.id, role: decoded.role },
       process.env.REFRESH_TOKEN_SECRET as string,
-      { expiresIn: "7d" }
+      { expiresIn: "7d" },
     );
 
     if (decoded.role === "user") {
-      setCookie(res, "access_Token", newAccessToken);
-      setCookie(res, "refresh_Token", newRefreshToken);
-    } else if (decoded.role === "seller") {
-      setCookie(res, "seller-access-token", newAccessToken);
-      setCookie(res, "seller-refresh-token", newRefreshToken);
-    } else if (decoded.role === "admin") {
       setCookie(res, "access_token", newAccessToken);
       setCookie(res, "refresh_token", newRefreshToken);
+    } else if (decoded.role === "seller") {
+      setCookie(res, "seller_access_token", newAccessToken);
+      setCookie(res, "seller_refresh_token", newRefreshToken);
+    } else if (decoded.role === "admin") {
+      setCookie(res, "admin_access_token", newAccessToken);
+      setCookie(res, "admin_refresh_token", newRefreshToken);
     }
 
     req.role = decoded.role;
@@ -400,7 +419,6 @@ export const refreshToken = async (
 //get logged in user info
 export const getUser = async (req: any, res: Response, next: NextFunction) => {
   try {
-    
     if (!req.user || !req.user.id) {
       return res.status(401).json({
         success: false,
@@ -440,7 +458,7 @@ export const getUser = async (req: any, res: Response, next: NextFunction) => {
 export const userForgetPassword = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   await handleForgetPassword(req, res, next, "user");
 };
@@ -449,22 +467,31 @@ export const userForgetPassword = async (
 export const verifyUserForgetPasswordOtp = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
-  await verifyForgetPasswordOtp(req, res, next);
+  await verifyForgetPasswordOtp(req, res, next, "user");
 };
 
 // reset user password
 export const userResetPassword = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { email, newPassword } = req.body;
     if (!email || !newPassword) {
       return next(new ValidationError("Email and new password are required"));
     }
+
+    if (!(await isPasswordResetAllowed("user", email))) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Password reset not authorized. Please verify your OTP first.",
+      });
+    }
+
     const user = await prisma.users.findUnique({
       where: { email },
     });
@@ -475,8 +502,8 @@ export const userResetPassword = async (
     if (isSamePassword) {
       return next(
         new ValidationError(
-          "New password cannot be the same as the old password"
-        )
+          "New password cannot be the same as the old password",
+        ),
       );
     }
 
@@ -485,6 +512,8 @@ export const userResetPassword = async (
       where: { email },
       data: { password: hashedPassword },
     });
+
+    await consumePasswordResetGrant("user", email);
 
     return res.status(200).json({
       status: "success",
@@ -499,7 +528,7 @@ export const userResetPassword = async (
 export const registerSeller = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     validateRegistrationData(req.body, "seller");
@@ -526,15 +555,15 @@ export const registerSeller = async (
 export const verifySeller = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { email, otp, password, name, phone_number, country } = req.body;
     if (!email || !otp || !password || !name || !phone_number || !country) {
       return next(
         new ValidationError(
-          "Email, OTP, password, name, phone number and country are required"
-        )
+          "Email, OTP, password, name, phone number and country are required",
+        ),
       );
     }
     const existingSeller = await prisma.sellers.findUnique({
@@ -562,7 +591,7 @@ export const verifySeller = async (
 export const createShop = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { name, bio, address, opening_hours, website, category, sellerId } =
@@ -601,7 +630,7 @@ export const createShop = async (
 export const createStripeConnectLink = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { sellerId } = req.body;
@@ -616,7 +645,6 @@ export const createStripeConnectLink = async (
     if (!seller) {
       return next(new ValidationError("Seller not found"));
     }
-
 
     const account = await stripe.accounts.create({
       type: "standard",
@@ -656,7 +684,7 @@ export const createStripeConnectLink = async (
 export const loginSeller = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { email, password } = req.body;
@@ -682,56 +710,21 @@ export const loginSeller = async (
     if (!isMatch) {
       return next(new ValidationError("Invalid email or password"));
     }
-    res.clearCookie("access_Token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("refresh_Token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("access_token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("refresh_token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("seller-access-token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("seller-refresh-token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
+    clearAuthCookies(res);
 
     const accessToken = jwt.sign(
       { id: seller.id, role: "seller" },
       process.env.ACCESS_TOKEN_SECRET as string,
-      { expiresIn: "15m" }
+      { expiresIn: "15m" },
     );
 
     const refreshToken = jwt.sign(
       { id: seller.id, role: "seller" },
       process.env.REFRESH_TOKEN_SECRET as string,
-      { expiresIn: "7d" }
+      { expiresIn: "7d" },
     );
-    setCookie(res, "seller-access-token", accessToken);
-    setCookie(res, "seller-refresh-token", refreshToken);
+    setCookie(res, "seller_access_token", accessToken);
+    setCookie(res, "seller_refresh_token", refreshToken);
     res.status(200).json({
       message: "Login Successful!",
       seller: { id: seller.id, email: seller.email, name: seller.name },
@@ -745,11 +738,11 @@ export const loginSeller = async (
 export const getSeller = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const seller = req.seller;
-    
+
     let followersCount = 0;
     if (seller.shop?.id) {
       followersCount = await prisma.followers.count({
@@ -758,17 +751,23 @@ export const getSeller = async (
         },
       });
     }
-    
+
     const formattedSeller = {
       ...seller,
       followers: followersCount,
-      shop: seller.shop ? {
-        ...seller.shop,
-        avatar: seller.shop.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756",
-        coverBanner: seller.shop.coverBanner || "https://ik.imagekit.io/w7lwh7wre/cover-handmade.webp?updatedAt=175424311149",
-      } : null,
+      shop: seller.shop
+        ? {
+            ...seller.shop,
+            avatar:
+              seller.shop.avatar?.url ||
+              "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756",
+            coverBanner:
+              seller.shop.coverBanner ||
+              "https://ik.imagekit.io/w7lwh7wre/cover-handmade.webp?updatedAt=175424311149",
+          }
+        : null,
     };
-    
+
     return res.status(201).json({
       success: true,
       seller: formattedSeller,
@@ -782,7 +781,7 @@ export const getSeller = async (
 export const addUserAddress = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = req.user?.id;
@@ -832,12 +831,13 @@ export const addUserAddress = async (
 export const editUserAddress = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = req.user?.id;
     const { addressId } = req.params;
-    const { label, name, phone, street, city, zip, country, isDefault } = req.body;
+    const { label, name, phone, street, city, zip, country, isDefault } =
+      req.body;
 
     if (!userId) return next(new ValidationError("User not authenticated"));
     if (!addressId) return next(new ValidationError("Address ID is required"));
@@ -878,7 +878,7 @@ export const editUserAddress = async (
 export const deleteUserAddress = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = req.user?.id;
@@ -911,7 +911,7 @@ export const deleteUserAddress = async (
 export const getUserAddresses = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = req.user?.id;
@@ -935,7 +935,7 @@ export const getUserAddresses = async (
 export const setDefaultUserAddress = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = req.user?.id;
@@ -973,7 +973,7 @@ export const setDefaultUserAddress = async (
 export const sellerForgetPassword = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   await handleForgetPassword(req, res, next, "seller");
 };
@@ -982,22 +982,31 @@ export const sellerForgetPassword = async (
 export const verifySellerForgetPasswordOtp = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
-  await verifyForgetPasswordOtp(req, res, next);
+  await verifyForgetPasswordOtp(req, res, next, "seller");
 };
 
 // reset seller password
 export const sellerResetPassword = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { email, newPassword } = req.body;
     if (!email || !newPassword) {
       return next(new ValidationError("Email and new password are required"));
     }
+
+    if (!(await isPasswordResetAllowed("seller", email))) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Password reset not authorized. Please verify your OTP first.",
+      });
+    }
+
     const seller = await prisma.sellers.findUnique({
       where: { email },
     });
@@ -1008,8 +1017,8 @@ export const sellerResetPassword = async (
     if (isSamePassword) {
       return next(
         new ValidationError(
-          "New password cannot be the same as the old password"
-        )
+          "New password cannot be the same as the old password",
+        ),
       );
     }
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -1017,6 +1026,9 @@ export const sellerResetPassword = async (
       where: { email },
       data: { password: hashedPassword },
     });
+
+    await consumePasswordResetGrant("seller", email);
+
     return res.status(200).json({
       status: "success",
       message: "Password reset successfully",
@@ -1030,7 +1042,7 @@ export const sellerResetPassword = async (
 export const updateUserPassword = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = req.user?.id;
@@ -1047,8 +1059,8 @@ export const updateUserPassword = async (
     if (currentPassword === newPassword) {
       return next(
         new ValidationError(
-          "New password cannot be the same as the current password"
-        )
+          "New password cannot be the same as the current password",
+        ),
       );
     }
 
@@ -1062,7 +1074,7 @@ export const updateUserPassword = async (
 
     const isPasswordCorrect = await bcrypt.compare(
       currentPassword,
-      user.password
+      user.password,
     );
     if (!isPasswordCorrect) {
       return next(new AuthError("Current password is incorrect"));
@@ -1084,7 +1096,7 @@ export const updateUserPassword = async (
 export const loginAdmin = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { email, password } = req.body;
@@ -1095,7 +1107,7 @@ export const loginAdmin = async (
     const user = await prisma.users.findUnique({ where: { email } });
 
     if (!user) return next(new AuthError("User doesn't exists!"));
-   
+
     if (user.role !== "admin") {
       return next(new AuthError("Access denied. Admin privileges required."));
     }
@@ -1111,57 +1123,22 @@ export const loginAdmin = async (
       return next(new AuthError("Invalid email or password"));
     }
 
-    res.clearCookie("access_Token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("refresh_Token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("access_token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("refresh_token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("seller-access-token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("seller-refresh-token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
+    clearAuthCookies(res);
 
     const accessToken = jwt.sign(
       { id: user.id, role: "admin" },
       process.env.ACCESS_TOKEN_SECRET as string,
-      { expiresIn: "15m" }
+      { expiresIn: "15m" },
     );
     const refreshToken = jwt.sign(
       { id: user.id, role: "admin" },
       process.env.REFRESH_TOKEN_SECRET as string,
       {
         expiresIn: "7d",
-      }
+      },
     );
-    setCookie(res, "refresh_token", refreshToken);
-    setCookie(res, "access_token", accessToken);
+    setCookie(res, "admin_refresh_token", refreshToken);
+    setCookie(res, "admin_access_token", accessToken);
 
     res.status(200).json({
       message: "Login successful!",
@@ -1175,7 +1152,7 @@ export const loginAdmin = async (
 export const getLoggedInAdmin = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const user = req.user;
@@ -1195,45 +1172,10 @@ export const getLoggedInAdmin = async (
 export const logoutUser = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
-    res.clearCookie("access_Token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("refresh_Token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("access_token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("refresh_token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("seller-access-token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("seller-refresh-token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
+    clearAuthCookies(res);
     return res
       .status(200)
       .json({ success: true, message: "Logged out successfully" });
@@ -1246,45 +1188,10 @@ export const logoutUser = async (
 export const logoutSeller = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
-    res.clearCookie("seller-access-token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("seller-refresh-token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("access_Token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("refresh_Token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("access_token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("refresh_token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-    });
+    clearAuthCookies(res);
     return res
       .status(200)
       .json({ success: true, message: "Seller logged out successfully" });
@@ -1297,12 +1204,14 @@ export const logoutSeller = async (
 export const uploadUserImage = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
-  const requestId = req.headers['x-request-id'] as string || `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const requestId =
+    (req.headers["x-request-id"] as string) ||
+    `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const requestLogger = logger.forRequest(requestId, req.user?.id, {
     ip: req.ip || req.connection?.remoteAddress,
-    userAgent: req.headers['user-agent']
+    userAgent: req.headers["user-agent"],
   });
 
   try {
@@ -1313,8 +1222,15 @@ export const uploadUserImage = async (
       throw new ValidationError("Image and fileName are required");
     }
 
-    await requestLogger.info('User image upload attempt started', {
-      metadata: { fileName, folder, userId: req.user?.id }
+    if (!isValidImageBase64(imageData)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid image file. Only JPEG, PNG, and WebP are allowed.",
+      });
+    }
+
+    await requestLogger.info("User image upload attempt started", {
+      metadata: { fileName, folder, userId: req.user?.id },
     });
 
     const ImageKit = require("imagekit");
@@ -1330,14 +1246,14 @@ export const uploadUserImage = async (
       folder: folder,
     });
 
-    await requestLogger.info('User image upload completed successfully', {
-      metadata: { 
-        fileName, 
-        folder, 
+    await requestLogger.info("User image upload completed successfully", {
+      metadata: {
+        fileName,
+        folder,
         userId: req.user?.id,
         imageUrl: uploadResponse.url,
-        fileId: uploadResponse.fileId
-      }
+        fileId: uploadResponse.fileId,
+      },
     });
 
     return res.status(200).json({
@@ -1348,12 +1264,12 @@ export const uploadUserImage = async (
       file_id: uploadResponse.fileId,
     });
   } catch (error) {
-    await requestLogger.error('User image upload failed', {
-      metadata: { 
+    await requestLogger.error("User image upload failed", {
+      metadata: {
         fileName: req.body?.fileName,
         userId: req.user?.id,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
     });
     return next(error);
   }
@@ -1363,33 +1279,34 @@ export const uploadUserImage = async (
 export const getProfilePictureEligibility = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
-  const requestId = req.headers['x-request-id'] as string || `eligibility_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const requestId =
+    (req.headers["x-request-id"] as string) ||
+    `eligibility_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const requestLogger = logger.forRequest(requestId, req.user?.id, {
     ip: req.ip || req.connection?.remoteAddress,
-    userAgent: req.headers['user-agent']
+    userAgent: req.headers["user-agent"],
   });
 
   try {
     const userId = req.user?.id;
 
-    await requestLogger.info('Profile picture eligibility check started', {
-      metadata: { userId }
+    await requestLogger.info("Profile picture eligibility check started", {
+      metadata: { userId },
     });
 
     const user = await prisma.users.findUnique({
       where: { id: userId },
       include: {
-        avatar: true
-      }
+        avatar: true,
+      },
     });
 
     if (!user) {
       throw new NotFoundError("User not found");
     }
 
-    
     let canChange = true;
     let daysRemaining = 0;
     let lastChanged = user.avatarLastChanged;
@@ -1399,7 +1316,7 @@ export const getProfilePictureEligibility = async (
       const lastChangedDate = new Date(user.avatarLastChanged);
       const ninetyDaysInMs = 90 * 24 * 60 * 60 * 1000;
       const timeSinceLastChange = now.getTime() - lastChangedDate.getTime();
-      
+
       if (timeSinceLastChange < ninetyDaysInMs) {
         canChange = false;
         const remainingMs = ninetyDaysInMs - timeSinceLastChange;
@@ -1407,14 +1324,14 @@ export const getProfilePictureEligibility = async (
       }
     }
 
-    await requestLogger.info('Profile picture eligibility check completed', {
-      metadata: { 
-        userId, 
-        canChange, 
+    await requestLogger.info("Profile picture eligibility check completed", {
+      metadata: {
+        userId,
+        canChange,
         daysRemaining,
         hasAvatar: !!user.avatar,
-        lastChanged: lastChanged?.toISOString()
-      }
+        lastChanged: lastChanged?.toISOString(),
+      },
     });
 
     return res.status(200).json({
@@ -1423,14 +1340,16 @@ export const getProfilePictureEligibility = async (
       daysRemaining,
       lastChanged: lastChanged?.toISOString(),
       hasAvatar: !!user.avatar,
-      message: canChange ? "You can change your profile picture" : `You can change your profile picture in ${daysRemaining} days`
+      message: canChange
+        ? "You can change your profile picture"
+        : `You can change your profile picture in ${daysRemaining} days`,
     });
   } catch (error) {
-    await requestLogger.error('Profile picture eligibility check failed', {
-      metadata: { 
+    await requestLogger.error("Profile picture eligibility check failed", {
+      metadata: {
         userId: req.user?.id,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
     });
     return next(error);
   }
@@ -1440,12 +1359,14 @@ export const getProfilePictureEligibility = async (
 export const updateUserProfilePicture = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
-  const requestId = req.headers['x-request-id'] as string || `update_avatar_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const requestId =
+    (req.headers["x-request-id"] as string) ||
+    `update_avatar_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const requestLogger = logger.forRequest(requestId, req.user?.id, {
     ip: req.ip || req.connection?.remoteAddress,
-    userAgent: req.headers['user-agent']
+    userAgent: req.headers["user-agent"],
   });
 
   try {
@@ -1456,74 +1377,74 @@ export const updateUserProfilePicture = async (
       throw new ValidationError("Image URL and file ID are required");
     }
 
-    await requestLogger.info('User profile picture update started', {
-      metadata: { userId, imageUrl, fileId }
+    await requestLogger.info("User profile picture update started", {
+      metadata: { userId, imageUrl, fileId },
     });
 
-    
     const user = await prisma.users.findUnique({
       where: { id: userId },
-      include: { avatar: true }
+      include: { avatar: true },
     });
 
     if (!user) {
       throw new NotFoundError("User not found");
     }
 
-    
     if (user.avatarLastChanged) {
       const now = new Date();
       const lastChangedDate = new Date(user.avatarLastChanged);
       const ninetyDaysInMs = 90 * 24 * 60 * 60 * 1000;
       const timeSinceLastChange = now.getTime() - lastChangedDate.getTime();
-      
+
       if (timeSinceLastChange < ninetyDaysInMs) {
         const remainingMs = ninetyDaysInMs - timeSinceLastChange;
         const daysRemaining = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
-        
-        await requestLogger.warning('Profile picture update blocked by 90-day restriction', {
-          metadata: { 
-            userId, 
-            daysRemaining,
-            lastChanged: lastChangedDate.toISOString()
-          }
-        });
-        
-        throw new ValidationError(`You can change your profile picture in ${daysRemaining} days`);
+
+        await requestLogger.warning(
+          "Profile picture update blocked by 90-day restriction",
+          {
+            metadata: {
+              userId,
+              daysRemaining,
+              lastChanged: lastChangedDate.toISOString(),
+            },
+          },
+        );
+
+        throw new ValidationError(
+          `You can change your profile picture in ${daysRemaining} days`,
+        );
       }
     }
 
     let imageRecord;
 
     if (user.avatarId && user.avatar) {
-      
       imageRecord = await prisma.images.update({
         where: { id: user.avatarId },
         data: {
           url: imageUrl,
           file_id: fileId,
-        }
+        },
       });
     } else {
-  
       imageRecord = await prisma.images.create({
         data: {
           url: imageUrl,
           file_id: fileId,
-          userId: userId
-        }
+          userId: userId,
+        },
       });
 
       await prisma.users.update({
         where: { id: userId },
-        data: { avatarId: imageRecord.id }
+        data: { avatarId: imageRecord.id },
       });
     }
 
-
     await prisma.users.update({
       where: { id: userId },
-      data: { avatarLastChanged: new Date() }
+      data: { avatarLastChanged: new Date() },
     });
 
     const updatedUser = await prisma.users.findUnique({
@@ -1539,34 +1460,37 @@ export const updateUserProfilePicture = async (
         avatar: {
           select: {
             id: true,
-            url: true
-          }
-        }
-      }
+            url: true,
+          },
+        },
+      },
     });
 
-    await requestLogger.info('User profile picture update completed successfully', {
-      metadata: { 
-        userId, 
-        imageUrl, 
-        fileId,
-        avatarId: imageRecord.id,
-        avatarLastChanged: new Date().toISOString()
-      }
-    });
+    await requestLogger.info(
+      "User profile picture update completed successfully",
+      {
+        metadata: {
+          userId,
+          imageUrl,
+          fileId,
+          avatarId: imageRecord.id,
+          avatarLastChanged: new Date().toISOString(),
+        },
+      },
+    );
 
     return res.status(200).json({
       success: true,
       message: "Profile picture updated successfully",
-      user: updatedUser
+      user: updatedUser,
     });
   } catch (error) {
-    await requestLogger.error('User profile picture update failed', {
-      metadata: { 
+    await requestLogger.error("User profile picture update failed", {
+      metadata: {
         userId: req.user?.id,
         imageUrl: req.body?.imageUrl,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
     });
     return next(error);
   }
@@ -1576,7 +1500,7 @@ export const updateUserProfilePicture = async (
 export const updateUserProfilePhone = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = req.user?.id;
@@ -1590,7 +1514,6 @@ export const updateUserProfilePhone = async (
       return next(new ValidationError("Phone number is required"));
     }
 
-
     const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
     if (!phoneRegex.test(phone)) {
       return next(new ValidationError("Invalid phone number format"));
@@ -1601,15 +1524,15 @@ export const updateUserProfilePhone = async (
       data: { phone },
       include: {
         avatar: {
-          select: { id: true, url: true }
-        }
-      }
+          select: { id: true, url: true },
+        },
+      },
     });
 
     res.status(200).json({
       success: true,
       message: "Phone number updated successfully",
-      user: updatedUser
+      user: updatedUser,
     });
   } catch (error) {
     return next(error);
@@ -1617,7 +1540,11 @@ export const updateUserProfilePhone = async (
 };
 
 // Update user profile (name and phone)
-export const updateUserProfile = async (req: any, res: Response, next: NextFunction) => {
+export const updateUserProfile = async (
+  req: any,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { name, phone } = req.body;
     const userId = req.user?.id;
@@ -1626,17 +1553,14 @@ export const updateUserProfile = async (req: any, res: Response, next: NextFunct
       return res.status(401).json({ message: "User not authenticated" });
     }
 
-
     if (!name || !phone) {
       return res.status(400).json({ message: "Name and phone are required" });
     }
-
 
     const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
     if (!phoneRegex.test(phone)) {
       return res.status(400).json({ message: "Invalid phone number format" });
     }
-
 
     const updatedUser = await prisma.users.update({
       where: { id: userId },
@@ -1670,7 +1594,11 @@ export const updateUserProfile = async (req: any, res: Response, next: NextFunct
 };
 
 // Follow a shop
-export const followShop = async (req: any, res: Response, next: NextFunction) => {
+export const followShop = async (
+  req: any,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { shopId } = req.body;
     const userId = req.user?.id;
@@ -1683,21 +1611,19 @@ export const followShop = async (req: any, res: Response, next: NextFunction) =>
       return res.status(400).json({ message: "Shop ID is required" });
     }
 
-    
     const shop = await prisma.shops.findUnique({
-      where: { id: shopId }
+      where: { id: shopId },
     });
 
     if (!shop) {
       return res.status(404).json({ message: "Shop not found" });
     }
 
-    
     const existingFollow = await prisma.followers.findFirst({
       where: {
         userId,
-        shopId
-      }
+        shopId,
+      },
     });
 
     if (existingFollow) {
@@ -1708,13 +1634,13 @@ export const followShop = async (req: any, res: Response, next: NextFunction) =>
     await prisma.followers.create({
       data: {
         userId,
-        shopId
-      }
+        shopId,
+      },
     });
 
     res.status(200).json({
       message: "Successfully followed shop",
-      success: true
+      success: true,
     });
   } catch (error) {
     console.error("Error following shop:", error);
@@ -1723,7 +1649,11 @@ export const followShop = async (req: any, res: Response, next: NextFunction) =>
 };
 
 // Unfollow a shop
-export const unfollowShop = async (req: any, res: Response, next: NextFunction) => {
+export const unfollowShop = async (
+  req: any,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { shopId } = req.body;
     const userId = req.user?.id;
@@ -1736,28 +1666,26 @@ export const unfollowShop = async (req: any, res: Response, next: NextFunction) 
       return res.status(400).json({ message: "Shop ID is required" });
     }
 
-    
     const existingFollow = await prisma.followers.findFirst({
       where: {
         userId,
-        shopId
-      }
+        shopId,
+      },
     });
 
     if (!existingFollow) {
       return res.status(400).json({ message: "Not following this shop" });
     }
 
-   
     await prisma.followers.delete({
       where: {
-        id: existingFollow.id
-      }
+        id: existingFollow.id,
+      },
     });
 
     res.status(200).json({
       message: "Successfully unfollowed shop",
-      success: true
+      success: true,
     });
   } catch (error) {
     console.error("Error unfollowing shop:", error);
@@ -1766,7 +1694,11 @@ export const unfollowShop = async (req: any, res: Response, next: NextFunction) 
 };
 
 // Get user's followed shops
-export const getUserFollowedShops = async (req: any, res: Response, next: NextFunction) => {
+export const getUserFollowedShops = async (
+  req: any,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const userId = req.user?.id;
     const page = parseInt(req.query.page as string) || 1;
@@ -1782,37 +1714,37 @@ export const getUserFollowedShops = async (req: any, res: Response, next: NextFu
         where: {
           followers: {
             some: {
-              userId
-            }
-          }
+              userId,
+            },
+          },
         },
         include: {
           avatar: {
             select: {
-              url: true
-            }
+              url: true,
+            },
           },
           reviews: {
             select: {
-              rating: true
-            }
+              rating: true,
+            },
           },
         },
         skip,
         take: limit,
         orderBy: {
-          createdAt: 'desc'
-        }
+          createdAt: "desc",
+        },
       }),
       prisma.shops.count({
         where: {
           followers: {
             some: {
-              userId
-            }
-          }
-        }
-      })
+              userId,
+            },
+          },
+        },
+      }),
     ]);
 
     const totalPages = Math.ceil(total / limit);
@@ -1823,8 +1755,8 @@ export const getUserFollowedShops = async (req: any, res: Response, next: NextFu
         total,
         page,
         totalPages,
-        limit
-      }
+        limit,
+      },
     });
   } catch (error) {
     console.error("Error fetching followed shops:", error);

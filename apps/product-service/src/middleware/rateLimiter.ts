@@ -101,3 +101,10 @@ export const filtersRateLimiter = createRateLimiter({
   maxRequests: 50, 
   message: 'Too many filter requests. Please wait before requesting filters again.'
 });
+
+/** Applies to all product-service HTTP traffic (direct :6002 access). */
+export const globalRateLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 200,
+  message: 'Too many requests. Please try again later.',
+});

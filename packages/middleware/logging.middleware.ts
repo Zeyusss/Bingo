@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { sendLog } from "../utils/logs/send-logs";
+import { deepRedactSensitive } from "../utils/logs/redact-sensitive";
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -111,7 +112,7 @@ export function createErrorLoggingMiddleware(serviceName: string) {
         statusCode: error.statusCode || 500,
         method: req.method,
         url: req.originalUrl || req.url,
-        requestBody: req.body,
+        requestBody: deepRedactSensitive(req.body),
         query: req.query,
         params: req.params,
       },

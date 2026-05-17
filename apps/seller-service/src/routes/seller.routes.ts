@@ -44,6 +44,8 @@ import { isSeller } from "@packages/middleware/authorizeRoles";
 
 const router: Router = express.Router();
 
+// debug endpoint removed in cleanup
+
 router.delete("/delete", isAuthenticated, deleteShop);
 router.put("/restore", isAuthenticated, restoreShop);
 router.post("/upload-image", isAuthenticated, uploadImage);
@@ -52,12 +54,42 @@ router.put("/edit-profile", isAuthenticated, editSellerProfile);
 router.get("/get-seller/:id", getSellerInfo);
 router.get("/get-seller-products/:id", getSellerProducts);
 router.get("/get-seller-events/:id", getSellerEvents);
-router.get("/seller-notifications",isAuthenticated,isSeller,sellerNotifications);
-router.get("/get-seller-notifications", isAuthenticated, isSeller, getSellerNotifications);
-router.patch("/notifications/mark-all-read", isAuthenticated, isSeller, markAllSellerNotificationsAsRead);
-router.delete("/notifications/bulk-delete-read", isAuthenticated, isSeller, bulkDeleteReadNotifications);
-router.patch("/notifications/:notificationId/read", isAuthenticated, isSeller, markSellerNotificationAsRead);
-router.delete("/notifications/:notificationId", isAuthenticated, isSeller, deleteSellerNotification);
+router.get(
+  "/seller-notifications",
+  isAuthenticated,
+  isSeller,
+  sellerNotifications,
+);
+router.get(
+  "/get-seller-notifications",
+  isAuthenticated,
+  isSeller,
+  getSellerNotifications,
+);
+router.patch(
+  "/notifications/mark-all-read",
+  isAuthenticated,
+  isSeller,
+  markAllSellerNotificationsAsRead,
+);
+router.delete(
+  "/notifications/bulk-delete-read",
+  isAuthenticated,
+  isSeller,
+  bulkDeleteReadNotifications,
+);
+router.patch(
+  "/notifications/:notificationId/read",
+  isAuthenticated,
+  isSeller,
+  markSellerNotificationAsRead,
+);
+router.delete(
+  "/notifications/:notificationId",
+  isAuthenticated,
+  isSeller,
+  deleteSellerNotification,
+);
 router.post("/create-event/:id", isAuthenticated, isSeller, createEvent);
 router.put("/update-event/:id", isAuthenticated, isSeller, updateEvent);
 router.delete("/remove-event/:id", isAuthenticated, isSeller, removeEvent);
@@ -76,31 +108,31 @@ router.get(
   "/dashboard/recent-orders",
   isAuthenticated,
   isSeller,
-  getShopRecentOrders
+  getShopRecentOrders,
 );
 router.get(
   "/dashboard/device-usage",
   isAuthenticated,
   isSeller,
-  getShopDeviceUsage
+  getShopDeviceUsage,
 );
 router.get(
   "/dashboard/world-activity",
   isAuthenticated,
   isSeller,
-  getShopWorldActivity
+  getShopWorldActivity,
 );
 router.get(
   "/dashboard/visitor-analytics",
   isAuthenticated,
   isSeller,
-  getShopVisitorAnalytics
+  getShopVisitorAnalytics,
 );
 router.get(
   "/dashboard/top-selling-products",
   isAuthenticated,
   isSeller,
-  getShopTopSellingProducts
+  getShopTopSellingProducts,
 );
 
 router.post("/track-visitor", trackShopVisitor);
@@ -110,32 +142,31 @@ router.get(
   "/verification/status",
   isAuthenticated,
   isSeller,
-  getVerificationStatus
+  getVerificationStatus,
 );
 router.post(
   "/verification/upload-document",
   isAuthenticated,
   isSeller,
-  uploadVerificationDocument
+  uploadVerificationDocument,
 );
 router.post(
   "/verification/accept-terms",
   isAuthenticated,
   isSeller,
-  acceptTerms
+  acceptTerms,
 );
 router.post(
   "/verification/submit",
   isAuthenticated,
   isSeller,
-  submitVerification
+  submitVerification,
 );
 router.get(
   "/verification/download-contract",
   isAuthenticated,
   isSeller,
-  downloadContract
+  downloadContract,
 );
-
 
 export default router;

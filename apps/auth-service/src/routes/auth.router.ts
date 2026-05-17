@@ -38,13 +38,14 @@ import {
 } from '../controller/auth.controller';
 import isAuthenticated from '@packages/middleware/isAuthenticated';
 import { isSeller } from '@packages/middleware/authorizeRoles';
+import { loginRateLimiter } from '../middleware/loginRateLimiter';
 
 
 const router: Router = express.Router();
 
 router.post("/user-registration", userRegistration);
 router.post("/verify-user", verifyUserRegistrationOtp);
-router.post("/login-user", userLogin);
+router.post("/login-user", loginRateLimiter, userLogin);
 router.post("/refresh-token",refreshToken);
 router.get("/logged-in-user",isAuthenticated,getUser);
 router.post("/forget-password-user", userForgetPassword);
@@ -54,7 +55,7 @@ router.post("/seller-registration", registerSeller);
 router.post("/verify-seller", verifySeller);
 router.post("/create-shop", createShop);
 router.post("/create-stripe-link",createStripeConnectLink)
-router.post("/login-seller",loginSeller)
+router.post("/login-seller", loginRateLimiter, loginSeller);
 router.get("/logged-in-seller",isAuthenticated,isSeller,getSeller)
 router.post("/forget-password-seller", sellerForgetPassword);
 router.post("/verify-password-seller", verifySellerForgetPasswordOtp);
@@ -65,7 +66,7 @@ router.delete("/delete-address/:addressId",isAuthenticated,deleteUserAddress)
 router.put("/set-default-address/:addressId",isAuthenticated,setDefaultUserAddress)
 router.put("/edit-address/:addressId",isAuthenticated,editUserAddress)
 router.post("/change-password",isAuthenticated,updateUserPassword)
-router.post("/login-admin", loginAdmin);
+router.post("/login-admin", loginRateLimiter, loginAdmin);
 router.get("/logged-in-admin", isAuthenticated, getLoggedInAdmin);
 router.get("/logout-user", logoutUser);
 router.get("/logout-seller", logoutSeller);

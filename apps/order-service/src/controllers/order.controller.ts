@@ -7,6 +7,11 @@ import prisma from "@packages/libs/prisma";
 import { Prisma } from "@prisma/client";
 import { sendEmail } from "../utils/send-email";
 import { createLogger } from "@packages/utils/logs/structured-logger";
+import {
+  resolveCartFromDb,
+  serializeCartForSessionCompare,
+} from "../utils/resolve-cart-pricing";
+import { resolveCouponFromDb } from "../utils/resolve-coupon";
 
 interface AuthenticatedRequest extends Request {
   user?: any;
@@ -25,17 +30,44 @@ export const createPaymentIntent = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { amount, sellerStripeAccountId, sessionId } = req.body;
-  const minimumAmount = 50;
-  if (amount < minimumAmount) {
-    return res.status(400).json({
-      error: `Minimum order amount is ${minimumAmount} EGP. Current amount: ${amount} EGP`,
-    });
-  }
-
-  const customerAmount = Math.round(amount * 100);
-  const platformFee = Math.floor(customerAmount * 0.1);
   try {
+    const { amount, sellerStripeAccountId, sessionId } = req.body;
+
+    if (!sessionId) {
+      return res.status(400).json({ error: "Session ID is required." });
+    }
+
+    const sessionKey = `payment-session:${sessionId}`;
+    const sessionData = await redis.get(sessionKey);
+    if (!sessionData) {
+      return res.status(404).json({ error: "Session not found or expired." });
+    }
+
+    const session = JSON.parse(sessionData);
+    if (session.userId !== req.user.id) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const expectedTotal = session.totalAmount;
+    if (
+      typeof amount !== "number" ||
+      Math.abs(amount - expectedTotal) > 0.01
+    ) {
+      return res.status(400).json({
+        error: "Payment amount does not match checkout session.",
+      });
+    }
+
+    const minimumAmount = 50;
+    if (expectedTotal < minimumAmount) {
+      return res.status(400).json({
+        error: `Minimum order amount is ${minimumAmount} EGP. Current amount: ${expectedTotal} EGP`,
+      });
+    }
+
+    const customerAmount = Math.round(expectedTotal * 100);
+    const platformFee = Math.floor(customerAmount * 0.1);
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: customerAmount,
       currency: "EGP",
@@ -49,6 +81,7 @@ export const createPaymentIntent = async (
         userId: req.user.id,
       },
     });
+
     res.send({
       clientSecret: paymentIntent.client_secret,
     });
@@ -69,18 +102,49 @@ export const createPaymentSession = async (
     if (!cart || !Array.isArray(cart) || cart.length === 0) {
       return next(new ValidationError("Cart is empty or invalid."));
     }
-    const normailizedCart = JSON.stringify(
-      cart
-        .map((item: any) => ({
-          id: item.id,
-          quantity: item.quantity,
-          sale_price: item.sale_price,
-          shopId: item.shopId,
-          selectedOptions: item.selectedOptions || {},
-          personalizationData: item.personalizationData || null,
-        }))
-        .sort((a, b) => a.id.localeCompare(b.id))
+
+    const { cart: resolvedCart, subtotal } = await resolveCartFromDb(
+      cart.map((item: any) => ({
+        id: item.id,
+        quantity: item.quantity,
+        selectedOptions: item.selectedOptions,
+        personalizationData: item.personalizationData,
+      })),
     );
+
+    const couponCode =
+      typeof coupon?.code === "string" ? coupon.code.trim() : "";
+    const clientDiscountAmount = Number(coupon?.discountAmount ?? 0);
+    const clientDiscountPercent = Number(coupon?.discountPercent ?? 0);
+    const clientDiscountedProductId =
+      (typeof coupon?.discountedProductId === "string" &&
+        coupon.discountedProductId.trim()) ||
+      (typeof coupon?.discountProductId === "string" &&
+        coupon.discountProductId.trim()) ||
+      "";
+    const bodyDiscountAmount =
+      req.body.discountAmount != null ? Number(req.body.discountAmount) : 0;
+
+    const hasDiscountWithoutCode =
+      !couponCode &&
+      (clientDiscountAmount !== 0 ||
+        clientDiscountPercent !== 0 ||
+        Boolean(clientDiscountedProductId) ||
+        bodyDiscountAmount !== 0);
+
+    if (hasDiscountWithoutCode) {
+      return res.status(400).json({
+        success: false,
+        message: "Coupon code is required when applying a discount.",
+      });
+    }
+
+    let validatedCoupon = null;
+    if (couponCode) {
+      validatedCoupon = await resolveCouponFromDb(couponCode, resolvedCart);
+    }
+
+    const normailizedCart = serializeCartForSessionCompare(resolvedCart);
 
     const keys = await redis.keys("payment-session:*");
     for (const key of keys) {
@@ -88,18 +152,7 @@ export const createPaymentSession = async (
       if (data) {
         const session = JSON.parse(data);
         if (session.userId === userId) {
-          const existingCart = JSON.stringify(
-            session.cart
-              .map((item: any) => ({
-                id: item.id,
-                quantity: item.quantity,
-                sale_price: item.sale_price,
-                shopId: item.shopId,
-                selectedOptions: item.selectedOptions || {},
-                personalizationData: item.personalizationData || null,
-              }))
-              .sort((a: any, b: any) => a.id.localeCompare(b.id))
-          );
+          const existingCart = serializeCartForSessionCompare(session.cart);
 
           if (existingCart === normailizedCart) {
             return res.status(200).json({ sessionId: key.split(":")[1] });
@@ -109,7 +162,7 @@ export const createPaymentSession = async (
         }
       }
     }
-    const uniqueShopIds = [...new Set(cart.map((item: any) => item.shopId))];
+    const uniqueShopIds = [...new Set(resolvedCart.map((item) => item.shopId))];
     const shops = await prisma.shops.findMany({
       where: {
         id: { in: uniqueShopIds },
@@ -130,17 +183,20 @@ export const createPaymentSession = async (
       sellerId: shop.sellerId,
       stripeAccountId: shop?.sellers?.stripeId,
     }));
-    const totalAmount = cart.reduce((total: number, item: any) => {
-      return total + item.quantity * item.sale_price;
-    }, 0);
+    const totalAmount = validatedCoupon
+      ? Math.max(
+          0,
+          Math.round((subtotal - validatedCoupon.discountAmount) * 100) / 100,
+        )
+      : subtotal;
     const sessionId = crypto.randomUUID();
     const sessionData = {
       userId,
-      cart,
+      cart: resolvedCart,
       sellers: sellerData,
       totalAmount,
       shippingAddressId: selectedAddressId || null,
-      coupon: coupon || null,
+      coupon: validatedCoupon,
     };
 
     await redis.setex(
@@ -225,11 +281,20 @@ export const createOrder = async (
       const { cart, shippingAddressId, coupon } =
         JSON.parse(sessionData);
 
+      const { cart: pricedCart } = await resolveCartFromDb(
+        cart.map((item: any) => ({
+          id: item.id,
+          quantity: item.quantity,
+          selectedOptions: item.selectedOptions,
+          personalizationData: item.personalizationData,
+        })),
+      );
+
       const user = await prisma.users.findUnique({ where: { id: userId } });
       const name = user?.name!;
       const email = user?.email!;
 
-      const shopGrouped = cart.reduce((acc: any, item: any) => {
+      const shopGrouped = pricedCart.reduce((acc: any, item: any) => {
         if (!acc[item.shopId]) acc[item.shopId] = [];
         acc[item.shopId].push(item);
         return acc;
@@ -247,19 +312,7 @@ export const createOrder = async (
           coupon.discountedProductId &&
           orderItems.some((item: any) => item.id === coupon.discountedProductId)
         ) {
-          const discountedItem = orderItems.find(
-            (item: any) => item.id === coupon.discountedProductId
-          );
-          if (discountedItem) {
-            const discount =
-              coupon.discountPercent > 0
-                ? (discountedItem.sale_price *
-                    discountedItem.quantity *
-                    coupon.discountPercent) /
-                  100
-                : coupon.discountAmount;
-            orderTotal -= discount;
-          }
+          orderTotal = Math.max(0, orderTotal - (coupon.discountAmount || 0));
         }
 
         let shippingAddressSnapshot = null;
@@ -387,14 +440,14 @@ export const createOrder = async (
         }
       }
       const couponCode = coupon?.code || null;
-      const subtotal = cart.reduce(
+      const subtotal = pricedCart.reduce(
         (sum: number, item: any) => sum + item.sale_price * item.quantity,
         0
       );
       const discountAmount = coupon?.discountAmount || 0;
       const shippingFee = 0;
       const total = subtotal - discountAmount + shippingFee;
-      const orderItemsForEmail = cart.map((item: any) => ({
+      const orderItemsForEmail = pricedCart.map((item: any) => ({
         title: item.title,
         quantity: item.quantity,
         price: item.sale_price,
@@ -421,7 +474,9 @@ export const createOrder = async (
           orderTrackingUrl,
         }
       );
-      const createdShopIds = [...new Set(cart.map((item: any) => item.shopId))];
+      const createdShopIds = [
+        ...new Set(pricedCart.map((item: any) => item.shopId)),
+      ];
       const shopIds = createdShopIds as string[];
       
       const sellerShops = await prisma.shops.findMany({
@@ -713,6 +768,23 @@ export const getOrderDetails = async (
     if (!order) {
       return next(new NotFoundError("Order not found with this id!"));
     }
+
+    if (req.role === "seller") {
+      const shop = await prisma.shops.findUnique({
+        where: { sellerId: req.seller.id },
+        select: { id: true },
+      });
+      if (!shop || order.shopId !== shop.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+    } else if (req.role === "user") {
+      if (order.userId !== req.user?.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+    } else if (req.role !== "admin") {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
     const [shippingAddress, coupon] = await Promise.all([
       order.shippingAddressId
         ? prisma.address.findUnique({ where: { id: order.shippingAddressId } })
@@ -758,7 +830,7 @@ export const getOrderDetails = async (
 
 // update order status
 export const updateDeliveryStatus = async (
-  req: Request,
+  req: any,
   res: Response,
   next: NextFunction
 ) => {
@@ -771,10 +843,9 @@ export const updateDeliveryStatus = async (
         .status(400)
         .json({ error: "Missing order ID or delivery status." });
     }
-    
-    
+
     const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(orderId);
-    
+
     if (!isValidObjectId) {
       return next(new NotFoundError("Invalid order ID format"));
     }
@@ -789,11 +860,30 @@ export const updateDeliveryStatus = async (
       return next(new ValidationError("Invalid delivery status."));
     }
 
-    const existingOrder = await prisma.orders.findUnique({
-      where: { id: orderId },
+    const shop = await prisma.shops.findUnique({
+      where: { sellerId: req.seller.id },
+      select: { id: true },
+    });
+
+    if (!shop) {
+      return next(new NotFoundError("Shop not found"));
+    }
+
+    const existingOrder = await prisma.orders.findFirst({
+      where: {
+        id: orderId,
+        shopId: shop.id,
+      },
     });
 
     if (!existingOrder) {
+      const orderExists = await prisma.orders.findUnique({
+        where: { id: orderId },
+        select: { id: true },
+      });
+      if (orderExists) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
       return next(new NotFoundError("Order not found!"));
     }
 
@@ -829,46 +919,36 @@ export const verifyCouponCode = async (
       return next(new ValidationError("Coupon code and cart are required!"));
     }
 
-    const discount = await prisma.discount_codes.findUnique({
-      where: { discountCode: couponCode },
-    });
-
-    if (!discount) {
-      return next(new ValidationError("Coupon code isn't valid!"));
-    }
-
-    const matchingProduct = cart.find((item: any) =>
-      item.discount_codes?.some((d: any) => d === discount.id)
+    const { cart: resolvedCart } = await resolveCartFromDb(
+      cart.map((item: any) => ({
+        id: item.id,
+        quantity: item.quantity,
+        selectedOptions: item.selectedOptions,
+        personalizationData: item.personalizationData,
+      })),
     );
 
-    if (!matchingProduct) {
+    try {
+      const validated = await resolveCouponFromDb(couponCode, resolvedCart);
       return res.status(200).json({
-        valid: false,
-        discount: 0,
-        discountAmount: 0,
-        message: "No matching product found in cart for this coupon",
+        valid: true,
+        discount: validated.discount,
+        discountAmount: validated.discountAmount.toFixed(2),
+        discountedProductId: validated.discountedProductId,
+        discountType: validated.discountType,
+        message: "Discount applied to 1 eligible product",
       });
+    } catch (err) {
+      if (err instanceof ValidationError) {
+        return res.status(200).json({
+          valid: false,
+          discount: 0,
+          discountAmount: 0,
+          message: err.message,
+        });
+      }
+      throw err;
     }
-
-    let discountAmount = 0;
-    const price = matchingProduct.sale_price * matchingProduct.quantity;
-
-    if (discount.discountType === "percentage") {
-      discountAmount = (price * discount.discountValue) / 100;
-    } else if (discount.discountType === "flat") {
-      discountAmount = discount.discountValue;
-    }
-
-    discountAmount = Math.min(discountAmount, price);
-
-    res.status(200).json({
-      valid: true,
-      discount: discount.discountValue,
-      discountAmount: discountAmount.toFixed(2),
-      discountedProductId: matchingProduct.id,
-      discountType: discount.discountType,
-      message: "Discount applied to 1 eligible product",
-    });
   } catch (error) {
     return next(error);
   }

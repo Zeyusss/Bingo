@@ -1,5 +1,5 @@
 import { NextFunction, Response } from "express";
-import { AuthError } from "../error-handler";
+import { AuthError, ForbiddenError } from "../error-handler";
 
 export const isSeller = (req: any, res: Response, next: NextFunction) => {
   if (req.role !== "seller") {
@@ -14,12 +14,14 @@ export const isVerifiedSeller = (
   next: NextFunction
 ) => {
   if (req.role !== "seller") {
-    return next(new AuthError("Access Denied ! You are not a seller."));
+    return next(new ForbiddenError("Access Denied ! You are not a seller."));
   }
 
   if (!req.seller?.isVerified) {
     return next(
-      new AuthError("Access Denied ! Seller identity verification required.")
+      new ForbiddenError(
+        "Access Denied ! Seller identity verification required.",
+      ),
     );
   }
 

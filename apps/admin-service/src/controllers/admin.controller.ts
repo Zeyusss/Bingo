@@ -88,12 +88,14 @@ export const getAllProducts = async (
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const skip = (page - 1) * limit;
+    const showDeleted = req.query.showDeleted === "true";
+    const where = showDeleted
+      ? { isDeleted: true, starting_date: null }
+      : { isDeleted: false, starting_date: null };
 
     const [products, totalProducts] = await Promise.all([
       prisma.products.findMany({
-        where: {
-          starting_date: null,
-        },
+        where,
         skip,
         take: limit,
         orderBy: { createdAt: "desc" },
@@ -110,6 +112,7 @@ export const getAllProducts = async (
           ratings: true,
           category: true,
           subCategory: true,
+          isDeleted: true,
           tags: true,
           images: {
             select: { url: true },
@@ -120,11 +123,7 @@ export const getAllProducts = async (
           },
         },
       }),
-      prisma.products.count({
-        where: {
-          starting_date: null,
-        },
-      }),
+      prisma.products.count({ where }),
     ]);
 
     const totalPages = Math.ceil(totalProducts / limit);
@@ -152,12 +151,14 @@ export const getAllEvents = async (
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const skip = (page - 1) * limit;
+    const showDeleted = req.query.showDeleted === "true";
+    const where = showDeleted
+      ? { isDeleted: true, starting_date: { not: null } }
+      : { isDeleted: false, starting_date: { not: null } };
 
     const [events, totalEvents] = await Promise.all([
       prisma.products.findMany({
-        where: {
-          starting_date: { not: null },
-        },
+        where,
         skip,
         take: limit,
         orderBy: { createdAt: "desc" },
@@ -170,6 +171,7 @@ export const getAllEvents = async (
           createdAt: true,
           ratings: true,
           category: true,
+          isDeleted: true,
           starting_date: true,
           ending_date: true,
           images: {
@@ -181,11 +183,7 @@ export const getAllEvents = async (
           },
         },
       }),
-      prisma.products.count({
-        where: {
-          starting_date: { not: null },
-        },
-      }),
+      prisma.products.count({ where }),
     ]);
 
     const totalPages = Math.ceil(totalEvents / limit);
