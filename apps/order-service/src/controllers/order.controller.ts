@@ -264,6 +264,11 @@ export const createOrder = async (
       return res.status(400).send(`Webhook Error: ${error.message}`);
     }
 
+    const alreadyProcessed = await redis.get(`stripe-event:${event.id}`);
+    if (alreadyProcessed) {
+      return res.status(200).json({ received: true });
+    }
+
     if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
       const sessionId = paymentIntent.metadata.sessionId;
@@ -273,9 +278,8 @@ export const createOrder = async (
       const sessionData = await redis.get(sessionKey);
       if (!sessionData) {
         console.warn("Session data expired or missing for", sessionId);
-        return res
-          .status(200)
-          .send("No session found, skipping order creation");
+        await redis.set(`stripe-event:${event.id}`, 'processed', 'EX', 86400);
+        return res.status(200).json({ received: true });
       }
 
       const { cart, shippingAddressId, coupon } =
@@ -544,7 +548,11 @@ export const createOrder = async (
       }
 
       await redis.del(sessionKey);
+      await redis.set(`stripe-event:${event.id}`, 'processed', 'EX', 86400);
+      return res.status(200).json({ received: true });
     }
+
+    return res.status(200).json({ received: true });
   } catch (error) {
 
     return next(error);

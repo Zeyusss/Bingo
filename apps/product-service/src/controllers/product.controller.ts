@@ -1597,7 +1597,7 @@ export const getColorsWithCount = async (
     );
     res.status(200).json({ colors: colorsWithCount });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -1750,7 +1750,7 @@ export const getNewProducts = async (
 
     res.status(200).json({ products });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -1987,7 +1987,7 @@ export const searchAdvanced = async (
       },
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -2204,7 +2204,7 @@ export const getPopularSearches = async (
       searches: popularSearches,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -2311,7 +2311,7 @@ export const getSearchFilters = async (
       },
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 

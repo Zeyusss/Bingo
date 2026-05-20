@@ -100,7 +100,7 @@ export const handleForgetPassword = async (req: any, res: any, next: NextFunctio
             message: `OTP sent to user email. Please check your inbox.`,
         });
     } catch (error) {
-        next(error);
+        return next(error);
     }
 };
 
@@ -153,6 +153,6 @@ export const verifyForgetPasswordOtp = async (
       message: "OTP verified successfully",
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };

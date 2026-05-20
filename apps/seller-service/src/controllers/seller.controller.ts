@@ -414,7 +414,7 @@ export const getSellerInfo = async (
       eventsCount,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -487,7 +487,7 @@ export const getSellerProducts = async (
       },
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -655,7 +655,7 @@ export const getSellerEvents = async (
       },
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -730,7 +730,7 @@ export const createEvent = async (
       product: updatedProduct,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -808,7 +808,7 @@ export const updateEvent = async (
       product: updatedProduct,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -873,7 +873,7 @@ export const removeEvent = async (
       product: updatedProduct,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -913,7 +913,7 @@ export const followShop = async (
       follow,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -953,7 +953,7 @@ export const unfollowShop = async (
       message: "Successfully unfollowed the shop.",
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -980,7 +980,7 @@ export const isFollowing = async (
       isFollowing,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -1065,7 +1065,7 @@ export const createShopReview = async (
       message: "Review created successfully!",
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -1112,7 +1112,7 @@ export const getShopReviews = async (
       },
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -1174,7 +1174,7 @@ export const deleteShopReview = async (
       message: "Review deleted successfully!",
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -1270,7 +1270,7 @@ export const getShopAnalytics = async (
       },
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 

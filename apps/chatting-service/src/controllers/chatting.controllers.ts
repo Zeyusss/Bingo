@@ -63,7 +63,7 @@ export const newConversation = async (
 
     return res.status(201).json({ conversation: newGroup, isNew: true });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 

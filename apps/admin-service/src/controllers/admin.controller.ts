@@ -1635,7 +1635,7 @@ export const markNotificationAsRead = async (
       notification
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -1657,7 +1657,7 @@ export const deleteNotification = async (
       message: "Notification deleted successfully"
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -1691,7 +1691,7 @@ export const markAllNotificationsAsRead = async (
       message: "All notifications marked as read"
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -1755,7 +1755,7 @@ export const getUserNotifications = async (
       }
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -1783,7 +1783,7 @@ export const markUserNotificationAsRead = async (
       message: "Notification marked as read",
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -1808,7 +1808,7 @@ export const deleteUserNotification = async (
       message: "Notification deleted",
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -1834,7 +1834,7 @@ export const markAllUserNotificationsAsRead = async (
       message: "All notifications marked as read",
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -1857,7 +1857,7 @@ export const deleteAllReadUserNotifications = async (
       message: "All read notifications deleted",
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -1891,7 +1891,7 @@ export const deleteAllReadAdminNotifications = async (
     });
   } catch (error) {
     console.error('Error deleting read admin notifications:', error);
-    next(error);
+    return next(error);
   }
 };
 
