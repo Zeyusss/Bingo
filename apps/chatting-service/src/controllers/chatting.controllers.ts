@@ -135,6 +135,7 @@ export const getUserConversations = async (
               id: seller?.id || null,
             name: seller?.shop?.name || "Unknown",
             isOnline,
+            lastSeenAt: sellerParticipant?.lastSeenAt ?? null,
             avatar: seller?.shop?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756",
           },
           lastMessage:
@@ -202,7 +203,7 @@ export const getSellerConversations = async (
 
         let isOnline = false;
         if (userParticipant?.userId) {
-          const redisKey = `online:user:user_${userParticipant.userId}`;
+          const redisKey = `online:user:${userParticipant.userId}`;
           const redisResult = await redis.get(redisKey);
           isOnline = !!redisResult;
         }
@@ -215,6 +216,7 @@ export const getSellerConversations = async (
             id: user?.id || null,
             name: user?.name || "Unknown",
             isOnline,
+            lastSeenAt: userParticipant?.lastSeenAt ?? null,
             avatar: user?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756",
           },
           lastMessage:
@@ -301,6 +303,7 @@ export const fetchMessages = async (
         name: seller?.shop?.name || "Unknowm",
         avatar: seller?.shop?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756",
         isOnline,
+        lastSeenAt: sellerParticipant?.lastSeenAt ?? null,
       },
       currentPage: page,
       hasMore: messages.length === pageSize,
@@ -357,7 +360,7 @@ export const fetchSellerMessages = async (
         },
       });
 
-      const redisKey = `online:user:user_${userParticipant.userId}`;
+      const redisKey = `online:user:${userParticipant.userId}`;
       const redisResult = await redis.get(redisKey);
       isOnline = !!redisResult;
     }
@@ -375,6 +378,7 @@ export const fetchSellerMessages = async (
         name: user?.name || "Unknowm",
         avatar: user?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756",
         isOnline,
+        lastSeenAt: userParticipant?.lastSeenAt ?? null,
       },
       currentPage: page,
       hasMore: messages.length === pageSize,

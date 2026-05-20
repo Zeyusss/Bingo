@@ -5,6 +5,7 @@ import  cookieParser from 'cookie-parser';
 import express from "express";
 import { createWebSocketServer } from './websocket';
 import { startConsumer } from './chat-message.consumer';
+import { errorMiddleware } from '@packages/error-handler/error-middleware';
 import router from './routes/chat.routes';
 
 
@@ -19,6 +20,9 @@ app.get("/", (req, res) => {
 
 // routes
 app.use("/api",router)
+
+app.use(errorMiddleware)
+
 const port = process.env.PORT || 6006;
 
 const server = app.listen(port, () => {

@@ -8,6 +8,27 @@ import useSeller from "apps/seller-ui/src/hooks/useSeller";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "apps/seller-ui/src/utils/axiosInstance";
 
+function formatLastSeen(lastSeenAt: string | null | undefined): string {
+  if (!lastSeenAt) return "Offline";
+  const date = new Date(lastSeenAt);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "Last seen just now";
+  if (diffMin < 60) return `Last seen ${diffMin} minute${diffMin === 1 ? "" : "s"} ago`;
+  const diffHours = Math.floor(diffMin / 60);
+  const isToday = date.toDateString() === now.toDateString();
+  const timeStr = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  if (isToday) return `Last seen at ${timeStr}`;
+  const diffDays = Math.floor(diffMs / 86400000);
+  if (diffDays < 7) {
+    const day = date.toLocaleDateString([], { weekday: "long" });
+    return `Last seen ${day} at ${timeStr}`;
+  }
+  const dateStr = date.toLocaleDateString([], { month: "short", day: "numeric" });
+  return `Last seen ${dateStr} at ${timeStr}`;
+}
+
 const ChatPage = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -406,7 +427,9 @@ const ChatPage = () => {
                       <span className={`w-2 h-2 rounded-full ${
                         selectedChat.user?.isOnline ? "bg-green-500" : "bg-slate-400"
                       }`} />
-                      {selectedChat.user?.isOnline ? "Online" : "Offline"}
+                      {selectedChat.user?.isOnline
+                        ? "Online"
+                        : formatLastSeen(selectedChat.user?.lastSeenAt)}
                     </p>
                   </div>
                 </div>

@@ -29,6 +29,11 @@ export async function startConsumer(){
             if(!message.value) return;
             try {
                 const parsed : BufferedMessage = JSON.parse(message.value.toString());
+                const required = ["conversationId", "senderId", "senderType", "content"];
+                if (!required.every((f) => typeof (parsed as any)[f] === "string" && (parsed as any)[f].trim() !== "")) {
+                    console.error("chat-message.consumer: dropping malformed message", parsed);
+                    return;
+                }
                 buffer.push(parsed);
 
                 if(buffer.length === 1 && !flushTimer){

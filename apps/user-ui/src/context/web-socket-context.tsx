@@ -21,7 +21,6 @@ export const WebSocketProvider =({
     wsRef.current = ws;
 
     ws.onopen = ()=>{
-        ws.send(`user_${user.id}`);
         setWsReady(true);
     }
 

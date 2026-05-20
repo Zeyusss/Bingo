@@ -55,10 +55,9 @@ const createRateLimiter = (windowMs: number, max: number, message: string) => {
         'X-RateLimit-Reset': new Date(Date.now() + windowMs).toISOString()
       });
       res.status(429).json({
-        error: message,
-        retryAfter,
-        type: 'rate_limit_exceeded',
-        timestamp: new Date().toISOString()
+        status: 'error',
+        message: message,
+        details: { retryAfter, type: 'rate_limit_exceeded', timestamp: new Date().toISOString() }
       });
     },
     skip: (req) => {

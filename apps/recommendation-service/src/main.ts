@@ -1,5 +1,6 @@
 import  cookieParser  from 'cookie-parser';
 import express from 'express';
+import { errorMiddleware } from '@packages/error-handler/error-middleware';
 import router from './routes/recommendation.route';
 
 
@@ -16,6 +17,7 @@ app.get('/', (req, res) => {
 // routes
 app.use("/api",router);
 
+app.use(errorMiddleware)
 
 const port = process.env.PORT || 6007;
 const server = app.listen(port, () => {

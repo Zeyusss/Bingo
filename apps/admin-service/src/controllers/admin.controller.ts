@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "@packages/libs/prisma";
 import { ValidationError } from "@packages/error-handler";
+import { sendApiError } from "@packages/error-handler/send-api-error";
 import { imagekit } from "@packages/libs/imagekit";
 import { Prisma } from "@prisma/client";
 import {
@@ -854,13 +855,13 @@ export const addCategory = async (
   try {
     const { categoryName } = req.body;
     if (!categoryName || typeof categoryName !== "string") {
-      return res.status(400).json({ error: "categoryName is required" });
+      return sendApiError(res, 400, "categoryName is required");
     }
     const config = await prisma.site_config.findFirst();
     if (!config)
-      return res.status(500).json({ error: "Site config not found" });
+      return sendApiError(res, 500, "Site config not found");
     if (config.categories.includes(categoryName)) {
-      return res.status(400).json({ error: "Category already exists" });
+      return sendApiError(res, 400, "Category already exists");
     }
     const updated = await prisma.site_config.update({
       where: { id: config.id },
@@ -888,21 +889,19 @@ export const addSubcategory = async (
   try {
     const { categoryName, subcategoryName } = req.body;
     if (!categoryName || !subcategoryName) {
-      return res
-        .status(400)
-        .json({ error: "categoryName and subcategoryName are required" });
+      return sendApiError(res, 400, "categoryName and subcategoryName are required");
     }
     const config = await prisma.site_config.findFirst();
     if (!config)
-      return res.status(500).json({ error: "Site config not found" });
+      return sendApiError(res, 500, "Site config not found");
     const subCategories = {
       ...(config.subCategories as Record<string, string[]>),
     };
     if (!subCategories[categoryName]) {
-      return res.status(400).json({ error: "Category does not exist" });
+      return sendApiError(res, 400, "Category does not exist");
     }
     if (subCategories[categoryName].includes(subcategoryName)) {
-      return res.status(400).json({ error: "Subcategory already exists" });
+      return sendApiError(res, 400, "Subcategory already exists");
     }
     subCategories[categoryName] = [
       ...subCategories[categoryName],
@@ -929,9 +928,9 @@ export const deleteCategory = async (
     const { name } = req.params;
     const config = await prisma.site_config.findFirst();
     if (!config)
-      return res.status(500).json({ error: "Site config not found" });
+      return sendApiError(res, 500, "Site config not found");
     if (!config.categories.includes(name)) {
-      return res.status(404).json({ error: "Category not found" });
+      return sendApiError(res, 404, "Category not found");
     }
     const newCategories = config.categories.filter((cat) => cat !== name);
     const subCategories = {
@@ -962,15 +961,15 @@ export const deleteSubcategory = async (
     const { category, name } = req.params;
     const config = await prisma.site_config.findFirst();
     if (!config)
-      return res.status(500).json({ error: "Site config not found" });
+      return sendApiError(res, 500, "Site config not found");
     const subCategories = {
       ...(config.subCategories as Record<string, string[]>),
     };
     if (!subCategories[category]) {
-      return res.status(404).json({ error: "Category not found" });
+      return sendApiError(res, 404, "Category not found");
     }
     if (!subCategories[category].includes(name)) {
-      return res.status(404).json({ error: "Subcategory not found" });
+      return sendApiError(res, 404, "Subcategory not found");
     }
     subCategories[category] = subCategories[category].filter(
       (sub: string) => sub !== name
@@ -996,12 +995,12 @@ export const reorderCategories = async (
   try {
     const { categories } = req.body;
     if (!Array.isArray(categories)) {
-      return res.status(400).json({ error: "categories array is required" });
+      return sendApiError(res, 400, "categories array is required");
     }
 
     const config = await prisma.site_config.findFirst();
     if (!config)
-      return res.status(500).json({ error: "Site config not found" });
+      return sendApiError(res, 500, "Site config not found");
 
     const existingCategories = config.categories;
     const isValid = categories.every((cat: string) =>
@@ -1009,7 +1008,7 @@ export const reorderCategories = async (
     );
 
     if (!isValid) {
-      return res.status(400).json({ error: "Invalid category names provided" });
+      return sendApiError(res, 400, "Invalid category names provided");
     }
 
     const updated = await prisma.site_config.update({
@@ -1036,21 +1035,19 @@ export const reorderSubcategories = async (
   try {
     const { categoryName, subcategories } = req.body;
     if (!categoryName || !Array.isArray(subcategories)) {
-      return res.status(400).json({
-        error: "categoryName and subcategories array are required",
-      });
+      return sendApiError(res, 400, "categoryName and subcategories array are required");
     }
 
     const config = await prisma.site_config.findFirst();
     if (!config)
-      return res.status(500).json({ error: "Site config not found" });
+      return sendApiError(res, 500, "Site config not found");
 
     const subCategories = {
       ...(config.subCategories as Record<string, string[]>),
     };
 
     if (!subCategories[categoryName]) {
-      return res.status(404).json({ error: "Category not found" });
+      return sendApiError(res, 404, "Category not found");
     }
 
     const existingSubcategories = subCategories[categoryName];
@@ -1059,9 +1056,7 @@ export const reorderSubcategories = async (
     );
 
     if (!isValid) {
-      return res
-        .status(400)
-        .json({ error: "Invalid subcategory names provided" });
+      return sendApiError(res, 400, "Invalid subcategory names provided");
     }
 
     subCategories[categoryName] = subcategories;
@@ -1091,37 +1086,31 @@ export const moveSubcategory = async (
     const { subcategoryName, fromCategory, toCategory } = req.body;
 
     if (!subcategoryName || !fromCategory || !toCategory) {
-      return res.status(400).json({
-        error: "subcategoryName, fromCategory, and toCategory are required",
-      });
+      return sendApiError(res, 400, "subcategoryName, fromCategory, and toCategory are required");
     }
 
     const config = await prisma.site_config.findFirst();
     if (!config)
-      return res.status(500).json({ error: "Site config not found" });
+      return sendApiError(res, 500, "Site config not found");
 
     const subCategories = {
       ...(config.subCategories as Record<string, string[]>),
     };
 
     if (!subCategories[fromCategory]) {
-      return res.status(404).json({ error: "Source category not found" });
+      return sendApiError(res, 404, "Source category not found");
     }
 
     if (!subCategories[toCategory]) {
-      return res.status(404).json({ error: "Target category not found" });
+      return sendApiError(res, 404, "Target category not found");
     }
 
     if (!subCategories[fromCategory].includes(subcategoryName)) {
-      return res
-        .status(404)
-        .json({ error: "Subcategory not found in source category" });
+      return sendApiError(res, 404, "Subcategory not found in source category");
     }
 
     if (subCategories[toCategory].includes(subcategoryName)) {
-      return res
-        .status(400)
-        .json({ error: "Subcategory already exists in target category" });
+      return sendApiError(res, 400, "Subcategory already exists in target category");
     }
 
     subCategories[fromCategory] = subCategories[fromCategory].filter(

@@ -1,6 +1,8 @@
 import redis from "@packages/libs/redis";
 import { Server as HttpServer } from "http";
 import { kafka } from "@packages/utils/kafka";
+import prisma from "@packages/libs/prisma";
+import { verifyAccessToken } from "@packages/middleware/verify-access-token";
 import { WebSocketServer, WebSocket } from "ws";
 
 const producer = kafka.producer();
@@ -20,61 +22,87 @@ export async function createWebSocketServer(server: HttpServer) {
   const wss = new WebSocketServer({ server });
   await producer.connect();
   console.log("kafka producer connected");
-  wss.on("connection", (ws: WebSocket) => {
+  wss.on("connection", (ws: WebSocket, request) => {
     console.log("New Websocket connection");
-    let registeredUserId: string | null = null;
+
+    let decoded;
+    try {
+      decoded = verifyAccessToken(
+        request.headers.cookie,
+        request.headers.authorization as string
+      );
+    } catch {
+      ws.close(4001, "Unauthorized");
+      return;
+    }
+
+    const rawUserId = decoded.id;
+    const registeredUserId =
+      decoded.role === "seller"
+        ? `seller_${decoded.id}`
+        : `user_${decoded.id}`;
+
+    connectedUsers.set(registeredUserId, ws);
+    console.log(`registered websocket for userId:${registeredUserId}`);
+
+    const isSeller = decoded.role === "seller";
+    const redisKey = isSeller
+      ? `online:seller:${rawUserId}`
+      : `online:user:${rawUserId}`;
+    void (async () => {
+      await redis.set(redisKey, "1");
+      await redis.expire(redisKey, 300);
+
+      const statusMessage = JSON.stringify({
+        type: isSeller ? "SELLER_ONLINE_STATUS" : "USER_ONLINE_STATUS",
+        payload: {
+          userId: rawUserId,
+          isOnline: true,
+        },
+      });
+
+      connectedUsers.forEach((socket, userId) => {
+        if (socket.readyState === WebSocket.OPEN && userId !== registeredUserId) {
+          socket.send(statusMessage);
+        }
+      });
+    })();
+
+    const ttlInterval = setInterval(async () => {
+      try {
+        await redis.expire(redisKey, 300);
+      } catch {
+        // ignore — socket close will clean up
+      }
+    }, 60000);
+
     ws.on("message", async (rawMessage) => {
       try {
         const messageStr = rawMessage.toString();
-        if (!registeredUserId && !messageStr.startsWith("{")) {
-          registeredUserId = messageStr;
-          connectedUsers.set(registeredUserId, ws);
-          console.log(`registered websocket for userId:${registeredUserId}`);
-          const isSeller = registeredUserId.startsWith("seller_");
-          const redisKey = isSeller
-            ? `online:seller:${registeredUserId.replace("seller_", "")}`
-            : `online:user:${registeredUserId}`;
-          await redis.set(redisKey, "1");
-          await redis.expire(redisKey, 300);
-          
-          // Broadcast online status to all connected users
-          const statusMessage = JSON.stringify({
-            type: isSeller ? "SELLER_ONLINE_STATUS" : "USER_ONLINE_STATUS",
-            payload: {
-              userId: isSeller ? registeredUserId.replace("seller_", "") : registeredUserId,
-              isOnline: true
-            }
-          });
-          
-          connectedUsers.forEach((socket, userId) => {
-            if (socket.readyState === WebSocket.OPEN && userId !== registeredUserId) {
-              socket.send(statusMessage);
-            }
-          });
-          return;
-        }
         const data: IncomingMessage = JSON.parse(messageStr);
-        
-        if (data.type === "MARK_AS_SEEN" && registeredUserId) {
+
+        if (data.type === "MARK_AS_SEEN") {
+          if (!data.conversationId) return;
+
+          const conversation = await prisma.conversationGroup.findUnique({
+            where: { id: data.conversationId },
+          });
+          if (!conversation) return;
+          if (!conversation.participantIds.includes(rawUserId)) return;
+
           const seenKey = `${registeredUserId}_${data.conversationId}`;
           unseenCounts.set(seenKey, 0);
-          
+
           // Also clear from Redis permanently
-          const isSeller = registeredUserId.startsWith("seller_");
           const receiverType = isSeller ? "seller" : "user";
           const redisKey = `unseen:${receiverType}_${data.conversationId}`;
           await redis.del(redisKey);
-          
+
           return;
         }
 
-        const {
-          fromUserId,
-          toUserId,
-          messageBody,
-          conversationId,
-          senderType,
-        } = data;
+        const { toUserId, messageBody, conversationId } = data;
+        const senderType = decoded.role;
         if (!data || !toUserId || !messageBody || !conversationId) {
           console.warn("Invalid message format :", data);
           return;
@@ -82,7 +110,7 @@ export async function createWebSocketServer(server: HttpServer) {
         const now = new Date().toISOString();
         const messagePayload = {
           conversationId,
-          senderId: fromUserId,
+          senderId: rawUserId,
           senderType,
           content: messageBody,
           createdAt: now,
@@ -96,8 +124,8 @@ export async function createWebSocketServer(server: HttpServer) {
         const receiverKey =
           senderType === "user" ? `seller_${toUserId}` : `user_${toUserId}`;
         const senderKey =
-          senderType === "user" ? `user_${fromUserId}` : `seller_${fromUserId}`;
-        
+          senderType === "user" ? `user_${rawUserId}` : `seller_${rawUserId}`;
+
         const unseenKey = `${receiverKey}_${conversationId}`;
         const prevCount = unseenCounts.get(unseenKey) || 0;
         unseenCounts.set(unseenKey, prevCount + 1);
@@ -148,30 +176,37 @@ export async function createWebSocketServer(server: HttpServer) {
     });
 
     ws.on("close", async () => {
-      if (registeredUserId) {
-        connectedUsers.delete(registeredUserId);
-        console.log(`Disconnected user ${registeredUserId}`);
-        const isSeller = registeredUserId.startsWith("seller_");
-        const redisKey = isSeller
-          ? `online:seller:${registeredUserId.replace("seller_", "")}`
-          : `online:user:${registeredUserId}`;
-        await redis.del(redisKey);
-        
-        // Broadcast offline status to all connected users
-        const statusMessage = JSON.stringify({
-          type: isSeller ? "SELLER_ONLINE_STATUS" : "USER_ONLINE_STATUS",
-          payload: {
-            userId: isSeller ? registeredUserId.replace("seller_", "") : registeredUserId,
-            isOnline: false
-          }
+      clearInterval(ttlInterval);
+      connectedUsers.delete(registeredUserId);
+      console.log(`Disconnected user ${registeredUserId}`);
+      await redis.del(redisKey);
+
+      if (decoded.role === "seller") {
+        await prisma.participant.updateMany({
+          where: { sellerId: rawUserId },
+          data: { lastSeenAt: new Date() },
         });
-        
-        connectedUsers.forEach((socket, userId) => {
-          if (socket.readyState === WebSocket.OPEN) {
-            socket.send(statusMessage);
-          }
+      } else {
+        await prisma.participant.updateMany({
+          where: { userId: rawUserId },
+          data: { lastSeenAt: new Date() },
         });
       }
+
+      // Broadcast offline status to all connected users
+      const statusMessage = JSON.stringify({
+        type: isSeller ? "SELLER_ONLINE_STATUS" : "USER_ONLINE_STATUS",
+        payload: {
+          userId: rawUserId,
+          isOnline: false,
+        },
+      });
+
+      connectedUsers.forEach((socket, userId) => {
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send(statusMessage);
+        }
+      });
     });
     ws.on("error", (err) => {
       console.error("WebSocket error :", err);

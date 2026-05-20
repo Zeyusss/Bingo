@@ -3,6 +3,7 @@ import crypto from "crypto";
 import Stripe from "stripe";
 import redis from "@packages/libs/redis";
 import { NotFoundError, ValidationError } from "@packages/error-handler";
+import { sendApiError } from "@packages/error-handler/send-api-error";
 import prisma from "@packages/libs/prisma";
 import { Prisma } from "@prisma/client";
 import { sendEmail } from "../utils/send-email";
@@ -34,18 +35,18 @@ export const createPaymentIntent = async (
     const { amount, sellerStripeAccountId, sessionId } = req.body;
 
     if (!sessionId) {
-      return res.status(400).json({ error: "Session ID is required." });
+      return sendApiError(res, 400, "Session ID is required.");
     }
 
     const sessionKey = `payment-session:${sessionId}`;
     const sessionData = await redis.get(sessionKey);
     if (!sessionData) {
-      return res.status(404).json({ error: "Session not found or expired." });
+      return sendApiError(res, 404, "Session not found or expired.");
     }
 
     const session = JSON.parse(sessionData);
     if (session.userId !== req.user.id) {
-      return res.status(403).json({ error: "Forbidden" });
+      return sendApiError(res, 403, "Forbidden");
     }
 
     const expectedTotal = session.totalAmount;
@@ -219,12 +220,12 @@ export const verifyingPaymentSession = async (
   try {
     const sessionId = req.query.sessionId as string;
     if (!sessionId) {
-      return res.status(400).json({ error: "Session ID is required." });
+      return sendApiError(res, 400, "Session ID is required.");
     }
     const sessionKey = `payment-session:${sessionId}`;
     const sessionData = await redis.get(sessionKey);
     if (!sessionData) {
-      return res.status(404).json({ error: "Session not found or expired." });
+      return sendApiError(res, 404, "Session not found or expired.");
     }
 
     const session = JSON.parse(sessionData);
@@ -609,6 +610,7 @@ export const getSellerOrders = async (
             });
           }
         } catch (error) {
+          console.error('Hex search filter error:', error);
         }
       }
       
@@ -650,30 +652,29 @@ export const getSellerOrders = async (
       }
     }
 
+    if (dateFrom && isNaN(new Date(dateFrom).getTime())) {
+      return res.status(400).json({ message: "Invalid dateFrom value" });
+    }
+    if (dateTo && isNaN(new Date(dateTo).getTime())) {
+      return res.status(400).json({ message: "Invalid dateTo value" });
+    }
+
     if (dateFrom || dateTo) {
-      whereClause.createdAt = {};
-      
+      const createdAtFilter: Record<string, Date> = {};
+
       if (dateFrom) {
-        try {
-          const fromDate = new Date(dateFrom);
-          fromDate.setHours(0, 0, 0, 0); 
-          if (!isNaN(fromDate.getTime())) {
-            whereClause.createdAt.gte = fromDate;
-          }
-        } catch (error) {
-        }
+        const fromDate = new Date(dateFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        createdAtFilter.gte = fromDate;
       }
-      
+
       if (dateTo) {
-        try {
-          const toDate = new Date(dateTo);
-          toDate.setHours(23, 59, 59, 999); 
-          if (!isNaN(toDate.getTime())) {
-            whereClause.createdAt.lte = toDate;
-          }
-        } catch (error) {
-        }
+        const toDate = new Date(dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        createdAtFilter.lte = toDate;
       }
+
+      whereClause.createdAt = createdAtFilter;
     }
 
     const orderBy: any = {};
@@ -847,9 +848,7 @@ export const updateDeliveryStatus = async (
     const { deliveryStatus } = req.body;
 
     if (!orderId || !deliveryStatus) {
-      return res
-        .status(400)
-        .json({ error: "Missing order ID or delivery status." });
+      return sendApiError(res, 400, "Missing order ID or delivery status.");
     }
 
     const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(orderId);
@@ -1098,102 +1097,6 @@ export const getAdminOrders = async (
       total,
     });
   } catch (error) {
-    return next(error);
-  }
-};
-
-// get order by session ID
-export const getOrderBySession = async (
-  req: any,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const sessionId = req.params.sessionId;
-    
-    if (!sessionId) {
-      return next(new NotFoundError("Session ID is required"));
-    }
-
-   
-    const directOrder = await prisma.orders.findFirst({
-      where: {
-        createdAt: {
-          gte: new Date(Date.now() - 60 * 60 * 1000) 
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      select: {
-        id: true,
-        createdAt: true,
-        total: true,
-        status: true,
-        userId: true
-      }
-    });
-
-    if (directOrder) {
-      console.log(`Found recent order directly: ${directOrder.id}`);
-      return res.status(200).json({
-        success: true,
-        orderId: directOrder.id,
-        orderDetails: directOrder
-      });
-    }
-
-    
-    const sessionKey = `payment-session:${sessionId}`;
-    const sessionData = await redis.get(sessionKey);
-    
-    if (!sessionData) {
-      console.log(`No session data found for key: ${sessionKey}`);
-      return next(new NotFoundError("Session not found or expired"));
-    }
-
-    
-    const parsedData = JSON.parse(sessionData);
-    const userId = parsedData.userId || parsedData.user?.id;
-    
-    if (!userId) {
-      console.log("Session data structure:", parsedData);
-      return next(new NotFoundError("User ID not found in session"));
-    }
-
-    console.log(`Looking for orders for user ${userId} in last 30 minutes`);
-
-   
-    const recentOrder = await prisma.orders.findFirst({
-      where: {
-        userId: userId,
-        createdAt: {
-          gte: new Date(Date.now() - 30 * 60 * 1000)
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      select: {
-        id: true,
-        createdAt: true,
-        total: true,
-        status: true
-      }
-    });
-
-    if (!recentOrder) {
-      return next(new NotFoundError("No recent order found for this session"));
-    }
-
-    res.status(200).json({
-      success: true,
-      orderId: recentOrder.id,
-      orderDetails: recentOrder
-    });
-
-  } catch (error) {
-    console.error("Error in getOrderBySession:", error);
     return next(error);
   }
 };
