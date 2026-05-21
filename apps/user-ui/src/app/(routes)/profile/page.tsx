@@ -34,7 +34,7 @@ import {
   Filter
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import axios from 'axios';
 import { useForm } from 'react-hook-form';
 import { useMutation } from '@tanstack/react-query';
@@ -42,6 +42,20 @@ import axiosInstance from 'apps/user-ui/src/utils/axiosInstance';
 import FollowingSection from 'apps/user-ui/src/shared/components/profile/FollowingSection';
 
 const Page = () => {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      }
+    >
+      <ProfileContent />
+    </Suspense>
+  );
+};
+
+function ProfileContent() {
   const { user, isLoading } = useRequireAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -146,17 +160,14 @@ const Page = () => {
     }
   };
 
-const logOutHandler = async ()=> {
-        await axiosInstance.get("/api/logout-user").then((res)=>{
-            queryClient.invalidateQueries({queryKey:["user"]});
-            
-
-            const { clearSessionData } = useStore.getState();
-            clearSessionData();
-
-            router.push("/login");
-        });
-    };
+  const logOutHandler = useCallback(async () => {
+    await axiosInstance.get("/api/logout-user").then((res) => {
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+      const { clearSessionData } = useStore.getState();
+      clearSessionData();
+      router.push("/login");
+    });
+  }, [queryClient, router]);
 
 
   const NavItem = ({ icon: Icon, label, isActive, onClick, danger = false, badge }: any) => (

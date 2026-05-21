@@ -5,12 +5,13 @@ import axiosInstance from "apps/user-ui/src/utils/axiosInstance";
 import { XCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import CheckoutForm from "apps/user-ui/src/shared/components/checkout/checkoutForm";
 
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
-const Page = () => {
+
+function CheckoutContent() {
     const [clientSecret,setClientSecret] = useState("");
     const [cartItems,setCartItems] = useState<any[]>([]);
     const [coupon,setCoupon] = useState();
@@ -111,4 +112,16 @@ clientSecret &&(
   )
 }
 
-export default Page
+export default function Page() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex justify-center items-center min-h-[70vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+        </div>
+      }
+    >
+      <CheckoutContent />
+    </Suspense>
+  );
+}

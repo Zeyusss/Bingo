@@ -1,13 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   CheckCircle,
   AlertCircle,
   Upload,
   Download,
-  Eye,
   FileText,
   User,
   CreditCard,
@@ -44,7 +43,6 @@ const VerificationPage = () => {
   );
   const [previews, setPreviews] = useState<{ [key: string]: string }>({});
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const queryClient = useQueryClient();
 
   // Fetch verification status
   const {

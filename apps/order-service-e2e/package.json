@@ -15,7 +15,9 @@
         "options": {
           "jestConfig": "order-service-e2e/jest.config.ts",
           "passWithNoTests": true
-        },
+        }
+      },
+      "test": {
         "dependsOn": [
           "@auth-service/order-service:build",
           "@auth-service/order-service:serve"

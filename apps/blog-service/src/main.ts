@@ -15,9 +15,11 @@ import checkInternalToken from "@packages/middleware/check-internal-token";
 
 const app = express();
 
+const corsOrigins = (process.env.CORS_ORIGINS || "http://localhost:3000").split(",");
+
 app.use(
   cors({
-    origin: ["http://localhost:3000"],
+    origin: corsOrigins,
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
   })

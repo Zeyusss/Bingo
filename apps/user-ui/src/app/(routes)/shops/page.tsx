@@ -5,13 +5,13 @@ import ShopCard from "apps/user-ui/src/shared/components/cards/shop-card";
 import axiosInstance from "apps/user-ui/src/utils/axiosInstance";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, Suspense } from "react";
 import Footer from "apps/user-ui/src/shared/components/homepage/Footer";
 import ShopFilterSidebar from "apps/user-ui/src/shared/components/filters/ShopFilterSidebar";
 import FilterButton from "apps/user-ui/src/shared/components/filters/FilterButton";
 import ProductListAnimator from "apps/user-ui/src/shared/components/animations/ProductListAnimator";
 
-const Page = () => {
+const PageContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -308,4 +308,16 @@ const Page = () => {
   );
 };
 
-export default Page;
+export default function Page() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex justify-center items-center min-h-[60vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      }
+    >
+      <PageContent />
+    </Suspense>
+  );
+}

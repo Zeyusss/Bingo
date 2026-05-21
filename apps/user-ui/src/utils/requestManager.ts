@@ -45,7 +45,6 @@ class RequestManager {
     limit: 100,
     retryAfter: 0
   };
-  private maxConcurrentRequests = 6; 
   private requestHistory: { timestamp: number; success: boolean }[] = [];
   private backoffMultiplier = 1;
   private lastBackoffReset = Date.now();

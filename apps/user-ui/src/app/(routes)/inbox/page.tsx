@@ -7,7 +7,7 @@ import axiosInstance from "apps/user-ui/src/utils/axiosInstance";
 import { isProtected } from "apps/user-ui/src/utils/protected";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 function formatLastSeen(lastSeenAt: string | null | undefined): string {
   if (!lastSeenAt) return "Offline";
@@ -17,7 +17,6 @@ function formatLastSeen(lastSeenAt: string | null | undefined): string {
   const diffMin = Math.floor(diffMs / 60000);
   if (diffMin < 1) return "Last seen just now";
   if (diffMin < 60) return `Last seen ${diffMin} minute${diffMin === 1 ? "" : "s"} ago`;
-  const diffHours = Math.floor(diffMin / 60);
   const isToday = date.toDateString() === now.toDateString();
   const timeStr = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   if (isToday) return `Last seen at ${timeStr}`;
@@ -30,7 +29,7 @@ function formatLastSeen(lastSeenAt: string | null | undefined): string {
   return `Last seen ${dateStr} at ${timeStr}`;
 }
 
-const page = () => {
+const Page = () => {
   const searchParams = useSearchParams();
   const { user } = useRequireAuth();
   const router = useRouter();
@@ -551,4 +550,16 @@ const page = () => {
   );
 };
 
-export default page;
+export default function InboxPageWrapper() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex justify-center items-center min-h-[60vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      }
+    >
+      <Page />
+    </Suspense>
+  );
+}

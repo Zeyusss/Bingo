@@ -14,10 +14,12 @@ const swaggerDocument = require('./swagger-output.json');
 
 const app = express();
 
+const corsOrigins = (process.env.CORS_ORIGINS || "http://localhost:3000").split(",");
+
 app.use(cors({
-  origin:["http://localhost:3000"],
+  origin: corsOrigins,
   allowedHeaders: ['Content-Type', 'Authorization'],
-credentials: true ,
+  credentials: true ,
 }),
 );
 app.use(express.json({ limit: '10mb' }));

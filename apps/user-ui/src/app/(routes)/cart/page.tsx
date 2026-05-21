@@ -4,7 +4,6 @@ import { Phone, Lock, ShieldCheck, Loader2, X } from "lucide-react";
 import useDeviceTracking from "apps/user-ui/src/hooks/useDeviceTracking";
 import useLocationTracking from "apps/user-ui/src/hooks/useLocationTracking";
 import useUser from "apps/user-ui/src/hooks/useUser";
-import useAbandonedCart from "apps/user-ui/src/hooks/useAbandonedCart";
 import { useStore } from "apps/user-ui/src/store";
 import axiosInstance from "apps/user-ui/src/utils/axiosInstance";
 import Image from "next/image";
@@ -24,7 +23,6 @@ const CartPage = () => {
   
 
   const cart = getAuthenticatedCart(user);
-  const { removeAbandonedCart } = useAbandonedCart();
 
   const [couponCode, setCouponCode] = useState("");
   const [discountProductId, setDiscountProductId] = useState("");

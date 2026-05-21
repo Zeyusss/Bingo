@@ -21,9 +21,7 @@ const HeaderMain = () => {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestions, setSuggestions] = useState<any[]>([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
- 
   return (
     <div className="w-[80%] mx-auto hidden lg:flex items-center justify-between py-4">
       <Link href={"/"}>
@@ -55,11 +53,6 @@ const HeaderMain = () => {
                 {item.title}
               </Link>
             ))}
-          </div>
-        )}
-        {loadingSuggestions && (
-          <div className="absolute w-full top-[60px] bg-white border px-4 py-2 text-sm">
-            Searching...
           </div>
         )}
       </div>
@@ -113,4 +106,3 @@ const HeaderMain = () => {
 };
 
 export default HeaderMain;
-

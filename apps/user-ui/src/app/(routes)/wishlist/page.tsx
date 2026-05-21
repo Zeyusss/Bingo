@@ -17,7 +17,6 @@ const WishlistPage = () => {
   const router = useRouter();
   const location = useLocationTracking();
   const deviceInfo = useDeviceTracking();
-  const addToCart = useStore((state: any) => state.addToCart);
   const removeFromWishlist = useStore((state: any) => state.removeFromWishlist);
   const wishlist = useStore((state: any) => state.wishlist);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -39,16 +38,6 @@ const WishlistPage = () => {
   if (!user) {
     return null;
   }
-
-  const decreaseQuantity = (id: string) => {
-    useStore.setState((state: any) => ({
-      wishlist: state.wishlist.map((item: any) =>
-        item.id === id && item.quantity > 1
-          ? { ...item, quantity: item.quantity - 1 }
-          : item
-      ),
-    }));
-  };
 
   const toggleSelect = (id: string) => {
     setSelectedItems((prev) =>
@@ -74,15 +63,6 @@ const WishlistPage = () => {
 
   const removeItem = (id: string) => {
     removeFromWishlist(id, user, location, deviceInfo);
-  };
-  const increaseQuantity = (id: string) => {
-    useStore.setState((state: any) => ({
-      wishlist: state.wishlist.map((item: any) =>
-        item.id === id 
-          ? { ...item, quantity: Math.min((item.quantity ?? 1) + 1, item.stock || 0) } 
-          : item
-      ),
-    }));
   };
   return (
 <div className="flex flex-col min-h-screen">

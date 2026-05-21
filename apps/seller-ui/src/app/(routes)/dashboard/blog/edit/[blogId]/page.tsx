@@ -35,19 +35,23 @@ const EditBlogPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (blog) {
-     
-      if (blog.status !== "Accepted") {
-        setError("Only published blogs can be edited");
-       
-        const timer = setTimeout(() => router.push("/dashboard/blog"), 3000);
-        return () => clearTimeout(timer);
-      }
+    if (!blog) return;
+    if (blog.status !== "Accepted") {
+      setError("Only published blogs can be edited");
+    } else {
       setTitle(blog.title);
       setContent(blog.content);
       setCoverImage(blog.coverImage || undefined);
     }
-  }, [blog, router]);
+  }, [blog]);
+
+  useEffect(() => {
+    const redirect = error
+      ? () => router.push("/dashboard/blog")
+      : () => undefined;
+    const timer = setTimeout(redirect, 3000);
+    return () => { clearTimeout(timer); };
+  }, [error, router]);
 
   useEffect(() => {
     if (updateBlogMutation.isSuccess) {

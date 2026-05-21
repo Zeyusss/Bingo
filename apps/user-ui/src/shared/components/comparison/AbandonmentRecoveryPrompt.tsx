@@ -54,6 +54,8 @@ const AbandonmentRecoveryPrompt: React.FC<AbandonmentRecoveryPromptProps> = ({ o
 
       return () => clearTimeout(timer);
     }
+
+    return;
   }, [products, shouldShowRecoveryPrompt, cleanupExpired]);
 
   const handleRecover = () => {

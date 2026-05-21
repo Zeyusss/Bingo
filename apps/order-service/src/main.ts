@@ -12,9 +12,12 @@ import router from './routes/order.route';
 import { createOrder } from './controllers/order.controller';
 
 const app = express();
+
+const corsOrigins = (process.env.CORS_ORIGINS || "http://localhost:3000").split(",");
+
 app.use(
   cors({
-    origin : ["http://localhost:3000"],
+    origin : corsOrigins,
     allowedHeaders:["Authorization","Content-Type"],
     credentials:true,
   })

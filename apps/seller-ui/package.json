@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
     "@tanstack/react-query-devtools": "^5.84.1",
     "next": "~15.2.4",
     "react": "19.0.0",

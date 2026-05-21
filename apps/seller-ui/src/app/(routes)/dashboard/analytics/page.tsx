@@ -4,11 +4,6 @@ import ErrorBoundary from "../../../../shared/components/dashboard/ErrorBoundary
 import VisitorAnalytics from "../../../../shared/components/dashboard/VisitorAnalytics";
 import OrderActivity from "../../../../shared/components/dashboard/OrderActivity";
 import RevenueChart from "../../../../shared/components/dashboard/RevenueChart";
-import { 
-  Eye, 
-  Globe,
-  DollarSign
-} from "lucide-react";
 
 function AnalyticsContent() {
   return (

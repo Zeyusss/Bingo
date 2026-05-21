@@ -8,16 +8,12 @@ import initializeConfig from "./libs/initializeSiteConfig";
 
 const app = express();
 
+const corsOrigins = (process.env.CORS_ORIGINS || "http://localhost:3000").split(",");
 const INTERNAL_SERVICE_TOKEN = process.env.INTERNAL_SERVICE_TOKEN;
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "http://localhost:3001",
-      "http://localhost:3002",
-      "http://localhost:3003",
-    ],
+    origin: corsOrigins,
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
@@ -104,82 +100,82 @@ app.get("/gateway-health", (req, res) => {
 // routes
 app.use('/admin/api/dashboard/resource-monitor', monitoringLimiter, proxy("http://localhost:6005", {
   proxyReqPathResolver: (req) => '/api/dashboard/resource-monitor',
-  proxyReqOptDecorator: (proxyReqOpts) => {
+  proxyReqOptDecorator: (proxyReqOpts: any) => {
     proxyReqOpts.headers['x-internal-service-token'] = INTERNAL_SERVICE_TOKEN;
     return proxyReqOpts;
   }
 })); // ultra-high for monitoring
 app.use('/admin/api/dashboard/system-stats', monitoringLimiter, proxy("http://localhost:6005", {
   proxyReqPathResolver: (req) => '/api/dashboard/system-stats',
-  proxyReqOptDecorator: (proxyReqOpts) => {
+  proxyReqOptDecorator: (proxyReqOpts: any) => {
     proxyReqOpts.headers['x-internal-service-token'] = INTERNAL_SERVICE_TOKEN;
     return proxyReqOpts;
   }
 })); // ultra-high for stats
  app.use('/admin/api/dashboard/revenue', dashboardLimiter, proxy("http://localhost:6005", {
   proxyReqPathResolver: (req) => '/api/dashboard/revenue',
-  proxyReqOptDecorator: (proxyReqOpts) => {
+  proxyReqOptDecorator: (proxyReqOpts: any) => {
     proxyReqOpts.headers['x-internal-service-token'] = INTERNAL_SERVICE_TOKEN;
     return proxyReqOpts;
   }
 })); // specific route for revenue
 app.use('/admin/api/dashboard', dashboardLimiter, proxy("http://localhost:6005", {
-  proxyReqOptDecorator: (proxyReqOpts) => {
+  proxyReqOptDecorator: (proxyReqOpts: any) => {
     proxyReqOpts.headers['x-internal-service-token'] = INTERNAL_SERVICE_TOKEN;
     return proxyReqOpts;
   }
 })); // high capacity for dashboards
 app.use('/order/api/get-recent-orders', dashboardLimiter, proxy("http://localhost:6004", {
   proxyReqPathResolver: (req) => '/api/get-recent-orders',
-  proxyReqOptDecorator: (proxyReqOpts) => {
+  proxyReqOptDecorator: (proxyReqOpts: any) => {
     proxyReqOpts.headers['x-internal-service-token'] = INTERNAL_SERVICE_TOKEN;
     return proxyReqOpts;
   }
 })); // high capacity for order dashboard
 app.use("/blogs", apiLimiter, proxy("http://localhost:6009", {
-  proxyReqOptDecorator: (proxyReqOpts) => {
+  proxyReqOptDecorator: (proxyReqOpts: any) => {
     proxyReqOpts.headers['x-internal-service-token'] = INTERNAL_SERVICE_TOKEN;
     return proxyReqOpts;
   }
 }));
 app.use("/recommendation", apiLimiter, proxy("http://localhost:6007", {
-  proxyReqOptDecorator: (proxyReqOpts) => {
+  proxyReqOptDecorator: (proxyReqOpts: any) => {
     proxyReqOpts.headers['x-internal-service-token'] = INTERNAL_SERVICE_TOKEN;
     return proxyReqOpts;
   }
 }));
 app.use("/chatting", apiLimiter, proxy("http://localhost:6006", {
-  proxyReqOptDecorator: (proxyReqOpts) => {
+  proxyReqOptDecorator: (proxyReqOpts: any) => {
     proxyReqOpts.headers['x-internal-service-token'] = INTERNAL_SERVICE_TOKEN;
     return proxyReqOpts;
   }
 })); // standard limits 
 app.use("/admin", apiLimiter, proxy("http://localhost:6005", {
-  proxyReqOptDecorator: (proxyReqOpts) => {
+  proxyReqOptDecorator: (proxyReqOpts: any) => {
     proxyReqOpts.headers['x-internal-service-token'] = INTERNAL_SERVICE_TOKEN;
     return proxyReqOpts;
   }
 })); // standard limits
 app.use("/order", apiLimiter, proxy("http://localhost:6004", {
-  proxyReqOptDecorator: (proxyReqOpts) => {
+  proxyReqOptDecorator: (proxyReqOpts: any) => {
     proxyReqOpts.headers['x-internal-service-token'] = INTERNAL_SERVICE_TOKEN;
     return proxyReqOpts;
   }
 })); // standard limits 
 app.use("/seller", apiLimiter, proxy("http://localhost:6003", {
-  proxyReqOptDecorator: (proxyReqOpts) => {
+  proxyReqOptDecorator: (proxyReqOpts: any) => {
     proxyReqOpts.headers['x-internal-service-token'] = INTERNAL_SERVICE_TOKEN;
     return proxyReqOpts;
   }
 })); // standard limits 
 app.use("/product", apiLimiter, proxy("http://localhost:6002", {
-  proxyReqOptDecorator: (proxyReqOpts) => {
+  proxyReqOptDecorator: (proxyReqOpts: any) => {
     proxyReqOpts.headers['x-internal-service-token'] = INTERNAL_SERVICE_TOKEN;
     return proxyReqOpts;
   }
 })); // standard limits
 app.use("/", generalLimiter, proxy("http://localhost:6001", {
-  proxyReqOptDecorator: (proxyReqOpts) => {
+  proxyReqOptDecorator: (proxyReqOpts: any) => {
     proxyReqOpts.headers['x-internal-service-token'] = INTERNAL_SERVICE_TOKEN;
     return proxyReqOpts;
   }

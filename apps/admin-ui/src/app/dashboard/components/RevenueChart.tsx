@@ -72,19 +72,9 @@ const RevenueChart: React.FC = () => {
     );
   }
 
-  const totalRevenue = Array.isArray(data) && data[0]?.data
+   const totalRevenue = Array.isArray(data) && data[0]?.data
     ? data[0].data.reduce((sum: number, point: any) => sum + point.y, 0)
     : 0;
-  const currentMonth = Array.isArray(data) && data[0]?.data
-    ? data[0].data[data[0].data.length - 1]?.y || 0
-    : 0;
-  const previousMonth = Array.isArray(data) && data[0]?.data
-    ? data[0].data[data[0].data.length - 2]?.y || 0
-    : 0;
-  const growth =
-    previousMonth > 0
-      ? ((currentMonth - previousMonth) / previousMonth) * 100
-      : 0;
 
  
   const formatMonth = (monthStr: string) => {

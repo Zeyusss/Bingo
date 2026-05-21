@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import ChatInput from "apps/seller-ui/src/shared/components/chats/chatinput";
@@ -16,7 +16,6 @@ function formatLastSeen(lastSeenAt: string | null | undefined): string {
   const diffMin = Math.floor(diffMs / 60000);
   if (diffMin < 1) return "Last seen just now";
   if (diffMin < 60) return `Last seen ${diffMin} minute${diffMin === 1 ? "" : "s"} ago`;
-  const diffHours = Math.floor(diffMin / 60);
   const isToday = date.toDateString() === now.toDateString();
   const timeStr = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   if (isToday) return `Last seen at ${timeStr}`;
@@ -29,7 +28,7 @@ function formatLastSeen(lastSeenAt: string | null | undefined): string {
   return `Last seen ${dateStr} at ${timeStr}`;
 }
 
-const ChatPage = () => {
+const ChatPageInner = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const messageContainerRef = useRef<HTMLDivElement | null>(null);
@@ -524,4 +523,16 @@ const ChatPage = () => {
   );
 };
 
-export default ChatPage;
+export default function InboxPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex justify-center items-center min-h-[60vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      }
+    >
+      <ChatPageInner />
+    </Suspense>
+  );
+}

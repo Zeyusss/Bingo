@@ -1,12 +1,12 @@
 'use client'
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { CheckCircle, Loader2 } from "lucide-react";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useStore } from 'apps/user-ui/src/store';
 import confetti from "canvas-confetti"
 import axiosInstance from 'apps/user-ui/src/utils/axiosInstance';
 
-const PaymentSuccessPage = () => {
+function PaymentSuccessContent() {
     const searchParams = useSearchParams();
     const sessionId = searchParams.get("sessionId");
     const router = useRouter();
@@ -71,4 +71,16 @@ const PaymentSuccessPage = () => {
   )
 }
 
-export default PaymentSuccessPage
+const PaymentSuccessPage = () => (
+  <Suspense fallback={
+    <div className='min-h-[80vh] flex items-center justify-center px-4'>
+      <div className='bg-white shadow-md border border-gray-200 rounded-2xl max-w-md w-full p-6 text-center'>
+        <Loader2 className='animate-spin w-8 h-8 mx-auto text-gray-400' />
+      </div>
+    </div>
+  }>
+    <PaymentSuccessContent />
+  </Suspense>
+);
+
+export default PaymentSuccessPage;

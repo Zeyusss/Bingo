@@ -50,8 +50,8 @@ const AdvancedSearchBar: React.FC<AdvancedSearchBarProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
 
-  const [isClient, setIsClient] = useState(false);
   const [showFiltersModal, setShowFiltersModal] = useState(false);
+
   const [filters, setFilters] = useState({
     categories: "",
     brand: "",
@@ -63,18 +63,12 @@ const AdvancedSearchBar: React.FC<AdvancedSearchBarProps> = ({
   });
 
   const router = useRouter();
+
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
 
-
   useEffect(() => {
-    
-    setIsClient(true);
-    
-
-    if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
-    
     try {
       const saved = localStorage.getItem("recentSearches");
       if (saved) {

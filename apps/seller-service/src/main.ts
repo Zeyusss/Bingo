@@ -11,9 +11,11 @@ import "./jobs/shop-deletion.job";
 
 const app = express();
 
+const corsOrigins = (process.env.CORS_ORIGINS || "http://localhost:3000").split(",");
+
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:3001"],
+    origin: corsOrigins,
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })

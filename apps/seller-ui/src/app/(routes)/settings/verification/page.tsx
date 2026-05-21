@@ -13,8 +13,7 @@ import {
   FileText,
   User,
   CreditCard,
-  Loader2,
-  XCircle,
+
 } from "lucide-react";
 import Image from "next/image";
 import axiosInstance from "../../../../utils/axiosInstance";

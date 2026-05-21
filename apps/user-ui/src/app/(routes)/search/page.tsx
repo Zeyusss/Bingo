@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Grid, List, Filter } from 'lucide-react';
 import AdvancedSearchBar from '../../../shared/components/search/AdvancedSearchBar';
@@ -401,4 +401,16 @@ const SearchPage: React.FC = () => {
   );
 };
 
-export default SearchPage;
+export default function SearchPageWrapper() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex justify-center items-center min-h-[60vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      }
+    >
+      <SearchPage />
+    </Suspense>
+  );
+}
