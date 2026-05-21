@@ -1407,10 +1407,15 @@ export const trackShopVisitor = async (
   next: NextFunction
 ) => {
   try {
-    const { shopId, userId } = req.body;
+    const { shopId } = req.body;
+    const userId = req.user?.id;
 
     if (!shopId || !userId) {
       return next(new ValidationError("Shop ID and User ID are required"));
+    }
+
+    if (!/^[0-9a-fA-F]{24}$/.test(shopId)) {
+      return res.status(400).json({ status: "error", message: "Invalid shopId format" });
     }
 
     const shop = await prisma.shops.findUnique({

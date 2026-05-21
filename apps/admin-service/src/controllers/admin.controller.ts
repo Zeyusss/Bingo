@@ -484,31 +484,11 @@ export const blockSeller = async (
 ) => {
   try {
     const { sellerId } = req.params;
-    const { isBlocked } = req.body;
 
-    const seller = await prisma.sellers.update({
-      where: { id: sellerId },
-      data: { isBlocked, blockedAt: isBlocked ? new Date() : null },
-    });
+    if (!/^[0-9a-fA-F]{24}$/.test(sellerId)) {
+      return res.status(400).json({ status: "error", message: "Invalid sellerId format" });
+    }
 
-    res.status(200).json({
-      success: true,
-      message: `Seller ${isBlocked ? "blocked" : "unblocked"} successfully`,
-      seller,
-    });
-  } catch (error) {
-    return next(error);
-  }
-};
-
-// Delete seller
-export const deleteSeller = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const { sellerId } = req.params;
     const seller = await prisma.sellers.findUnique({
       where: { id: sellerId },
       include: { shop: true },
@@ -721,6 +701,11 @@ export const getSellerDetails = async (
 ) => {
   try {
     const { sellerId } = req.params;
+
+    if (!/^[0-9a-fA-F]{24}$/.test(sellerId)) {
+      return res.status(400).json({ status: "error", message: "Invalid sellerId format" });
+    }
+
     const seller = await prisma.sellers.findUnique({
       where: { id: sellerId },
       include: {
