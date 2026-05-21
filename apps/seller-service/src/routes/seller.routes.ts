@@ -135,7 +135,7 @@ router.get(
   getShopTopSellingProducts,
 );
 
-router.post("/track-visitor", trackShopVisitor);
+router.post("/track-visitor", isAuthenticated, trackShopVisitor);
 
 // Identity Verification Routes
 router.get(

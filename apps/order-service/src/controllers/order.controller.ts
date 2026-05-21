@@ -32,6 +32,10 @@ export const createPaymentIntent = async (
   next: NextFunction
 ) => {
   try {
+    // TODO: [PAYMOB MIGRATION] - sellerStripeAccountId is blindly trusted from req.body.
+    // When replacing Stripe with Paymob, redesign this to support multi-seller checkout:
+    // - Split payment per seller based on their items in the cart session
+    // - Never trust client-supplied destination account — read from DB or Redis session only
     const { amount, sellerStripeAccountId, sessionId } = req.body;
 
     if (!sessionId) {
@@ -262,7 +266,7 @@ export const createOrder = async (
       );
     } catch (error: any) {
       console.error("Webhook signature verification failed.", error.message);
-      return res.status(400).send(`Webhook Error: ${error.message}`);
+      return res.status(400).send("Webhook Error: invalid signature");
     }
 
     const alreadyProcessed = await redis.get(`stripe-event:${event.id}`);

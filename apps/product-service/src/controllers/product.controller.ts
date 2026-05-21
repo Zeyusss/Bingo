@@ -414,7 +414,7 @@ export const getShopProducts = async (
 
     const actualSortField = sortFieldMapping[sortBy as string] || "createdAt";
     const orderBy: any = {};
-    orderBy[actualSortField] = sortOrder;
+    orderBy[actualSortField] = sortOrder === "asc" ? "asc" : "desc";
 
 
     const totalProducts = await prisma.products.count({
@@ -691,7 +691,7 @@ export const restoreProduct = async (
 
     return res.status(200).json({ message: "Product successfully restored!" });
   } catch (error) {
-    return res.status(500).json({ message: "Error restoring product", error });
+    return res.status(500).json({ message: "Error restoring product" });
   }
 };
 
@@ -1224,6 +1224,9 @@ export const getFilteredShops = async (
 
    
     if (notFollowed === 'true' && userId) {
+      if (!/^[0-9a-fA-F]{24}$/.test(userId as string)) {
+        return res.status(400).json({ status: "error", message: "Invalid userId format" });
+      }
       filters.followers = {
         none: {
           userId: userId as string

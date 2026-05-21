@@ -67,7 +67,7 @@ router.get("/admin/reports", isAuthenticated, isAdmin, getCommentReports);
 router.put("/admin/reports/:reportId/review", isAuthenticated, isAdmin, reviewCommentReport);
 
 // Image upload route
-router.post("/upload-image", isAuthenticated, uploadBlogImage);
+router.post("/upload-image", isAuthenticated, isSeller, uploadBlogImage);
 
 // public should be at the end i dont know why :)
 router.get("/:blogId", getBlogById);

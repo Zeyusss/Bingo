@@ -53,8 +53,8 @@ router.post("/reset-password-user", userResetPassword);
 router.post("/verify-password-user", verifyUserForgetPasswordOtp);
 router.post("/seller-registration", registerSeller);
 router.post("/verify-seller", verifySeller);
-router.post("/create-shop", createShop);
-router.post("/create-stripe-link",createStripeConnectLink)
+router.post("/create-shop", isAuthenticated, isSeller, createShop);
+router.post("/create-stripe-link", isAuthenticated, isSeller, createStripeConnectLink);
 router.post("/login-seller", loginRateLimiter, loginSeller);
 router.get("/logged-in-seller",isAuthenticated,isSeller,getSeller)
 router.post("/forget-password-seller", sellerForgetPassword);

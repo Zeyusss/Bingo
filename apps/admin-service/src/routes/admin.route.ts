@@ -70,10 +70,11 @@ router.get(
   isAdmin,
   getWorldActivity
 );
-router.get("/dashboard/system-stats", isAuthenticated, getSystemStats);
+router.get("/dashboard/system-stats", isAuthenticated, isAdmin, getSystemStats);
 router.get(
   "/dashboard/resource-monitor",
   isAuthenticated,
+  isAdmin,
   getResourceMonitor
 );
 router.get("/get-all-products", isAuthenticated, isAdmin, getAllProducts);
@@ -112,9 +113,9 @@ router.patch("/notifications/:notificationId/read", isAuthenticated, isAdmin, ma
 router.delete("/notifications/:notificationId", isAuthenticated, isAdmin, deleteNotification);
 
 // User Notification routes
-router.get("/get-user-notifications", isAuthenticated, getUserNotifications);
-router.patch("/user-notifications/mark-all-read", isAuthenticated, markAllUserNotificationsAsRead);
-router.delete("/user-notifications/delete-all-read", isAuthenticated, deleteAllReadUserNotifications);
+router.get("/get-user-notifications", isAuthenticated, isAdmin, getUserNotifications);
+router.patch("/user-notifications/mark-all-read", isAuthenticated, isAdmin, markAllUserNotificationsAsRead);
+router.delete("/user-notifications/delete-all-read", isAuthenticated, isAdmin, deleteAllReadUserNotifications);
 router.patch("/user-notifications/:id/read", isAuthenticated, markUserNotificationAsRead);
 router.delete("/user-notifications/:id", isAuthenticated, deleteUserNotification);
 router.post("/users/:userId/block", isAuthenticated, isAdmin, blockUser);

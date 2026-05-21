@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 
 const checkInternalToken = (req: Request, res: Response, next: NextFunction) => {
+  // Only GET / is exempt. Any future health check paths (e.g. /healthz, /status)
+  // must be added here manually.
   if (req.method === "GET" && req.path === "/") {
     return next();
   }

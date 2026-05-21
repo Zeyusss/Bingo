@@ -105,7 +105,6 @@ export const userRegistration = async (
     await requestLogger.error(`User registration failed: ${error.message}`, {
       metadata: {
         error: error.name,
-        stack: error.stack,
         email: req.body?.email,
       },
     });
@@ -294,7 +293,6 @@ export const userLogin = async (
     await requestLogger.error(`User login failed: ${error.message}`, {
       metadata: {
         error: error.name,
-        stack: error.stack,
         email: req.body?.email,
       },
     });
@@ -665,8 +663,8 @@ export const createStripeConnectLink = async (
 
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
-      refresh_url: `http://localhost:3000/success`,
-      return_url: `http://localhost:3000/success`,
+      refresh_url: `${process.env.SELLER_ONBOARDING_URL || "http://localhost:3000"}/success`,
+      return_url: `${process.env.SELLER_ONBOARDING_URL || "http://localhost:3000"}/success`,
       type: "account_onboarding",
     });
 

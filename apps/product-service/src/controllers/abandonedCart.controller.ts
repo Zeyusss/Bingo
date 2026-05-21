@@ -365,7 +365,6 @@ export const triggerAbandonedCartEmailForUser = async (req: Request, res: Respon
     console.error('Error triggering automated abandoned cart email:', error);
     auditLog('automated_trigger_error', userId || 'unknown', {
       error: error.message,
-      stack: error.stack,
       processingTimeMs: processingTime
     }, false, error.message);
     
@@ -556,7 +555,6 @@ export const adminForceAbandonedCartEmail = async (req: Request, res: Response) 
     auditLog('admin_trigger_error', userId || 'unknown', {
       adminUser,
       error: error.message,
-      stack: error.stack,
       processingTimeMs: processingTime
     }, false, error.message);
     
