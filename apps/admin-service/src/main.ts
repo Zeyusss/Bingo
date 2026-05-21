@@ -3,6 +3,7 @@ require('dotenv').config({ path: require('path').resolve(__dirname, '../../../.e
 
 import { errorMiddleware } from '@packages/error-handler/error-middleware';
 import { createLoggingMiddleware, createErrorLoggingMiddleware } from '@packages/middleware/logging.middleware';
+import checkInternalToken from '@packages/middleware/check-internal-token';
 import cookieParser  from 'cookie-parser';
 
 import express from 'express';
@@ -17,6 +18,8 @@ app.use(cookieParser());
 
 // Add logging middleware
 app.use(createLoggingMiddleware('admin-service'));
+
+app.use(checkInternalToken);
 
 app.get('/', (req, res) => {
   res.send({ message: 'Welcome to admin-service!' });

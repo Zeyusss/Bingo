@@ -11,6 +11,7 @@ import {
   createLoggingMiddleware,
   createErrorLoggingMiddleware,
 } from "@packages/middleware/logging.middleware";
+import checkInternalToken from "@packages/middleware/check-internal-token";
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(cookieParser());
 app.use(createLoggingMiddleware("blog-service"));
 
+app.use(checkInternalToken);
 
 app.use("/", blogRoutes);
 

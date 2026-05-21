@@ -1469,7 +1469,7 @@ export const getBestSellersByCategory = async (
 ) => {
   try {
     const category = req.query.category as string;
-    const limit = parseInt(req.query.limit as string) || 8;
+    const limit = Math.min(parseInt(req.query.limit as string) || 8, 100);
 
     const products = await prisma.products.findMany({
       where: {

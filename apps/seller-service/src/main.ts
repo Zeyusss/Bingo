@@ -2,6 +2,7 @@ require('dotenv').config({ path: require('path').resolve(__dirname, '../../../.e
 
 import { errorMiddleware } from "@packages/error-handler/error-middleware";
 import { createLoggingMiddleware, createErrorLoggingMiddleware } from '@packages/middleware/logging.middleware';
+import checkInternalToken from '@packages/middleware/check-internal-token';
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -23,6 +24,8 @@ app.use(cookieParser());
 
 
 app.use(createLoggingMiddleware('seller-service'));
+
+app.use(checkInternalToken);
 
 app.get("/", (req, res) => {
   res.send({ message: "Seller Service API" });

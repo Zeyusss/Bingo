@@ -6,6 +6,7 @@ import "./jobs/abandoned-cart.job"
 import cors from 'cors';
 import { errorMiddleware } from '@packages/error-handler/error-middleware';
 import { createLoggingMiddleware, createErrorLoggingMiddleware } from '@packages/middleware/logging.middleware';
+import checkInternalToken from '@packages/middleware/check-internal-token';
 import cookieParser from 'cookie-parser';
 import { globalRateLimiter } from './middleware/rateLimiter';
 import router from './routes/product.routes';
@@ -31,6 +32,7 @@ app.use(globalRateLimiter);
 
 app.use(createLoggingMiddleware('product-service'));
 
+app.use(checkInternalToken);
 
 app.get('/', (req, res) => {
     res.send({ 'message': 'Product Service is running'});

@@ -104,7 +104,7 @@ router.get("/get-filtered-offers", getFilteredEvents);
 router.get("/get-todays-deals", getTodaysDeals);
 router.get("/get-trending-products", getTrendingProducts);
 router.get("/get-filtered-shops", getFilteredShops);
-router.get("/search-products", searchProducts);
+router.get("/search-products", searchRateLimiter, searchProducts);
 router.get("/search-advanced", searchRateLimiter, searchAdvanced);
 router.get("/search-suggestions", suggestionsRateLimiter, getSearchSuggestions);
 router.get("/search-popular", filtersRateLimiter, getPopularSearches);
