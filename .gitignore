@@ -28,6 +28,7 @@ node_modules
 .env
 .env.local
 .env.*.local
+*.pem
 !.env.example
 
 # misc
@@ -60,4 +61,4 @@ out
 apps/*/.env
 apps/*/.env.local
 apps/*/.env.*.local
-!apps/*/.env.example
+!apps/*/.env.example"*.pem" 
