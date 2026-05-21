@@ -182,9 +182,20 @@ export const deleteProductImage = async (
   try {
     const { fileId } = req.body;
 
+    const shopId = req.seller?.shop?.id;
+
+    const image = await prisma.images.findFirst({
+      where: { file_id: fileId },
+      include: { products: { select: { shopId: true } } }
+    });
+
+    if (!image || image.products?.shopId !== shopId) {
+      return res.status(403).json({ status: "error", message: "Forbidden" });
+    }
+
     const response = await imagekit.deleteFile(fileId);
 
-    res.status(201).json({
+    res.status(200).json({
       success: true,
       response,
     });

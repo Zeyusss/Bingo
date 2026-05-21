@@ -1642,23 +1642,14 @@ export const markAllNotificationsAsRead = async (
   next: NextFunction
 ) => {
   try {
-    
-    const adminUsers = await prisma.users.findMany({
-      where: { role: "admin" },
-      select: { id: true }
+
+    await prisma.notifications.updateMany({
+      where: {
+        receiverId: req.user.id,
+        status: "Unread"
+      },
+      data: { status: "Read" }
     });
-    
-    const adminIds = adminUsers.map(admin => admin.id);
-    
-    if (adminIds.length > 0) {
-      await prisma.notifications.updateMany({
-        where: {
-          receiverId: { in: adminIds },
-          status: "Unread"
-        },
-        data: { status: "Read" }
-      });
-    }
 
     res.status(200).json({
       success: true,
