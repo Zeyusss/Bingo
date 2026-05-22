@@ -587,13 +587,14 @@ export const verifySeller = async (
 
 // create a new shop for seller
 export const createShop = async (
-  req: Request,
+  req: any,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const { name, bio, address, opening_hours, website, category, sellerId } =
+    const { name, bio, address, opening_hours, website, category } =
       req.body;
+    const sellerId = req.user.id;
     if (!name || !bio || !address || !opening_hours || !category || !sellerId) {
       return next(new ValidationError("All fields are required"));
     }
@@ -626,12 +627,12 @@ export const createShop = async (
 
 // create stripe connect account link for seller
 export const createStripeConnectLink = async (
-  req: Request,
+  req: any,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const { sellerId } = req.body;
+    const sellerId = req.user.id;
     if (!sellerId) {
       return next(new ValidationError("Seller ID is required"));
     }
