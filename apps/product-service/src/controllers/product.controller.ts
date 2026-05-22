@@ -541,6 +541,9 @@ export const deleteProduct = async (
 ) => {
   try {
     const { productId } = req.params;
+    if (!/^[0-9a-fA-F]{24}$/.test(productId)) {
+      return res.status(400).json({ status: "error", message: "Invalid productId format" });
+    }
     const sellerId = req.seller?.shop?.id;
 
     const product = await prisma.products.findUnique({
@@ -583,6 +586,9 @@ export const updateProduct = async (
 ) => {
   try {
     const { productId } = req.params;
+    if (!/^[0-9a-fA-F]{24}$/.test(productId)) {
+      return res.status(400).json({ status: "error", message: "Invalid productId format" });
+    }
     const {
       title,
       detailed_description,
@@ -673,6 +679,9 @@ export const restoreProduct = async (
 ) => {
   try {
     const { productId } = req.params;
+    if (!/^[0-9a-fA-F]{24}$/.test(productId)) {
+      return res.status(400).json({ status: "error", message: "Invalid productId format" });
+    }
     const sellerId = req.seller?.shop?.id;
 
     const product = await prisma.products.findUnique({

@@ -5,13 +5,21 @@ import { errorMiddleware } from '@packages/error-handler/error-middleware';
 import { createLoggingMiddleware, createErrorLoggingMiddleware } from '@packages/middleware/logging.middleware';
 import checkInternalToken from '@packages/middleware/check-internal-token';
 import cookieParser  from 'cookie-parser';
+import cors from 'cors';
 
 import express from 'express';
 import router from './routes/admin.route';
 import sliderRouter from './routes/slider.route';
 
+const corsOrigins = (
+  process.env.CORS_ORIGINS || 'http://localhost:3000'
+).split(',');
+
 
 const app = express();
+
+app.use(cors({ origin: corsOrigins, allowedHeaders: ['Content-Type', 'Authorization'], credentials: true }));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(cookieParser());
