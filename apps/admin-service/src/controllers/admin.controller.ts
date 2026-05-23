@@ -411,6 +411,11 @@ export const deleteUser = async (
 ) => {
   try {
     const { userId } = req.params;
+
+    if (!/^[0-9a-fA-F]{24}$/.test(userId)) {
+      return res.status(400).json({ status: "error", message: "Invalid userId format" });
+    }
+
     await prisma.users.update({
       where: { id: userId },
       data: { isDeleted: true, deletedAt: new Date() },
@@ -550,6 +555,11 @@ export const promoteUserToSeller = async (
 ) => {
   try {
     const { userId } = req.params;
+
+    if (!/^[0-9a-fA-F]{24}$/.test(userId)) {
+      return res.status(400).json({ status: "error", message: "Invalid userId format" });
+    }
+
     const user = await prisma.users.findUnique({ where: { id: userId } });
     if (!user) {
       return res
@@ -601,6 +611,11 @@ export const demoteSellerToUser = async (
 ) => {
   try {
     const { sellerId } = req.params;
+
+    if (!/^[0-9a-fA-F]{24}$/.test(sellerId)) {
+      return res.status(400).json({ status: "error", message: "Invalid sellerId format" });
+    }
+
     const seller = await prisma.sellers.findUnique({ where: { id: sellerId } });
     if (!seller) {
       return res

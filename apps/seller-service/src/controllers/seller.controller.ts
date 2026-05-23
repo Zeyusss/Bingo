@@ -345,6 +345,10 @@ export const getSellerInfo = async (
   next: NextFunction
 ) => {
   try {
+    if (!/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+      return res.status(400).json({ status: "error", message: "Invalid shop id format" });
+    }
+
     const shop = await prisma.shops.findUnique({
       where: { id: req.params.id },
       include: {
@@ -427,14 +431,18 @@ export const getSellerProducts = async (
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
-    const skip = (page - 1) * limit;
+const skip = (page - 1) * limit;
+
+    if (!/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+      return res.status(400).json({ status: "error", message: "Invalid shop id format" });
+    }
 
     const [products, total] = await Promise.all([
-      prisma.products.findMany({
-        where: {
-          isDeleted: { not: true },
-          starting_date: null,
-          shopId: req.params.id!,
+       prisma.products.findMany({
+         where: {
+           isDeleted: { not: true },
+           starting_date: null,
+           shopId: req.params.id!,
         },
         skip,
         take: limit,
@@ -505,9 +513,13 @@ export const getSellerEvents = async (
     const sortBy = req.query.sortBy as string || 'createdAt';
     const sortOrder = req.query.sortOrder as string || 'desc';
     const eventStatus = req.query.eventStatus as string;
-    const dateFrom = req.query.dateFrom as string;
+const dateFrom = req.query.dateFrom as string;
     const dateTo = req.query.dateTo as string;
+ 
 
+    if (!/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+      return res.status(400).json({ status: "error", message: "Invalid shop id format" });
+    }
 
     const whereClause: any = {
       isDeleted: { not: true },
@@ -968,6 +980,11 @@ export const isFollowing = async (
     if (!shopId) {
       return next(new ValidationError("Shop id is required!"));
     }
+
+    if (!/^[0-9a-fA-F]{24}$/.test(shopId)) {
+      return res.status(400).json({ status: "error", message: "Invalid shop id format" });
+    }
+
     const isFollowing = await prisma.followers.findFirst({
       where: {
         userId: req.user?.id,
@@ -1078,11 +1095,15 @@ export const getShopReviews = async (
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
-    const skip = (page - 1) * limit;
+const skip = (page - 1) * limit;
+
+    if (!/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+      return res.status(400).json({ status: "error", message: "Invalid shop id format" });
+    }
 
     const [reviews, total] = await Promise.all([
-      prisma.shopReviws.findMany({
-        where: { shopsId: req.params.id },
+       prisma.shopReviws.findMany({
+         where: { shopsId: req.params.id },
         skip,
         take: limit,
         orderBy: { createdAt: "desc" },
@@ -1836,6 +1857,10 @@ export const markSellerNotificationAsRead = async (
     const sellerId = req.seller.id;
     const { notificationId } = req.params;
 
+    if (!/^[0-9a-fA-F]{24}$/.test(notificationId)) {
+      return res.status(400).json({ status: "error", message: "Invalid notificationId format" });
+    }
+
     const notification = await prisma.notifications.findFirst({
       where: {
         id: notificationId,
@@ -1898,6 +1923,10 @@ export const deleteSellerNotification = async (
   try {
     const sellerId = req.seller.id;
     const { notificationId } = req.params;
+
+    if (!/^[0-9a-fA-F]{24}$/.test(notificationId)) {
+      return res.status(400).json({ status: "error", message: "Invalid notificationId format" });
+    }
 
     const notification = await prisma.notifications.findFirst({
       where: {
