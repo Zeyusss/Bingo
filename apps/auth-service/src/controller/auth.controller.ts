@@ -1221,6 +1221,14 @@ export const uploadUserImage = async (
       throw new ValidationError("Image and fileName are required");
     }
 
+    const MAX_BASE64_SIZE = 5 * 1024 * 1024; // 5MB limit
+    if (imageData.length > MAX_BASE64_SIZE) {
+      return res.status(400).json({
+        success: false,
+        message: "Image size exceeds the 5MB limit.",
+      });
+    }
+
     const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.\-_]/g, "_");
 
     if (!isValidImageBase64(imageData)) {

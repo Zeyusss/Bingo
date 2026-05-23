@@ -40,14 +40,13 @@ app.get('/', (req, res) => {
     res.send({ 'message': 'Product Service is running'});
 });
 
-
-
-
-app.use("/api-docs",swaggerUi.serve, swaggerUi.setup(swaggerDocument))
-app.get("/docs-json", (req, res) => {
+if (process.env.NODE_ENV !== "production") {
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+  app.get("/docs-json", (req, res) => {
     res.json(swaggerDocument);
-});
-
+  });
+}
+ 
 // Routes
 app.use('/api', router);
 app.use('/api/cart', cartRouter);

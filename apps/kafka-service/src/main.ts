@@ -1,3 +1,6 @@
+import * as dotenv from "dotenv";
+dotenv.config();
+
 import { kafka } from "@packages/utils/kafka";
 import {
   updateUserAnalytics,
