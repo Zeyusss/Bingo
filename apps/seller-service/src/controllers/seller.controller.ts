@@ -157,6 +157,8 @@ export const uploadImage = async (
         .json({ success: false, message: "Missing required fields." });
     }
 
+    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+
     if (!isValidImageBase64(file)) {
       return res.status(400).json({
         success: false,
@@ -166,7 +168,7 @@ export const uploadImage = async (
 
     const uploadResponse = await imagekit.upload({
       file,
-      fileName,
+      fileName: sanitizedFileName,
       folder,
     });
 

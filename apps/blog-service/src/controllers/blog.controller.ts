@@ -839,9 +839,11 @@ export const uploadBlogImage = async (
         .json({ success: false, message: "Missing required fields." });
     }
 
+    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+
     const uploadResponse = await imagekit.upload({
       file,
-      fileName,
+      fileName: sanitizedFileName,
       folder,
     });
 

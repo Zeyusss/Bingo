@@ -1221,6 +1221,8 @@ export const uploadUserImage = async (
       throw new ValidationError("Image and fileName are required");
     }
 
+    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+
     if (!isValidImageBase64(imageData)) {
       return res.status(400).json({
         success: false,
@@ -1241,7 +1243,7 @@ export const uploadUserImage = async (
 
     const uploadResponse = await imagekit.upload({
       file: imageData,
-      fileName: fileName,
+      fileName: sanitizedFileName,
       folder: folder,
     });
 
