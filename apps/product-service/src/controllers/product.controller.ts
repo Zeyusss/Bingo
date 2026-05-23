@@ -602,6 +602,23 @@ export const updateProduct = async (
       ending_date,
     } = req.body;
 
+    if (regular_price !== undefined && parseFloat(regular_price) <= 0) {
+      return next(new Error("regular_price must be greater than 0"));
+    }
+    if (sale_price !== undefined && parseFloat(sale_price) <= 0) {
+      return next(new Error("sale_price must be greater than 0"));
+    }
+    if (stock !== undefined && parseInt(stock) < 0) {
+      return next(new Error("stock cannot be negative"));
+    }
+    if (
+      sale_price !== undefined &&
+      regular_price !== undefined &&
+      parseFloat(sale_price) > parseFloat(regular_price)
+    ) {
+      return next(new Error("sale_price cannot exceed regular_price"));
+    }
+
     const whereCondition = {
       id: productId,
       Shop: {
