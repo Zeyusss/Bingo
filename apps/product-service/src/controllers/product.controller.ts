@@ -118,6 +118,11 @@ export const deleteDiscountCode = async (
     }
 
     const { id } = req.params;
+
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({ status: "error", message: "Invalid discount code id format" });
+    }
+
     const sellerId = req.seller?.id;
 
     const discountCode = await prisma.discount_codes.findUnique({

@@ -241,6 +241,11 @@ export const fetchMessages = async (
   try {
     const userId = req.user.id;
     const { conversationId } = req.params;
+
+    if (!/^[0-9a-fA-F]{24}$/.test(conversationId)) {
+      return res.status(400).json({ status: "error", message: "Invalid conversationId format" });
+    }
+
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = 10;
 

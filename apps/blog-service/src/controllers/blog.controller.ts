@@ -70,6 +70,11 @@ export const updateBlog = async (
   try {
     const sellerId = req.seller?.id;
     const { blogId } = req.params;
+
+    if (!/^[0-9a-fA-F]{24}$/.test(blogId)) {
+      return res.status(400).json({ status: "error", message: "Invalid blogId format" });
+    }
+
     const { title, content, coverImage } = req.body;
 
     if (!sellerId) {
@@ -113,6 +118,10 @@ export const deleteBlog = async (
   try {
     const sellerId = req.seller?.id;
     const { blogId } = req.params;
+
+    if (!/^[0-9a-fA-F]{24}$/.test(blogId)) {
+      return res.status(400).json({ status: "error", message: "Invalid blogId format" });
+    }
 
     if (!sellerId) {
       throw new AuthError("Unauthorized: Not a seller");
@@ -203,6 +212,11 @@ export const publishBlog = async (
     }
 
     const { blogId } = req.params;
+
+    if (!/^[0-9a-fA-F]{24}$/.test(blogId)) {
+      return res.status(400).json({ status: "error", message: "Invalid blogId format" });
+    }
+
     const adminId = req.user?.id;
 
     if (!adminId) {
@@ -244,6 +258,11 @@ export const rejectBlog = async (
     }
 
     const { blogId } = req.params;
+
+    if (!/^[0-9a-fA-F]{24}$/.test(blogId)) {
+      return res.status(400).json({ status: "error", message: "Invalid blogId format" });
+    }
+
     const adminId = req.user?.id;
 
     if (!adminId) {
@@ -283,6 +302,11 @@ export const updateComment = async (
   try {
     const userId = req.user?.id;
     const { commentId } = req.params;
+
+    if (!/^[0-9a-fA-F]{24}$/.test(commentId)) {
+      return res.status(400).json({ status: "error", message: "Invalid commentId format" });
+    }
+
     const { content } = req.body;
 
     if (!userId) throw new AuthError("Unauthorized: Not a user");
@@ -343,6 +367,10 @@ export const deleteComment = async (
   try {
     const userId = req.user?.id;
     const { commentId } = req.params;
+
+    if (!/^[0-9a-fA-F]{24}$/.test(commentId)) {
+      return res.status(400).json({ status: "error", message: "Invalid commentId format" });
+    }
 
     if (!userId) throw new AuthError("Unauthorized: Not a user");
 
@@ -462,6 +490,10 @@ export const getBlogById = async (
 ) => {
   try {
     const { blogId } = req.params;
+
+    if (!/^[0-9a-fA-F]{24}$/.test(blogId)) {
+      return res.status(400).json({ status: "error", message: "Invalid blogId format" });
+    }
 
     const blog = await prisma.blog.findFirst({
       where: {
