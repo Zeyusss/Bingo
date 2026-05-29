@@ -15,13 +15,13 @@ import {
 export async function getRevenue(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   try {
     const data = await fetchRevenueData();
     res.status(200).json(data);
   } catch (error) {
-    console.error('Error fetching revenue data:', error);
+    console.error("Error fetching revenue data:", error);
     return next(error);
   }
 }
@@ -29,7 +29,7 @@ export async function getRevenue(
 export async function getDeviceUsage(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   try {
     const data = await fetchDeviceUsage();
@@ -42,7 +42,7 @@ export async function getDeviceUsage(
 export async function getWorldActivity(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   try {
     const data = await fetchWorldActivity();
@@ -55,13 +55,13 @@ export async function getWorldActivity(
 export async function getSystemStats(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   try {
     const data = await fetchSystemStats();
     res.status(200).json(data);
   } catch (error) {
-    console.error('Error fetching system stats:', error);
+    console.error("Error fetching system stats:", error);
     return next(error);
   }
 }
@@ -69,7 +69,7 @@ export async function getSystemStats(
 export async function getResourceMonitor(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   try {
     const data = await fetchResourceMonitor();
@@ -83,7 +83,7 @@ export async function getResourceMonitor(
 export const getAllProducts = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -146,7 +146,7 @@ export const getAllProducts = async (
 export const getAllEvents = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -206,7 +206,7 @@ export const getAllEvents = async (
 export const getAllAdmins = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const admins = await prisma.users.findMany({
@@ -228,7 +228,7 @@ export const getAllAdmins = async (
 export const addNewAdmin = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { email, role } = req.body;
@@ -258,7 +258,7 @@ export const addNewAdmin = async (
 export const getAllCustomizations = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const config = await prisma.site_config.findFirst();
@@ -278,7 +278,7 @@ export const getAllCustomizations = async (
 export const getAllUsers = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -327,7 +327,7 @@ export const getAllUsers = async (
 export const getAllSellers = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -382,7 +382,7 @@ export const getAllSellers = async (
 export const blockUser = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { userId } = req.params;
@@ -407,13 +407,15 @@ export const blockUser = async (
 export const deleteUser = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { userId } = req.params;
 
     if (!/^[0-9a-fA-F]{24}$/.test(userId)) {
-      return res.status(400).json({ status: "error", message: "Invalid userId format" });
+      return res
+        .status(400)
+        .json({ status: "error", message: "Invalid userId format" });
     }
 
     await prisma.users.update({
@@ -436,7 +438,7 @@ export const deleteUser = async (
 export const updateUser = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { userId } = req.params;
@@ -461,7 +463,7 @@ export const updateUser = async (
 export const restoreUser = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { userId } = req.params;
@@ -485,13 +487,62 @@ export const restoreUser = async (
 export const blockSeller = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { sellerId } = req.params;
 
     if (!/^[0-9a-fA-F]{24}$/.test(sellerId)) {
-      return res.status(400).json({ status: "error", message: "Invalid sellerId format" });
+      return res
+        .status(400)
+        .json({ status: "error", message: "Invalid sellerId format" });
+    }
+
+    const seller = await prisma.sellers.findUnique({
+      where: { id: sellerId },
+      include: { shop: true },
+    });
+    if (!seller) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Seller not found" });
+    }
+    await prisma.sellers.update({
+      where: { id: sellerId },
+      data: { isDeleted: true, deletedAt: new Date() },
+    });
+    if (seller.shop) {
+      await prisma.shops.update({
+        where: { id: seller.shop.id },
+        data: { isDeleted: true, deletedAt: new Date() },
+      });
+      await prisma.products.updateMany({
+        where: { shopId: seller.shop.id },
+        data: { isDeleted: true, deletedAt: new Date() },
+      });
+    }
+    res.status(200).json({
+      success: true,
+      message: "Seller, shop, and products soft deleted",
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Delete seller
+export const deleteSeller = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { sellerId } = req.params;
+
+    if (!/^[0-9a-fA-F]{24}$/.test(sellerId)) {
+      return res
+        .status(400)
+        .json({ status: "error", message: "Invalid sellerId format" });
     }
 
     const seller = await prisma.sellers.findUnique({
@@ -530,7 +581,7 @@ export const blockSeller = async (
 export const updateSeller = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { sellerId } = req.params;
@@ -551,13 +602,15 @@ export const updateSeller = async (
 export const promoteUserToSeller = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { userId } = req.params;
 
     if (!/^[0-9a-fA-F]{24}$/.test(userId)) {
-      return res.status(400).json({ status: "error", message: "Invalid userId format" });
+      return res
+        .status(400)
+        .json({ status: "error", message: "Invalid userId format" });
     }
 
     const user = await prisma.users.findUnique({ where: { id: userId } });
@@ -607,13 +660,15 @@ export const promoteUserToSeller = async (
 export const demoteSellerToUser = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { sellerId } = req.params;
 
     if (!/^[0-9a-fA-F]{24}$/.test(sellerId)) {
-      return res.status(400).json({ status: "error", message: "Invalid sellerId format" });
+      return res
+        .status(400)
+        .json({ status: "error", message: "Invalid sellerId format" });
     }
 
     const seller = await prisma.sellers.findUnique({ where: { id: sellerId } });
@@ -655,7 +710,7 @@ export const demoteSellerToUser = async (
 export const restoreSeller = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { sellerId } = req.params;
@@ -688,7 +743,7 @@ export const restoreSeller = async (
 export const getUserDetails = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { userId } = req.params;
@@ -712,13 +767,15 @@ export const getUserDetails = async (
 export const getSellerDetails = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { sellerId } = req.params;
 
     if (!/^[0-9a-fA-F]{24}$/.test(sellerId)) {
-      return res.status(400).json({ status: "error", message: "Invalid sellerId format" });
+      return res
+        .status(400)
+        .json({ status: "error", message: "Invalid sellerId format" });
     }
 
     const seller = await prisma.sellers.findUnique({
@@ -770,7 +827,7 @@ export const getSellerDetails = async (
       });
       totalPurchasesAnalytics = analytics.reduce(
         (sum, a) => sum + (a.purchases || 0),
-        0
+        0,
       );
     }
 
@@ -791,7 +848,7 @@ export const getSellerDetails = async (
 export const promoteSellerToAdmin = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { sellerId } = req.params;
@@ -834,7 +891,7 @@ export const promoteSellerToAdmin = async (
 export const getConfig = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const config = await prisma.site_config.findFirst();
@@ -850,7 +907,7 @@ export const getConfig = async (
 export const addCategory = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { categoryName } = req.body;
@@ -858,8 +915,7 @@ export const addCategory = async (
       return sendApiError(res, 400, "categoryName is required");
     }
     const config = await prisma.site_config.findFirst();
-    if (!config)
-      return sendApiError(res, 500, "Site config not found");
+    if (!config) return sendApiError(res, 500, "Site config not found");
     if (config.categories.includes(categoryName)) {
       return sendApiError(res, 400, "Category already exists");
     }
@@ -884,16 +940,19 @@ export const addCategory = async (
 export const addSubcategory = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { categoryName, subcategoryName } = req.body;
     if (!categoryName || !subcategoryName) {
-      return sendApiError(res, 400, "categoryName and subcategoryName are required");
+      return sendApiError(
+        res,
+        400,
+        "categoryName and subcategoryName are required",
+      );
     }
     const config = await prisma.site_config.findFirst();
-    if (!config)
-      return sendApiError(res, 500, "Site config not found");
+    if (!config) return sendApiError(res, 500, "Site config not found");
     const subCategories = {
       ...(config.subCategories as Record<string, string[]>),
     };
@@ -922,13 +981,12 @@ export const addSubcategory = async (
 export const deleteCategory = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { name } = req.params;
     const config = await prisma.site_config.findFirst();
-    if (!config)
-      return sendApiError(res, 500, "Site config not found");
+    if (!config) return sendApiError(res, 500, "Site config not found");
     if (!config.categories.includes(name)) {
       return sendApiError(res, 404, "Category not found");
     }
@@ -955,13 +1013,12 @@ export const deleteCategory = async (
 export const deleteSubcategory = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { category, name } = req.params;
     const config = await prisma.site_config.findFirst();
-    if (!config)
-      return sendApiError(res, 500, "Site config not found");
+    if (!config) return sendApiError(res, 500, "Site config not found");
     const subCategories = {
       ...(config.subCategories as Record<string, string[]>),
     };
@@ -972,7 +1029,7 @@ export const deleteSubcategory = async (
       return sendApiError(res, 404, "Subcategory not found");
     }
     subCategories[category] = subCategories[category].filter(
-      (sub: string) => sub !== name
+      (sub: string) => sub !== name,
     );
     const updated = await prisma.site_config.update({
       where: { id: config.id },
@@ -990,7 +1047,7 @@ export const deleteSubcategory = async (
 export const reorderCategories = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { categories } = req.body;
@@ -999,12 +1056,11 @@ export const reorderCategories = async (
     }
 
     const config = await prisma.site_config.findFirst();
-    if (!config)
-      return sendApiError(res, 500, "Site config not found");
+    if (!config) return sendApiError(res, 500, "Site config not found");
 
     const existingCategories = config.categories;
     const isValid = categories.every((cat: string) =>
-      existingCategories.includes(cat)
+      existingCategories.includes(cat),
     );
 
     if (!isValid) {
@@ -1030,17 +1086,20 @@ export const reorderCategories = async (
 export const reorderSubcategories = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { categoryName, subcategories } = req.body;
     if (!categoryName || !Array.isArray(subcategories)) {
-      return sendApiError(res, 400, "categoryName and subcategories array are required");
+      return sendApiError(
+        res,
+        400,
+        "categoryName and subcategories array are required",
+      );
     }
 
     const config = await prisma.site_config.findFirst();
-    if (!config)
-      return sendApiError(res, 500, "Site config not found");
+    if (!config) return sendApiError(res, 500, "Site config not found");
 
     const subCategories = {
       ...(config.subCategories as Record<string, string[]>),
@@ -1052,7 +1111,7 @@ export const reorderSubcategories = async (
 
     const existingSubcategories = subCategories[categoryName];
     const isValid = subcategories.every((sub: string) =>
-      existingSubcategories.includes(sub)
+      existingSubcategories.includes(sub),
     );
 
     if (!isValid) {
@@ -1080,18 +1139,21 @@ export const reorderSubcategories = async (
 export const moveSubcategory = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { subcategoryName, fromCategory, toCategory } = req.body;
 
     if (!subcategoryName || !fromCategory || !toCategory) {
-      return sendApiError(res, 400, "subcategoryName, fromCategory, and toCategory are required");
+      return sendApiError(
+        res,
+        400,
+        "subcategoryName, fromCategory, and toCategory are required",
+      );
     }
 
     const config = await prisma.site_config.findFirst();
-    if (!config)
-      return sendApiError(res, 500, "Site config not found");
+    if (!config) return sendApiError(res, 500, "Site config not found");
 
     const subCategories = {
       ...(config.subCategories as Record<string, string[]>),
@@ -1110,11 +1172,15 @@ export const moveSubcategory = async (
     }
 
     if (subCategories[toCategory].includes(subcategoryName)) {
-      return sendApiError(res, 400, "Subcategory already exists in target category");
+      return sendApiError(
+        res,
+        400,
+        "Subcategory already exists in target category",
+      );
     }
 
     subCategories[fromCategory] = subCategories[fromCategory].filter(
-      (sub: string) => sub !== subcategoryName
+      (sub: string) => sub !== subcategoryName,
     );
 
     subCategories[toCategory] = [...subCategories[toCategory], subcategoryName];
@@ -1140,7 +1206,7 @@ export const moveSubcategory = async (
 export const getPendingVerifications = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { page = 1, limit = 10 } = req.query;
@@ -1204,7 +1270,7 @@ export const getPendingVerifications = async (
 export const getVerificationDetails = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { sellerId } = req.params;
@@ -1257,11 +1323,11 @@ export const getVerificationDetails = async (
 export const reviewVerification = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { sellerId } = req.params;
-    const { action, notes } = req.body; 
+    const { action, notes } = req.body;
     const adminId = req.user?.id;
 
     if (
@@ -1270,8 +1336,8 @@ export const reviewVerification = async (
     ) {
       return next(
         new ValidationError(
-          "Invalid action. Must be 'approve', 'reject', or 'require_resubmission'"
-        )
+          "Invalid action. Must be 'approve', 'reject', or 'require_resubmission'",
+        ),
       );
     }
 
@@ -1297,12 +1363,11 @@ export const reviewVerification = async (
       return next(new ValidationError("Verification is not pending review"));
     }
 
- 
     if (action === "approve" && !seller.termsAccepted) {
       return next(
         new ValidationError(
-          "Cannot approve verification: Seller has not accepted terms and conditions"
-        )
+          "Cannot approve verification: Seller has not accepted terms and conditions",
+        ),
       );
     }
 
@@ -1323,8 +1388,8 @@ export const reviewVerification = async (
       default:
         return next(
           new ValidationError(
-            "Invalid action. Must be 'approve', 'reject', or 'require_resubmission'"
-          )
+            "Invalid action. Must be 'approve', 'reject', or 'require_resubmission'",
+          ),
         );
     }
 
@@ -1338,8 +1403,6 @@ export const reviewVerification = async (
         adminReviewerId: adminId,
       },
     });
-
-   
 
     res.status(200).json({
       success: true,
@@ -1355,7 +1418,7 @@ export const reviewVerification = async (
 export const getVerificationStats = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const [
@@ -1367,41 +1430,33 @@ export const getVerificationStats = async (
       sellersWithTermsAccepted,
       sellersWithoutTerms,
     ] = await Promise.all([
-
       prisma.sellers.count(),
 
-    
       prisma.sellers.count({
         where: { verificationStatus: "Pending" },
       }),
 
-     
       prisma.sellers.count({
         where: { verificationStatus: "Approved" },
       }),
 
-   
       prisma.sellers.count({
         where: { verificationStatus: "Rejected" },
       }),
 
-    
       prisma.sellers.count({
         where: { verificationStatus: "RequiresResubmission" },
       }),
 
-    
       prisma.sellers.count({
         where: { termsAccepted: true },
       }),
 
-   
       prisma.sellers.count({
         where: { termsAccepted: false },
       }),
     ]);
 
- 
     const verificationRate =
       totalSellers > 0 ? (approvedVerifications / totalSellers) * 100 : 0;
     const termsAcceptanceRate =
@@ -1437,14 +1492,13 @@ export const getVerificationStats = async (
 export const getVerificationHistory = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { page = 1, limit = 10, status, termsAccepted, search } = req.query;
 
     const skip = (Number(page) - 1) * Number(limit);
 
-   
     const whereClause: any = {};
 
     if (status && status !== "all") {
@@ -1521,7 +1575,7 @@ export const getVerificationHistory = async (
 export const getAllNotifications = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -1529,21 +1583,18 @@ export const getAllNotifications = async (
     const status = req.query.status as string;
     const skip = (page - 1) * limit;
 
-  
     const whereClause: any = {};
-    
-    
+
     const adminUsers = await prisma.users.findMany({
       where: { role: "admin" },
-      select: { id: true }
+      select: { id: true },
     });
-    
-    const adminIds = adminUsers.map(admin => admin.id);
-    
+
+    const adminIds = adminUsers.map((admin) => admin.id);
+
     if (adminIds.length > 0) {
       whereClause.receiverId = { in: adminIds };
     } else {
-      
       return res.status(200).json({
         success: true,
         data: [],
@@ -1551,12 +1602,11 @@ export const getAllNotifications = async (
           totalNotifications: 0,
           currentPage: page,
           totalPages: 0,
-          unreadCount: 0
-        }
+          unreadCount: 0,
+        },
       });
     }
 
-    
     if (status && status !== "all") {
       whereClause.status = status;
     }
@@ -1574,16 +1624,16 @@ export const getAllNotifications = async (
           status: true,
           redirect_link: true,
           createdAt: true,
-          creatorId: true
-        }
+          creatorId: true,
+        },
       }),
       prisma.notifications.count({ where: whereClause }),
       prisma.notifications.count({
         where: {
           ...whereClause,
-          status: "Unread"
-        }
-      })
+          status: "Unread",
+        },
+      }),
     ]);
 
     const totalPages = Math.ceil(totalNotifications / limit);
@@ -1595,11 +1645,11 @@ export const getAllNotifications = async (
         totalNotifications,
         currentPage: page,
         totalPages,
-        unreadCount
-      }
+        unreadCount,
+      },
     });
   } catch (error) {
-    console.error('Error fetching notifications:', error);
+    console.error("Error fetching notifications:", error);
     return next(error);
   }
 };
@@ -1608,20 +1658,20 @@ export const getAllNotifications = async (
 export const markNotificationAsRead = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { notificationId } = req.params;
-    
+
     const notification = await prisma.notifications.update({
       where: { id: notificationId },
-      data: { status: "Read" }
+      data: { status: "Read" },
     });
 
     res.status(200).json({
       success: true,
       message: "Notification marked as read",
-      notification
+      notification,
     });
   } catch (error) {
     return next(error);
@@ -1632,18 +1682,18 @@ export const markNotificationAsRead = async (
 export const deleteNotification = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { notificationId } = req.params;
-    
+
     await prisma.notifications.delete({
-      where: { id: notificationId }
+      where: { id: notificationId },
     });
 
     res.status(200).json({
       success: true,
-      message: "Notification deleted successfully"
+      message: "Notification deleted successfully",
     });
   } catch (error) {
     return next(error);
@@ -1652,23 +1702,22 @@ export const deleteNotification = async (
 
 // Mark all notifications as read (ADMIN ONLY)
 export const markAllNotificationsAsRead = async (
-  req: Request,
+  req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
-
     await prisma.notifications.updateMany({
       where: {
         receiverId: req.user.id,
-        status: "Unread"
+        status: "Unread",
       },
-      data: { status: "Read" }
+      data: { status: "Read" },
     });
 
     res.status(200).json({
       success: true,
-      message: "All notifications marked as read"
+      message: "All notifications marked as read",
     });
   } catch (error) {
     return next(error);
@@ -1679,7 +1728,7 @@ export const markAllNotificationsAsRead = async (
 export const getUserNotifications = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -1687,12 +1736,10 @@ export const getUserNotifications = async (
     const status = req.query.status as string;
     const skip = (page - 1) * limit;
 
-    
     const whereClause: any = {
       receiverId: req.user.id,
     };
-    
-    
+
     if (status && status !== "all") {
       whereClause.status = status;
     }
@@ -1710,16 +1757,16 @@ export const getUserNotifications = async (
           status: true,
           redirect_link: true,
           createdAt: true,
-          creatorId: true
-        }
+          creatorId: true,
+        },
       }),
       prisma.notifications.count({ where: whereClause }),
       prisma.notifications.count({
         where: {
           receiverId: req.user.id,
-          status: "Unread"
-        }
-      })
+          status: "Unread",
+        },
+      }),
     ]);
 
     const totalPages = Math.ceil(totalNotifications / limit);
@@ -1731,8 +1778,8 @@ export const getUserNotifications = async (
         totalNotifications,
         currentPage: page,
         totalPages,
-        unreadCount
-      }
+        unreadCount,
+      },
     });
   } catch (error) {
     return next(error);
@@ -1743,7 +1790,7 @@ export const getUserNotifications = async (
 export const markUserNotificationAsRead = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { id } = req.params;
@@ -1771,7 +1818,7 @@ export const markUserNotificationAsRead = async (
 export const deleteUserNotification = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { id } = req.params;
@@ -1796,7 +1843,7 @@ export const deleteUserNotification = async (
 export const markAllUserNotificationsAsRead = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     await prisma.notifications.updateMany({
@@ -1822,7 +1869,7 @@ export const markAllUserNotificationsAsRead = async (
 export const deleteAllReadUserNotifications = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     await prisma.notifications.deleteMany({
@@ -1845,32 +1892,31 @@ export const deleteAllReadUserNotifications = async (
 export const deleteAllReadAdminNotifications = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
-   
     const adminUsers = await prisma.users.findMany({
       where: { role: "admin" },
-      select: { id: true }
+      select: { id: true },
     });
-    
-    const adminIds = adminUsers.map(admin => admin.id);
-    
+
+    const adminIds = adminUsers.map((admin) => admin.id);
+
     if (adminIds.length > 0) {
       await prisma.notifications.deleteMany({
         where: {
           receiverId: { in: adminIds },
-          status: "Read"
-        }
+          status: "Read",
+        },
       });
     }
 
     res.status(200).json({
       success: true,
-      message: "All read admin notifications deleted"
+      message: "All read admin notifications deleted",
     });
   } catch (error) {
-    console.error('Error deleting read admin notifications:', error);
+    console.error("Error deleting read admin notifications:", error);
     return next(error);
   }
 };
@@ -1881,50 +1927,53 @@ export const deleteAllReadAdminNotifications = async (
 export const getAllSliders = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const sliders = await prisma.sliders.findMany({
-      orderBy: { position: 'asc' },
+      orderBy: { position: "asc" },
     });
 
     // If no sliders exist, create some sample data
     if (sliders.length === 0) {
       console.log("No sliders found, creating sample data...");
-      
+
       const sampleSliders = [
         {
           title: "Welcome to Our Store",
           description: "Discover amazing products with great deals",
-          imageUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=400&fit=crop",
+          imageUrl:
+            "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=400&fit=crop",
           linkUrl: "/products",
           position: 0,
-          isActive: true
+          isActive: true,
         },
         {
           title: "Summer Sale",
           description: "Up to 50% off on selected items",
-          imageUrl: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&h=400&fit=crop",
+          imageUrl:
+            "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&h=400&fit=crop",
           linkUrl: "/sale",
           position: 1,
-          isActive: true
+          isActive: true,
         },
         {
           title: "New Arrivals",
           description: "Check out our latest collection",
-          imageUrl: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800&h=400&fit=crop",
+          imageUrl:
+            "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800&h=400&fit=crop",
           linkUrl: "/new-arrivals",
           position: 2,
-          isActive: false
-        }
+          isActive: false,
+        },
       ];
 
       await prisma.sliders.createMany({
-        data: sampleSliders
+        data: sampleSliders,
       });
 
       const newSliders = await prisma.sliders.findMany({
-        orderBy: { position: 'asc' },
+        orderBy: { position: "asc" },
       });
 
       res.status(200).json({
@@ -1946,16 +1995,16 @@ export const getAllSliders = async (
 export const createSlider = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
-    const { 
-      title, 
-      description, 
-      imageUrl, 
-      linkUrl, 
-      isActive, 
-      startDate, 
+    const {
+      title,
+      description,
+      imageUrl,
+      linkUrl,
+      isActive,
+      startDate,
       endDate,
       textColor,
       textPosition,
@@ -1963,7 +2012,7 @@ export const createSlider = async (
       buttonText,
       buttonColor,
       buttonUrl,
-      autoplaySpeed
+      autoplaySpeed,
     } = req.body;
 
     if (!title || !imageUrl) {
@@ -1972,7 +2021,7 @@ export const createSlider = async (
 
     // Get the highest position to add new slider at the end
     const lastSlider = await prisma.sliders.findFirst({
-      orderBy: { position: 'desc' },
+      orderBy: { position: "desc" },
     });
 
     const newPosition = lastSlider ? lastSlider.position + 1 : 0;
@@ -2011,17 +2060,17 @@ export const createSlider = async (
 export const updateSlider = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { sliderId } = req.params;
-    const { 
-      title, 
-      description, 
-      imageUrl, 
-      linkUrl, 
-      isActive, 
-      startDate, 
+    const {
+      title,
+      description,
+      imageUrl,
+      linkUrl,
+      isActive,
+      startDate,
       endDate,
       textColor,
       textPosition,
@@ -2029,7 +2078,7 @@ export const updateSlider = async (
       buttonText,
       buttonColor,
       buttonUrl,
-      autoplaySpeed
+      autoplaySpeed,
     } = req.body;
 
     if (!title || !imageUrl) {
@@ -2070,7 +2119,7 @@ export const updateSlider = async (
 export const deleteSlider = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { sliderId } = req.params;
@@ -2093,7 +2142,7 @@ export const deleteSlider = async (
     // Reorder remaining sliders to fill the gap
     const remainingSliders = await prisma.sliders.findMany({
       where: { position: { gt: slider.position } },
-      orderBy: { position: 'asc' },
+      orderBy: { position: "asc" },
     });
 
     for (let i = 0; i < remainingSliders.length; i++) {
@@ -2116,7 +2165,7 @@ export const deleteSlider = async (
 export const reorderSliders = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { sliderIds } = req.body;
@@ -2134,7 +2183,7 @@ export const reorderSliders = async (
     }
 
     const updatedSliders = await prisma.sliders.findMany({
-      orderBy: { position: 'asc' },
+      orderBy: { position: "asc" },
     });
 
     res.status(200).json({
@@ -2151,11 +2200,11 @@ export const reorderSliders = async (
 export const uploadSliderImage = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { file, fileName, folder } = req.body;
-    
+
     if (!file) {
       return next(new ValidationError("No image file provided"));
     }

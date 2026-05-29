@@ -9,22 +9,15 @@ import { Store, MapPin, Clock, FileText, Tag } from 'lucide-react';
 
 type FormData = {
   name: string;
-  email: string;
-  phone_number: string;
-  password: string;
-  country: string;
   bio: string;
-  sellerId: string;
   address: string;
   opening_hours: string;
   category: string[];
 };
 
 const CreateShop = ({
-  sellerId,
   setActiveStep,
 }: {
-  sellerId: string;
   setActiveStep: (step: number) => void;
 }) => {
   const {
@@ -38,7 +31,8 @@ const CreateShop = ({
     mutationFn: async (data: FormData) => {
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_SERVER_URL}/api/create-shop`,
-        data
+        data,
+        { withCredentials: true }
       );
       return response.data;
     },
@@ -51,8 +45,7 @@ const CreateShop = ({
   });
 
   const onSubmit = async (data: any) => {
-    const shopData = { ...data, sellerId };
-    shopCreateMutation.mutate(shopData);
+    shopCreateMutation.mutate(data);
   };
 
   const countWords = (text: string) => {

@@ -575,6 +575,20 @@ export const verifySeller = async (
     const seller = await prisma.sellers.create({
       data: { name, email, phone_number, country, password: hashedPassword },
     });
+
+    const accessToken = jwt.sign(
+      { id: seller.id, role: "seller" },
+      process.env.ACCESS_TOKEN_SECRET as string,
+      { expiresIn: "15m" },
+    );
+    const refreshToken = jwt.sign(
+      { id: seller.id, role: "seller" },
+      process.env.REFRESH_TOKEN_SECRET as string,
+      { expiresIn: "7d" },
+    );
+    setCookie(res, "seller_access_token", accessToken);
+    setCookie(res, "seller_refresh_token", refreshToken);
+
     return res.status(200).json({
       status: "success",
       message: "Seller registered successfully",
@@ -594,7 +608,7 @@ export const createShop = async (
   try {
     const { name, bio, address, opening_hours, website, category } =
       req.body;
-    const sellerId = req.user.id;
+    const sellerId = req.seller.id;
     if (!name || !bio || !address || !opening_hours || !category || !sellerId) {
       return next(new ValidationError("All fields are required"));
     }
@@ -632,7 +646,7 @@ export const createStripeConnectLink = async (
   next: NextFunction,
 ) => {
   try {
-    const sellerId = req.user.id;
+    const sellerId = req.seller.id;
     if (!sellerId) {
       return next(new ValidationError("Seller ID is required"));
     }

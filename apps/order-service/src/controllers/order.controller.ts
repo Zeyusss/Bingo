@@ -42,6 +42,10 @@ export const createPaymentIntent = async (
       return sendApiError(res, 400, "Session ID is required.");
     }
 
+    if (!sellerStripeAccountId) {
+      return sendApiError(res, 400, "Seller has not completed Stripe Connect onboarding yet.");
+    }
+
     const sessionKey = `payment-session:${sessionId}`;
     const sessionData = await redis.get(sessionKey);
     if (!sessionData) {

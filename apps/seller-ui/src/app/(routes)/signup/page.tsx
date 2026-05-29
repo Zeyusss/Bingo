@@ -30,7 +30,6 @@ const [canResend,setCanResend] = useState(true);
 const [timer,setTimer] = useState(60);
 const [otp,setOtp] = useState(["","","",""]);
 const [sellerData,setSellerData] = useState<FormData | null>(null);
-const [sellerId,setSellerId] = useState("");
 const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 useRedirectIfAuthenticated();
 const [phoneValidation, setPhoneValidation] = useState<PhoneNumberResult>({ isValid: false, normalized: '' });
@@ -90,13 +89,13 @@ const verifyOtpMutation = useMutation({
       {
         ...sellerData,
         otp: otp.join(""), 
-      }
+      },
+      { withCredentials: true }
     );
 
     return response.data;
   },
   onSuccess: (data) => {
-    setSellerId(data?.seller?.id);
     setActiveStep(2);
   }
 });
@@ -129,7 +128,8 @@ const connectStripe = async ()=>{
   try {
     const response = await axios.post(
       `${process.env.NEXT_PUBLIC_SERVER_URL}/api/create-stripe-link`,
-      {sellerId}
+      {},
+      { withCredentials: true }
     )
     if(response.data.url){
       window.location.href = response.data.url;
@@ -458,9 +458,9 @@ const connectStripe = async ()=>{
           )}
         </>
     )}
-    {activeStep === 2 && (
-      <CreateShop sellerId={sellerId} setActiveStep={setActiveStep}/>
-    )}
+{activeStep === 2 && (
+       <CreateShop setActiveStep={setActiveStep}/>
+     )}
     {activeStep === 3 && (
       <div className='text-center space-y-8'>
         <div>
