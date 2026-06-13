@@ -22,6 +22,7 @@ import jwt, { JsonWebTokenError } from "jsonwebtoken";
 import { clearAuthCookies, setCookie } from "../utils/cookies/setCookie";
 import Stripe from "stripe";
 import { createLogger } from "@packages/utils/logs/structured-logger";
+import { sendEmail } from "../utils/sendMail";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-06-30.basil",
@@ -145,6 +146,8 @@ export const verifyUserRegistrationOtp = async (
         password: hashedPassword,
       },
     });
+
+    await sendEmail(email, 'Welcome to Bingo!', 'user-welcome-mail', { name });
 
     return res.status(200).json({
       status: "success",
@@ -627,6 +630,7 @@ export const createShop = async (
     const shop = await prisma.shops.create({
       data: shopData,
     });
+    await sendEmail(req.seller.email, 'Shop Created - Next Steps', 'shop-created-mail', { name: req.seller.name, shopName: shop.name });
     return res.status(201).json({
       status: "success",
       message: "Shop created successfully",
