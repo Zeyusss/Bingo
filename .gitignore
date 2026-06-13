@@ -62,3 +62,10 @@ apps/*/.env
 apps/*/.env.local
 apps/*/.env.*.local
 !apps/*/.env.example"*.pem" 
+
+.claude/worktrees
+.nx/polygraph
+.nx/self-healing
+.angular
+
+__screenshots__/

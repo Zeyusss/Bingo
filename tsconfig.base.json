@@ -20,7 +20,7 @@
     "strict": true,
     "target": "es2022",
     "customConditions": [
-      "development"
+      "@auth-service/source"
     ],
     "paths": {
       "@packages/*": [
