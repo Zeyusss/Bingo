@@ -1,4 +1,4 @@
-import {
+﻿import {
   AuthError,
   NotFoundError,
   ValidationError,
@@ -485,8 +485,7 @@ export const userResetPassword = async (
     if (!(await isPasswordResetAllowed("user", email))) {
       return res.status(403).json({
         success: false,
-        message:
-          "Password reset not authorized. Please verify your OTP first.",
+        message: "Password reset not authorized. Please verify your OTP first.",
       });
     }
 
@@ -606,8 +605,7 @@ export const createShop = async (
   next: NextFunction,
 ) => {
   try {
-    const { name, bio, address, opening_hours, website, category } =
-      req.body;
+    const { name, bio, address, opening_hours, website, category } = req.body;
     const sellerId = req.seller.id;
     if (!name || !bio || !address || !opening_hours || !category || !sellerId) {
       return next(new ValidationError("All fields are required"));
@@ -1015,8 +1013,7 @@ export const sellerResetPassword = async (
     if (!(await isPasswordResetAllowed("seller", email))) {
       return res.status(403).json({
         success: false,
-        message:
-          "Password reset not authorized. Please verify your OTP first.",
+        message: "Password reset not authorized. Please verify your OTP first.",
       });
     }
 

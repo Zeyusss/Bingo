@@ -288,8 +288,8 @@ export const createProduct = async (
         category,
         subCategory,
         colors,
-        starting_date,
-        ending_date,
+        starting_date: starting_date ?? null,
+        ending_date: ending_date ?? null,
         discount_codes: discountCodes,
         sizes,
         stock,
@@ -1023,8 +1023,12 @@ export const getFilteredEvents = async (
         gte: parsedPriceRange[0],
         lte: parsedPriceRange[1],
       },
-      NOT: {
-        starting_date: null,
+      starting_date: {
+        not: null,
+        lte: new Date(),
+      },
+      ending_date: {
+        gte: new Date(),
       },
     };
     if (categories && (categories as string[]).length > 0) {
