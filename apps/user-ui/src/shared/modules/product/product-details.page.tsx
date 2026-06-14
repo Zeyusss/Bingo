@@ -78,7 +78,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
 
   const reviewsCount = reviewsData?.length || 0;
 
-  useEffect(() =>
+  useEffect(() => {
     if (!user?.id) return;
     if (!productDetails?.id) return;
     if (!location || !deviceInfo) return;
