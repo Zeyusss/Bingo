@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Ratings from "../../components/ratings";
 import Link from "next/link";
 import { useStore } from "apps/user-ui/src/store";
@@ -63,20 +64,21 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
     (item: any) => item.id === productDetails.id
   );
 
-  const [reviews, setReviews] = useState([]);
+  const { data: reviewsData } = useQuery({
+    queryKey: ["product-reviews", productDetails?.id],
+    queryFn: async () => {
+      const res = await axiosInstance.get(
+        `/product/api/get-reviews/${productDetails?.id}?page=1&limit=10`
+      );
+      return res.data.reviews;
+    },
+    enabled: !!productDetails?.id,
+    staleTime: 1000 * 60 * 5,
+  });
 
-  const fetchReviews = async () => {
-    setReviews([]);
-  };
+  const reviewsCount = reviewsData?.length || 0;
 
-  useEffect(() => {
-    if (productDetails?.id) {
-      fetchReviews();
-    }
-  }, [productDetails?.id]);
-
-  
-  useEffect(() => {
+  useEffect(() =>
     if (!user?.id) return;
     if (!productDetails?.id) return;
     if (!location || !deviceInfo) return;
@@ -310,11 +312,11 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
                   <Ratings rating={productDetails?.ratings} />
                 </div>
                 <Link
-                  href="#reviews"
+                  href="#shop-reviews"
                   className="text-blue-600 hover:underline text-sm"
                 >
-                  ({reviews.length} customer review
-                  {reviews.length !== 1 ? "s" : ""})
+                  ({reviewsCount} customer review
+                  {reviewsCount !== 1 ? "s" : ""})
                 </Link>
               </div>
             </div>
