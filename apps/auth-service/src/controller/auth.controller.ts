@@ -138,12 +138,20 @@ export const verifyUserRegistrationOtp = async (
     await verifyOtp(email, otp);
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await prisma.users.create({
+    const newUser = await prisma.users.create({
       data: {
         name,
         email,
         phone,
         password: hashedPassword,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        createdAt: true,
       },
     });
 
@@ -152,7 +160,7 @@ export const verifyUserRegistrationOtp = async (
     return res.status(200).json({
       status: "success",
       message: "User registration successful",
-      data: user,
+      data: newUser,
     });
   } catch (error) {
     return next(error);
