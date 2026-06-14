@@ -378,6 +378,7 @@ export const getShopProducts = async (
 
     const whereClause: any = {
       shopId: req?.seller?.shop?.id,
+      isDeleted: false,
     };
 
     if (search) {
