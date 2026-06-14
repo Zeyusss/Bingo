@@ -11,6 +11,7 @@ import {
   fetchSystemStats,
   fetchResourceMonitor,
 } from "../utils/dashboardData";
+import { sendEmail } from '../utils/sendMail';
 
 export async function getRevenue(
   req: Request,
@@ -1403,6 +1404,8 @@ export const reviewVerification = async (
         adminReviewerId: adminId,
       },
     });
+
+    await sendEmail(seller.email, 'Seller Verification Update', 'seller-verification-result-mail', { name: seller.name, status: newStatus, notes: notes || '' });
 
     res.status(200).json({
       success: true,
