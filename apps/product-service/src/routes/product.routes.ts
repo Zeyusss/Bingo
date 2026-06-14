@@ -32,6 +32,10 @@ import {
   getSearchFilters,
   getTrendingProducts,
   getSellerProductCategories,
+  createProductReview,
+  deleteProductReview,
+  getProductReviews,
+  getUserProductReview,
 } from "../controllers/product.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isVerifiedSeller } from "@packages/middleware/authorizeRoles";
@@ -44,6 +48,9 @@ import {
 const router: Router = express.Router();
 
 router.get("/get-categories", getCategories);
+// product reviews (authenticated users)
+router.post("/create-review", isAuthenticated, createProductReview);
+router.delete("/delete-review", isAuthenticated, deleteProductReview);
 router.post(
   "/create-discount-code",
   isAuthenticated,
@@ -99,6 +106,8 @@ router.put(
 router.get("/get-all-products", getAllProducts);
 router.get("/get-all-events", getAllEvents);
 router.get("/get-product/:slug", getProductDetails);
+router.get("/get-reviews/:id", getProductReviews);
+router.get("/get-user-review/:id", isAuthenticated, getUserProductReview);
 router.get("/get-filtered-products", getFilteredProducts);
 router.get("/get-filtered-offers", getFilteredEvents);
 router.get("/get-todays-deals", getTodaysDeals);

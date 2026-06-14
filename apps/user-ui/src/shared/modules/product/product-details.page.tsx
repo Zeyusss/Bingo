@@ -24,6 +24,7 @@ import axiosInstance from "apps/user-ui/src/utils/axiosInstance";
 import { useComparisonStore } from "../../../store/comparisonStore";
 import { isProtected } from "apps/user-ui/src/utils/protected";
 import { useRouter } from "next/navigation";
+import ProductReviews from "./ProductReviews";
 
 const ProductDetails = ({ productDetails }: { productDetails: any }) => {
   const { user} = useUser();
@@ -983,10 +984,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
           <h3 className="text-xl font-semibold mb-6">
             Ratings & Reviews of {productDetails?.title}
           </h3>
-          <div className="text-center py-12 text-gray-500">
-            <Star className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-            <p>No Reviews available yet!</p>
-          </div>
+          <ProductReviews productId={productDetails.id} />
         </div>
       </div>
 
