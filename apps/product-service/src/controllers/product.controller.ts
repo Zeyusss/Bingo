@@ -13,7 +13,7 @@ import {
   createProductSchema,
 } from "../schemas/product.schemas";
 import { Prisma } from "@prisma/client";
-
+import { recalculateProductRating } from "../utils/ratings/recalculateProductRating";
 const DEFAULT_PROFILE_IMAGE =
   "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756";
 const DEFAULT_COVER_IMAGE =
@@ -899,6 +899,228 @@ export const getProductDetails = async (
       return res.status(404).json({ message: "Product not found" });
     }
     return res.status(200).json({ product });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getProductReviews = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    if (!/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+      return res.status(400).json({ status: "error", message: "Invalid product id format" });
+    }
+
+    const [reviews, total] = await Promise.all([
+      prisma.productReviews.findMany({
+        where: { productsId: req.params.id },
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+            },
+          },
+        },
+      }),
+      prisma.productReviews.count({
+        where: { productsId: req.params.id },
+      }),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      reviews,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getUserProductReview = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const productsId = req.params.id;
+
+    if (!req.user?.id) {
+      return res.status(200).json({
+        success: true,
+        userReview: null,
+      });
+    }
+
+    const userReview = await prisma.productReviews.findFirst({
+      where: {
+        productsId,
+        userId: req.user.id,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+          },
+        },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      userReview,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const createProductReview = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { productId, rating, reviews } = req.body;
+
+    if (!productId || !rating || !reviews) {
+      return next(
+        new ValidationError("Product ID, rating, and review are required!")
+      );
+    }
+
+    const parsedRating = parseFloat(rating);
+    if (isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+      return next(new ValidationError("Rating must be between 1 and 5."));
+    }
+
+    if (!req.user?.id) {
+      return next(
+        new AuthError("Only authenticated users can create reviews.")
+      );
+    }
+
+    const product = await prisma.products.findUnique({
+      where: { id: productId },
+      select: {
+        shopId: true,
+        Shop: {
+          select: { sellerId: true },
+        },
+      },
+    });
+
+    if (!product) {
+      return next(new ValidationError("Product not found."));
+    }
+
+    if (product.Shop.sellerId === req.user.id) {
+      return next(new ValidationError("You cannot review your own product."));
+    }
+
+    const existingReview = await prisma.productReviews.findFirst({
+      where: {
+        userId: req.user.id,
+        productsId: productId,
+      },
+    });
+
+    if (existingReview) {
+      return next(new ValidationError("You have already reviewed this product."));
+    }
+
+    const review = await prisma.productReviews.create({
+      data: {
+        userId: req.user.id,
+        productsId: productId,
+        rating: parsedRating,
+        reviews,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+          },
+        },
+      },
+    });
+
+    await recalculateProductRating(prisma, productId);
+
+    res.status(201).json({
+      success: true,
+      review,
+      message: "Review created successfully!",
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const deleteProductReview = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { reviewId } = req.body;
+
+    if (!reviewId) {
+      return next(new ValidationError("Review ID is required!"));
+    }
+
+    if (!req.user?.id) {
+      return next(
+        new AuthError("Only authenticated users can delete reviews.")
+      );
+    }
+
+    const review = await prisma.productReviews.findFirst({
+      where: {
+        id: reviewId,
+        userId: req.user.id,
+      },
+    });
+
+    if (!review) {
+      return next(
+        new ValidationError(
+          "Review not found or you don't have permission to delete it."
+        )
+      );
+    }
+
+    await prisma.productReviews.delete({
+      where: { id: reviewId },
+    });
+
+    await recalculateProductRating(prisma, review.productsId);
+
+    res.status(200).json({
+      success: true,
+      message: "Review deleted successfully!",
+    });
   } catch (error) {
     return next(error);
   }
