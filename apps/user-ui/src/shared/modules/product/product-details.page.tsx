@@ -167,7 +167,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
       );
       setRecommendedProducts(res.data.products);
     } catch (error) {
-
+      console.warn("Failed to fetch recommended products:", error);
     }
   };
   useEffect(() => {
