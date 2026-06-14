@@ -4,10 +4,10 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "../../utils/axiosInstance";
 import useSeller from "../../hooks/useSeller";
-import { ArrowLeft, Loader2, CheckCircle } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle, LogOut } from "lucide-react";
 
 const EditProfilePage = () => {
-  const { seller, isLoading } = useSeller();
+  const { seller, isLoading, logout } = useSeller();
   const router = useRouter();
   const queryClient = useQueryClient();
   
@@ -91,6 +91,13 @@ const EditProfilePage = () => {
             <span>Back</span>
           </button>
           <h1 className="text-2xl font-bold text-black font-[Poppins]">Edit Shop Profile</h1>
+          <button
+            onClick={logout}
+            className="ml-auto flex items-center gap-2 px-4 py-2 bg-red-50 rounded-full hover:bg-red-100 transition-colors text-red-600 font-medium border border-red-200"
+          >
+            <LogOut size={20} />
+            <span>Logout</span>
+          </button>
         </div>
         
         <div className="bg-white rounded-lg p-8 shadow-lg border border-gray-200">

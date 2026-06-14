@@ -128,6 +128,23 @@ const Page = () => {
             </button>
           </div>
 
+          {/* Incomplete Shop Setup Banner */}
+          {seller && !seller.shop && (
+            <div className="w-full px-4 py-4 bg-yellow-50 border-b border-yellow-200">
+              <div className="max-w-4xl mx-auto flex items-center justify-between">
+                <p className="text-yellow-800 font-medium font-[Work Sans]">
+                  Your shop setup is incomplete. Complete it now to start selling.
+                </p>
+                <button
+                  onClick={() => router.push("/complete-shop-setup")}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors font-[Poppins]"
+                >
+                  Complete Setup
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="relative w-full flex justify-center bg-white">
             <Image
               src={
