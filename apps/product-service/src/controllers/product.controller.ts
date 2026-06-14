@@ -1037,6 +1037,22 @@ export const createProductReview = async (
       return next(new ValidationError("You cannot review your own product."));
     }
 
+    const hasPurchased = await prisma.order_items.findFirst({
+      where: {
+        productId,
+        order: {
+          userId: req.user.id,
+          status: "Paid",
+        },
+      },
+    });
+
+    if (!hasPurchased) {
+      return next(
+        new ValidationError("You can only review products you have purchased.")
+      );
+    }
+
     const existingReview = await prisma.productReviews.findFirst({
       where: {
         userId: req.user.id,
