@@ -39,6 +39,7 @@ model users {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   shopReviews shopReviws[]
+  productReviews productReviews[]
   images      images[]     @relation("UserImages")
   following   followers[]  @relation("user_follows")
   orders      orders[]
@@ -196,6 +197,22 @@ model products {
   totalSales            Int           @default(0)
   cartItems             cart_items[]
   wishlistItems         wishlist_items[]
+  reviews               productReviews[]
+}
+
+model productReviews {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String    @db.ObjectId
+  user       users     @relation(fields: [userId], references: [id])
+  productsId String    @db.ObjectId
+  products   products  @relation(fields: [productsId], references: [id])
+  rating     Float
+  reviews    String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([userId, productsId])
+  @@index([productsId])
 }
 
 model productAnalytics {
