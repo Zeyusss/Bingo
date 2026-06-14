@@ -1037,6 +1037,20 @@ export const createShopReview = async (
       return next(new ValidationError("You cannot review your own shop."));
     }
 
+    const hasPurchased = await prisma.orders.findFirst({
+      where: {
+        shopId,
+        userId: req.user.id,
+        status: "Paid",
+      },
+    });
+
+    if (!hasPurchased) {
+      return next(
+        new ValidationError("You can only review shops you have purchased from.")
+      );
+    }
+
     const existingReview = await prisma.shopReviws.findFirst({
       where: {
         userId: req.user.id,
