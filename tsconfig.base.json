@@ -1,14 +1,13 @@
 {
   "compilerOptions": {
+    "ignoreDeprecations": "6.0",
     "composite": true,
     "declarationMap": true,
     "emitDeclarationOnly": true,
     "importHelpers": true,
     "isolatedModules": true,
     "baseUrl": ".",
-    "lib": [
-      "es2022"
-    ],
+    "lib": ["es2022"],
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "noEmitOnError": true,
@@ -19,13 +18,9 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "es2022",
-    "customConditions": [
-      "@auth-service/source"
-    ],
+    "customConditions": ["@auth-service/source"],
     "paths": {
-      "@packages/*": [
-        "packages/*"
-      ]
+      "@packages/*": ["packages/*"]
     }
   }
 }
