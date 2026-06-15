@@ -366,104 +366,36 @@ export const createOrder = async (
       const sessionId = paymentIntent.metadata.sessionId;
       const userId = paymentIntent.metadata.userId;
 
-      const sessionKey = `payment-session:${sessionId}`;
-      const sessionData = await redis.get(sessionKey);
-      if (!sessionData) {
-        console.warn("Session data expired or missing for", sessionId);
+      const orders = await prisma.orders.findMany({
+        where: { sessionId, status: "pending_payment" },
+        include: { items: true },
+      });
+
+      if (orders.length === 0) {
+        logger.error(`No pending_payment orders found for session ${sessionId} (paymentIntent ${paymentIntent.id}). Possible duplicate webhook or data issue.`);
         await redis.set(`stripe-event:${event.id}`, 'processed', 'EX', 86400);
         return res.status(200).json({ received: true });
       }
 
-      const { cart, shippingAddressId, coupon } =
-        JSON.parse(sessionData);
-
-      const { cart: pricedCart } = await resolveCartFromDb(
-        cart.map((item: any) => ({
-          id: item.id,
-          quantity: item.quantity,
-          selectedOptions: item.selectedOptions,
-          personalizationData: item.personalizationData,
-        })),
-      );
-
       const user = await prisma.users.findUnique({ where: { id: userId } });
       if (!user) {
         logger.error(`User ${userId} not found while processing paid order for session ${sessionId}`);
+        await redis.set(`stripe-event:${event.id}`, 'processed', 'EX', 86400);
         return res.status(200).json({ received: true });
       }
       const name = user.name;
       const email = user.email;
 
-      const shopGrouped = pricedCart.reduce((acc: any, item: any) => {
-        if (!acc[item.shopId]) acc[item.shopId] = [];
-        acc[item.shopId].push(item);
-        return acc;
-      }, {});
-
-      for (const shopId in shopGrouped) {
-        const orderItems = shopGrouped[shopId];
-
-        let orderTotal = orderItems.reduce(
-          (sum: number, p: any) => sum + p.quantity * p.sale_price,
-          0
-        );
-        if (
-          coupon &&
-          coupon.discountedProductId &&
-          orderItems.some((item: any) => item.id === coupon.discountedProductId)
-        ) {
-          orderTotal = Math.max(0, orderTotal - (coupon.discountAmount || 0));
-        }
-
-        let shippingAddressSnapshot = null;
-        if (shippingAddressId) {
-          try {
-            const addressRecord = await prisma.address.findUnique({
-              where: { id: shippingAddressId },
-            });
-            if (addressRecord) {
-              shippingAddressSnapshot = {
-                name: addressRecord.name,
-                phone: addressRecord.phone,
-                street: addressRecord.street,
-                city: addressRecord.city,
-                zip: addressRecord.zip,
-                country: addressRecord.country,
-                label: addressRecord.label,
-              };
-            }
-          } catch (error) {
-            console.error("Failed to fetch address for snapshot:", error);
-          }
-        }
-
-        const order = await prisma.orders.create({
-          data: {
-            userId,
-            shopId,
-            total: orderTotal,
-            status: "Paid",
-            deliveryStatus: "Ordered",
-            shippingAddressId: shippingAddressId || null,
-            shippingAddressSnapshot,
-            couponCode: coupon?.code || null,
-            discountAmount: coupon?.discountAmount || 0,
-            items: {
-              create: orderItems.map((item: any) => ({
-                productId: item.id,
-                quantity: item.quantity,
-                price: item.sale_price,
-                selectedOptions: item.selectedOptions,
-                personalizationData: item.personalizationData || null,
-              })),
-            },
-          },
+      for (const order of orders) {
+        await prisma.orders.update({
+          where: { id: order.id },
+          data: { status: "Paid" },
         });
 
-        logger.info(`Order created successfully: ${order.id} for shop: ${shopId} with delivery status: ${order.deliveryStatus}`);
+        logger.info(`Order marked as paid: ${order.id} for shop: ${order.shopId}`);
 
-        for (const item of orderItems) {
-          const { id: productId, quantity } = item;
+        for (const item of order.items) {
+          const { productId, quantity } = item;
 
           await prisma.products.update({
             where: { id: productId },
@@ -472,11 +404,12 @@ export const createOrder = async (
               totalSales: { increment: quantity },
             },
           });
+
           await prisma.productAnalytics.upsert({
             where: { productId },
             create: {
               productId,
-              shopId,
+              shopId: order.shopId,
               purchases: quantity,
               lastViewedAt: new Date(),
             },
@@ -484,12 +417,13 @@ export const createOrder = async (
               purchases: { increment: quantity },
             },
           });
+
           const existingAnalytics = await prisma.userAnalytics.findUnique({
             where: { userId },
           });
           const newAction = {
             productId,
-            shopId,
+            shopId: order.shopId,
             action: "purchase",
             timeStamp: Date.now(),
           };
@@ -517,42 +451,38 @@ export const createOrder = async (
         }
       }
 
-      
-      const createdOrders = await prisma.orders.findMany({
-        where: { 
-          userId,
-          createdAt: {
-            gte: new Date(Date.now() - 60000) 
-          }
-        },
-        orderBy: { createdAt: 'desc' }
-      });
-      const orderId = createdOrders[0]?.id || sessionId;
+      const orderId = orders[0].id;
       const orderDate = new Date().toLocaleDateString();
       const paymentMethod = "Credit Card";
+
       let shippingAddress = "N/A";
-      if (shippingAddressId) {
-        const addressRecord = await prisma.address.findUnique({
-          where: { id: shippingAddressId },
-        });
-        if (addressRecord) {
-          shippingAddress = `${addressRecord.name}, ${addressRecord.street}, ${addressRecord.city}, ${addressRecord.country}, ${addressRecord.zip}`;
-        }
+      const firstSnapshot = orders[0].shippingAddressSnapshot as any;
+      if (firstSnapshot) {
+        shippingAddress = `${firstSnapshot.name}, ${firstSnapshot.street}, ${firstSnapshot.city}, ${firstSnapshot.country}, ${firstSnapshot.zip}`;
       }
-      const couponCode = coupon?.code || null;
-      const subtotal = pricedCart.reduce(
-        (sum: number, item: any) => sum + item.sale_price * item.quantity,
-        0
-      );
-      const discountAmount = coupon?.discountAmount || 0;
+
+      const couponCode = orders[0].couponCode || null;
+      const discountAmount = orders.reduce((sum, o) => sum + (o.discountAmount || 0), 0);
       const shippingFee = 0;
+      const subtotal = orders.reduce((sum, o) => sum + o.total, 0) + discountAmount;
       const total = subtotal - discountAmount + shippingFee;
-      const orderItemsForEmail = pricedCart.map((item: any) => ({
-        title: item.title,
-        quantity: item.quantity,
-        price: item.sale_price,
-        selectedOptions: item.selectedOptions || {},
-      }));
+
+      const productIds = orders.flatMap((o) => o.items.map((i) => i.productId));
+      const products = await prisma.products.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, title: true },
+      });
+      const productTitleById = new Map(products.map((p) => [p.id, p.title]));
+
+      const orderItemsForEmail = orders.flatMap((o) =>
+        o.items.map((item) => ({
+          title: productTitleById.get(item.productId) || "Product",
+          quantity: item.quantity,
+          price: item.price,
+          selectedOptions: item.selectedOptions || {},
+        }))
+      );
+
       const orderTrackingUrl = `${process.env.USER_UI_URL || 'http://localhost:3000'}/order/${orderId}`;
 
       await sendEmail(
@@ -574,11 +504,9 @@ export const createOrder = async (
           orderTrackingUrl,
         }
       );
-      const createdShopIds = [
-        ...new Set(pricedCart.map((item: any) => item.shopId)),
-      ];
-      const shopIds = createdShopIds as string[];
-      
+
+      const shopIds = [...new Set(orders.map((o) => o.shopId))];
+
       const sellerShops = await prisma.shops.findMany({
         where: { id: { in: shopIds } },
         select: {
@@ -588,17 +516,13 @@ export const createOrder = async (
         },
       });
 
-     
       try {
         for (const shop of sellerShops) {
-          const shopItems = cart.filter((item: any) => item.shopId === shop.id);
-          const firstProduct = shopItems[0];
-          const productTitle = firstProduct?.title || "new item";
-
-         
-          const shopOrder = createdOrders.find(order => order.shopId === shop.id);
+          const shopOrder = orders.find((o) => o.shopId === shop.id);
+          const firstItem = shopOrder?.items[0];
+          const productTitle = (firstItem && productTitleById.get(firstItem.productId)) || "new item";
           const shopOrderId = shopOrder?.id || orderId;
-          
+
           await prisma.notifications.create({
             data: {
               title: "New Order Received",
@@ -610,7 +534,6 @@ export const createOrder = async (
           });
         }
 
-      
         const adminUser = await prisma.users.findFirst({
           where: { role: "admin" },
           select: { id: true }
@@ -628,7 +551,6 @@ export const createOrder = async (
           });
         }
 
-        
         await prisma.notifications.create({
           data: {
             title: "Order Placed Successfully",
@@ -640,10 +562,9 @@ export const createOrder = async (
         });
       } catch (notificationError) {
         console.error("Error creating notifications:", notificationError);
-      
       }
 
-      await redis.del(sessionKey);
+      await redis.del(`payment-session:${sessionId}`);
       await redis.set(`stripe-event:${event.id}`, 'processed', 'EX', 86400);
       return res.status(200).json({ received: true });
     }
