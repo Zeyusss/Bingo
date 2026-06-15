@@ -224,6 +224,78 @@ export const createPaymentSession = async (
       600,
       JSON.stringify(sessionData)
     );
+
+    // Create pending_payment orders now (one per shop), so the webhook
+    // only needs to update status — never silently drops a paid order
+    // due to Redis session expiry.
+    const cartByShop = resolvedCart.reduce((acc: Record<string, typeof resolvedCart>, item) => {
+      if (!acc[item.shopId]) acc[item.shopId] = [];
+      acc[item.shopId].push(item);
+      return acc;
+    }, {});
+
+    let shippingAddressSnapshot: any = null;
+    if (selectedAddressId) {
+      try {
+        const addressRecord = await prisma.address.findUnique({
+          where: { id: selectedAddressId },
+        });
+        if (addressRecord) {
+          shippingAddressSnapshot = {
+            name: addressRecord.name,
+            phone: addressRecord.phone,
+            street: addressRecord.street,
+            city: addressRecord.city,
+            zip: addressRecord.zip,
+            country: addressRecord.country,
+            label: addressRecord.label,
+          };
+        }
+      } catch (error) {
+        console.error("Failed to fetch address for snapshot:", error);
+      }
+    }
+
+    for (const shopId in cartByShop) {
+      const shopItems = cartByShop[shopId];
+
+      let orderTotal = shopItems.reduce(
+        (sum, p) => sum + p.quantity * p.sale_price,
+        0
+      );
+      if (
+        validatedCoupon &&
+        validatedCoupon.discountedProductId &&
+        shopItems.some((item) => item.id === validatedCoupon.discountedProductId)
+      ) {
+        orderTotal = Math.max(0, orderTotal - (validatedCoupon.discountAmount || 0));
+      }
+
+      await prisma.orders.create({
+        data: {
+          userId,
+          shopId,
+          total: orderTotal,
+          status: "pending_payment",
+          sessionId,
+          deliveryStatus: "Ordered",
+          shippingAddressId: selectedAddressId || null,
+          shippingAddressSnapshot,
+          couponCode: validatedCoupon?.code || null,
+          discountAmount: validatedCoupon?.discountAmount || 0,
+          items: {
+            create: shopItems.map((item) => ({
+              productId: item.id,
+              quantity: item.quantity,
+              price: item.sale_price,
+              selectedOptions: item.selectedOptions,
+              personalizationData: item.personalizationData || null,
+            })),
+          },
+        },
+      });
+    }
+
     return res.status(201).json({ sessionId });
   } catch (error) {
     return next(error);
