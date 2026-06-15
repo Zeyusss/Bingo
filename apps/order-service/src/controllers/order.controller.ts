@@ -32,10 +32,10 @@ export const createPaymentIntent = async (
   next: NextFunction
 ) => {
   try {
-    // TODO: [PAYMOB MIGRATION] - sellerStripeAccountId is blindly trusted from req.body.
-    // When replacing Stripe with Paymob, redesign this to support multi-seller checkout:
-    // - Split payment per seller based on their items in the cart session
-    // - Never trust client-supplied destination account — read from DB or Redis session only
+    // TODO: [PAYMOB MIGRATION] - When replacing Stripe with Paymob, redesign this to support
+    // multi-seller checkout: split payment per seller based on their items in the cart session.
+    // sellerStripeAccountId is now validated against session.sellers (see validation below),
+    // but this single-seller-per-intent model will need rethinking for multi-seller carts.
     const { amount, sellerStripeAccountId, sessionId } = req.body;
 
     if (!sessionId) {
@@ -55,6 +55,17 @@ export const createPaymentIntent = async (
     const session = JSON.parse(sessionData);
     if (session.userId !== req.user.id) {
       return sendApiError(res, 403, "Forbidden");
+    }
+
+    const validSeller = session.sellers?.find(
+      (s: any) => s.stripeAccountId === sellerStripeAccountId
+    );
+    if (!validSeller) {
+      return sendApiError(
+        res,
+        403,
+        "Invalid seller payment destination for this session."
+      );
     }
 
     const expectedTotal = session.totalAmount;
