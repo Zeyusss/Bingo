@@ -288,7 +288,7 @@ export const createPaymentSession = async (
               productId: item.id,
               quantity: item.quantity,
               price: item.sale_price,
-              selectedOptions: item.selectedOptions,
+              selectedOptions: item.selectedOptions as Prisma.InputJsonValue,
               personalizationData: item.personalizationData || null,
             })),
           },
