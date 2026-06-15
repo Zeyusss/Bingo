@@ -315,8 +315,12 @@ export const createOrder = async (
       );
 
       const user = await prisma.users.findUnique({ where: { id: userId } });
-      const name = user?.name!;
-      const email = user?.email!;
+      if (!user) {
+        logger.error(`User ${userId} not found while processing paid order for session ${sessionId}`);
+        return res.status(200).json({ received: true });
+      }
+      const name = user.name;
+      const email = user.email;
 
       const shopGrouped = pricedCart.reduce((acc: any, item: any) => {
         if (!acc[item.shopId]) acc[item.shopId] = [];

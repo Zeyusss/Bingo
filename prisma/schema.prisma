@@ -274,7 +274,8 @@ model orders {
   user                    users         @relation(fields: [userId], references: [id])
   products                String[]
   total                   Float
-  status                  String
+  status                  String        @default("pending_payment")
+  sessionId               String?
   deliveryStatus          String?
   address                 String?
   paymentMethod           String?
