@@ -16,6 +16,7 @@ import {
   getAdminAbandonmentAnalytics,
 } from "../controllers/order.controller";
 import { isAdmin, isSeller } from "@packages/middleware/authorizeRoles";
+import { couponRateLimiter } from '../middleware/rateLimiter';
 
 const router: Router = express.Router();
 
@@ -32,7 +33,7 @@ router.put(
   isSeller,
   updateDeliveryStatus
 );
-router.put("/verify-coupon", isAuthenticated, verifyCouponCode);
+router.put("/verify-coupon", isAuthenticated, couponRateLimiter, verifyCouponCode);
 router.get("/get-user-orders", isAuthenticated, getUserOrders);
 router.get("/get-recent-orders", isAuthenticated, isAdmin, getRecentOrders);
 router.get ("/get-admin-orders",isAuthenticated,isAdmin,getAdminOrders)
