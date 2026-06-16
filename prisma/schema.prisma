@@ -288,6 +288,7 @@ model orders {
   discountAmount          Float?        @default(0)
   createdAt               DateTime      @default(now())
   updatedAt               DateTime      @updatedAt
+  recoveryEmailSentAt     DateTime?
   items                   order_items[]
   shop                    shops         @relation(fields: [shopId], references: [id])
   isDeleted               Boolean       @default(false)

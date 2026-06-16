@@ -175,3 +175,30 @@ export function useSystemStats() {
     refetchOnWindowFocus: false,
   });
 }
+
+export interface AbandonmentProductStat {
+  productId: string;
+  productTitle: string;
+  paidCount: number;
+  abandonedCount: number;
+  conversionRate: number;
+  revenueEarned: number;
+  revenueLost: number;
+}
+
+export interface SellerAbandonmentData {
+  shopId: string;
+  totalRevenueEarned: number;
+  totalRevenueLost: number;
+  overallConversionRate: number;
+  products: AbandonmentProductStat[];
+}
+
+export const useSellerAbandonmentAnalytics = () => {
+  return useQuery<SellerAbandonmentData>({
+    queryKey: ["seller-abandonment-analytics"],
+    queryFn: () => fetcher(`${BASE_URL}/order/api/analytics/seller-abandonment`),
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};

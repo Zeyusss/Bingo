@@ -2,7 +2,7 @@ require('dotenv').config({ path: require('path').resolve(__dirname, '../../../.e
 
 import express from 'express';
 import "./jobs/product-crone.job"
-import "./jobs/abandoned-cart.job"
+import "./jobs/cart-abandonment.job"
 import cors from 'cors';
 import { errorMiddleware } from '@packages/error-handler/error-middleware';
 import { createLoggingMiddleware, createErrorLoggingMiddleware } from '@packages/middleware/logging.middleware';

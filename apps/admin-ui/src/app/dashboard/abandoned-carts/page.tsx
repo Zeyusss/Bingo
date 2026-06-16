@@ -5,6 +5,7 @@ import { ShoppingCart, Users, TrendingUp, Mail, X, Eye, Search, Filter, ChevronL
 import { toast } from "react-hot-toast";
 import HelpModal, { HelpSection } from "../../shared/components/HelpModal";
 import HelpButton from "../../shared/components/HelpButton";
+import AbandonmentFunnel from "../../shared/components/dashboard/AbandonmentFunnel";
 
 interface AbandonedCartItem {
   id: string;
@@ -271,7 +272,11 @@ export default function AbandonedCartsPage() {
 
  
       <div className="px-6 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="mb-4">
+        <h2 className="text-lg font-semibold text-gray-800">Cart Abandonment</h2>
+        <p className="text-sm text-gray-500">Users who added items to cart but never started checkout</p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -321,7 +326,16 @@ export default function AbandonedCartsPage() {
           </div>
         </div>
 
-   
+      {/* Checkout Abandonment — orders started but payment not completed */}
+      <div className="mb-2">
+        <h2 className="text-lg font-semibold text-gray-800">Checkout Abandonment</h2>
+        <p className="text-sm text-gray-500">Users who started checkout but did not complete payment</p>
+      </div>
+      <div className="mb-8">
+        <AbandonmentFunnel />
+      </div>
+
+    
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <form onSubmit={handleSearch} className="flex-1">

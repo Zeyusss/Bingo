@@ -3,6 +3,7 @@ import React from "react";
 import ErrorBoundary from "../../../../shared/components/dashboard/ErrorBoundary";
 import VisitorAnalytics from "../../../../shared/components/dashboard/VisitorAnalytics";
 import OrderActivity from "../../../../shared/components/dashboard/OrderActivity";
+import AbandonmentAnalytics from "../../../../shared/components/dashboard/AbandonmentAnalytics";
 import RevenueChart from "../../../../shared/components/dashboard/RevenueChart";
 
 function AnalyticsContent() {
@@ -32,6 +33,13 @@ function AnalyticsContent() {
   <div className="mb-8">
     <div className="bg-white rounded-2xl shadow-lg p-6 border border-orange-100">
       <VisitorAnalytics />
+    </div>
+  </div>
+
+  {/* Checkout Abandonment — orders started but payment not completed */}
+  <div className="mb-8">
+    <div className="bg-white rounded-2xl shadow-lg p-6 border border-orange-100">
+      <AbandonmentAnalytics />
     </div>
   </div>
 </div>

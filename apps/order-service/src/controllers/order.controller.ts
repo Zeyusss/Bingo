@@ -1116,3 +1116,246 @@ export const getAdminOrders = async (
     return next(error);
   }
 };
+
+// ─── Seller abandonment analytics ────────────────────────────────────────────
+export const getSellerAbandonmentAnalytics = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const shop = await prisma.shops.findUnique({
+      where: { sellerId: req.seller.id },
+    });
+    if (!shop) {
+      return sendApiError(res, 404, "Shop not found");
+    }
+
+    const shopId = shop.id;
+
+    // Paid orders for this shop
+    const paidOrders = await prisma.orders.findMany({
+      where: { shopId, status: 'Paid', isDeleted: false },
+      include: { items: true },
+    });
+
+    // Abandoned orders for this shop
+    const abandonedOrders = await prisma.orders.findMany({
+      where: { shopId, status: 'abandoned', isDeleted: false },
+      include: { items: true },
+    });
+
+    // Build per-product stats
+    const productStats: Record<string, {
+      productId: string;
+      paidCount: number;
+      abandonedCount: number;
+      revenueEarned: number;
+      revenueLost: number;
+    }> = {};
+
+    for (const order of paidOrders) {
+      for (const item of order.items) {
+        if (!productStats[item.productId]) {
+          productStats[item.productId] = {
+            productId: item.productId,
+            paidCount: 0,
+            abandonedCount: 0,
+            revenueEarned: 0,
+            revenueLost: 0,
+          };
+        }
+        productStats[item.productId].paidCount += item.quantity;
+        productStats[item.productId].revenueEarned += item.price * item.quantity;
+      }
+    }
+
+    for (const order of abandonedOrders) {
+      for (const item of order.items) {
+        if (!productStats[item.productId]) {
+          productStats[item.productId] = {
+            productId: item.productId,
+            paidCount: 0,
+            abandonedCount: 0,
+            revenueEarned: 0,
+            revenueLost: 0,
+          };
+        }
+        productStats[item.productId].abandonedCount += item.quantity;
+        productStats[item.productId].revenueLost += item.price * item.quantity;
+      }
+    }
+
+    // Fetch product titles for the response
+    const productIds = Object.keys(productStats);
+    const products = await prisma.products.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, title: true },
+    });
+    const productTitleById = new Map(products.map((p) => [p.id, p.title]));
+
+    const stats = Object.values(productStats).map((s) => ({
+      productId: s.productId,
+      productTitle: productTitleById.get(s.productId) || 'Unknown Product',
+      paidCount: s.paidCount,
+      abandonedCount: s.abandonedCount,
+      conversionRate: s.paidCount + s.abandonedCount > 0
+        ? Math.round((s.paidCount / (s.paidCount + s.abandonedCount)) * 100)
+        : 0,
+      revenueEarned: Math.round(s.revenueEarned * 100) / 100,
+      revenueLost: Math.round(s.revenueLost * 100) / 100,
+    }));
+
+    // Sort by most abandoned first (biggest opportunity)
+    stats.sort((a, b) => b.abandonedCount - a.abandonedCount);
+
+    const totalRevenueEarned = stats.reduce((sum, s) => sum + s.revenueEarned, 0);
+    const totalRevenueLost = stats.reduce((sum, s) => sum + s.revenueLost, 0);
+
+    return res.status(200).json({
+      success: true,
+      shopId,
+      totalRevenueEarned: Math.round(totalRevenueEarned * 100) / 100,
+      totalRevenueLost: Math.round(totalRevenueLost * 100) / 100,
+      overallConversionRate: paidOrders.length + abandonedOrders.length > 0
+        ? Math.round((paidOrders.length / (paidOrders.length + abandonedOrders.length)) * 100)
+        : 0,
+      products: stats,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// ─── Admin abandonment analytics ─────────────────────────────────────────────
+export const getAdminAbandonmentAnalytics = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    // Platform-wide counts (last 30 days)
+    const [
+      totalPaid,
+      totalAbandoned,
+      recentPaid,
+      recentAbandoned,
+    ] = await Promise.all([
+      prisma.orders.count({
+        where: { status: 'Paid', isDeleted: false, createdAt: { gte: thirtyDaysAgo } },
+      }),
+      prisma.orders.count({
+        where: { status: 'abandoned', isDeleted: false, createdAt: { gte: thirtyDaysAgo } },
+      }),
+      prisma.orders.count({
+        where: { status: 'Paid', isDeleted: false, createdAt: { gte: sevenDaysAgo } },
+      }),
+      prisma.orders.count({
+        where: { status: 'abandoned', isDeleted: false, createdAt: { gte: sevenDaysAgo } },
+      }),
+    ]);
+
+    // Revenue metrics (last 30 days)
+    const [earnedResult, lostResult] = await Promise.all([
+      prisma.orders.aggregate({
+        where: { status: 'Paid', isDeleted: false, createdAt: { gte: thirtyDaysAgo } },
+        _sum: { total: true },
+      }),
+      prisma.orders.aggregate({
+        where: { status: 'abandoned', isDeleted: false, createdAt: { gte: thirtyDaysAgo } },
+        _sum: { total: true },
+      }),
+    ]);
+
+    const revenueEarned = earnedResult._sum.total || 0;
+    const revenueLost = lostResult._sum.total || 0;
+
+    // Recovery email effectiveness
+    const recoveryEmailsSent = await prisma.orders.count({
+      where: {
+        status: 'abandoned',
+        recoveryEmailSentAt: { not: null },
+        isDeleted: false,
+        createdAt: { gte: thirtyDaysAgo },
+      },
+    });
+
+    // Top abandoned products platform-wide (last 30 days)
+    const abandonedOrderItems = await prisma.order_items.findMany({
+      where: {
+        order: {
+          status: 'abandoned',
+          isDeleted: false,
+          createdAt: { gte: thirtyDaysAgo },
+        },
+      },
+      select: { productId: true, quantity: true, price: true },
+    });
+
+    const productAbandonStats: Record<string, { count: number; revenueLost: number }> = {};
+    for (const item of abandonedOrderItems) {
+      if (!productAbandonStats[item.productId]) {
+        productAbandonStats[item.productId] = { count: 0, revenueLost: 0 };
+      }
+      productAbandonStats[item.productId].count += item.quantity;
+      productAbandonStats[item.productId].revenueLost += item.price * item.quantity;
+    }
+
+    const topAbandonedProductIds = Object.entries(productAbandonStats)
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 10)
+      .map(([id]) => id);
+
+    const topProducts = await prisma.products.findMany({
+      where: { id: { in: topAbandonedProductIds } },
+      select: { id: true, title: true },
+    });
+    const productTitleById = new Map(topProducts.map((p) => [p.id, p.title]));
+
+    const topAbandonedProducts = topAbandonedProductIds.map((id) => ({
+      productId: id,
+      productTitle: productTitleById.get(id) || 'Unknown Product',
+      abandonedCount: productAbandonStats[id].count,
+      revenueLost: Math.round(productAbandonStats[id].revenueLost * 100) / 100,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      period: 'last_30_days',
+      funnel: {
+        totalCheckoutsStarted: totalPaid + totalAbandoned,
+        totalCompleted: totalPaid,
+        totalAbandoned,
+        conversionRate: totalPaid + totalAbandoned > 0
+          ? Math.round((totalPaid / (totalPaid + totalAbandoned)) * 100)
+          : 0,
+        abandonmentRate: totalPaid + totalAbandoned > 0
+          ? Math.round((totalAbandoned / (totalPaid + totalAbandoned)) * 100)
+          : 0,
+      },
+      last7Days: {
+        completed: recentPaid,
+        abandoned: recentAbandoned,
+        conversionRate: recentPaid + recentAbandoned > 0
+          ? Math.round((recentPaid / (recentPaid + recentAbandoned)) * 100)
+          : 0,
+      },
+      revenue: {
+        earned: Math.round(revenueEarned * 100) / 100,
+        lost: Math.round(revenueLost * 100) / 100,
+        recoveryOpportunity: Math.round(revenueLost * 100) / 100,
+      },
+      recovery: {
+        emailsSent: recoveryEmailsSent,
+        pendingRecovery: totalAbandoned - recoveryEmailsSent,
+      },
+      topAbandonedProducts,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};

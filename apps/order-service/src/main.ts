@@ -10,6 +10,7 @@ import cors from "cors"
 import bodyParser from "body-parser";
 import router from './routes/order.route';
 import { createOrder } from './controllers/order.controller';
+import './jobs/order-lifecycle.job';
 
 const app = express();
 

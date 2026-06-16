@@ -12,6 +12,8 @@ import {
   getUserOrders,
   getRecentOrders,
   getAdminOrders,
+  getSellerAbandonmentAnalytics,
+  getAdminAbandonmentAnalytics,
 } from "../controllers/order.controller";
 import { isAdmin, isSeller } from "@packages/middleware/authorizeRoles";
 
@@ -34,4 +36,6 @@ router.put("/verify-coupon", isAuthenticated, verifyCouponCode);
 router.get("/get-user-orders", isAuthenticated, getUserOrders);
 router.get("/get-recent-orders", isAuthenticated, isAdmin, getRecentOrders);
 router.get ("/get-admin-orders",isAuthenticated,isAdmin,getAdminOrders)
+router.get("/analytics/seller-abandonment", isAuthenticated, isSeller, getSellerAbandonmentAnalytics);
+router.get("/analytics/admin-abandonment", isAuthenticated, isAdmin, getAdminAbandonmentAnalytics);
 export default router;
