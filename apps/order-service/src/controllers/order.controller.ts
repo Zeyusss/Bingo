@@ -389,7 +389,7 @@ export const createOrder = async (
       for (const order of orders) {
         await prisma.orders.update({
           where: { id: order.id },
-          data: { status: "Paid" },
+          data: { status: "Paid", paymentIntentId: paymentIntent.id },
         });
 
         logger.info(`Order marked as paid: ${order.id} for shop: ${order.shopId}`);
@@ -1333,6 +1333,77 @@ export const getAdminAbandonmentAnalytics = async (
         pendingRecovery: totalAbandoned - recoveryEmailsSent,
       },
       topAbandonedProducts,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// cancel order
+export const cancelOrder = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { orderId } = req.params;
+
+    if (!orderId) {
+      return next(new ValidationError("Order ID is required."));
+    }
+
+    const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(orderId);
+    if (!isValidObjectId) {
+      return next(new NotFoundError("Invalid order ID format."));
+    }
+
+    const order = await prisma.orders.findUnique({
+      where: { id: orderId },
+    });
+
+    if (!order || order.isDeleted) {
+      return next(new NotFoundError("Order not found."));
+    }
+
+    // Only the order owner can cancel
+    if (order.userId !== req.user.id) {
+      return res.status(403).json({ success: false, message: "Forbidden." });
+    }
+
+    // Can only cancel paid orders
+    if (order.status !== "Paid") {
+      return next(new ValidationError("Only paid orders can be cancelled."));
+    }
+
+    // Can only cancel if not yet packed
+    const nonCancellableStatuses = ["Packed", "Shipped", "Out for Delivery", "Delivered"];
+    if (order.deliveryStatus && nonCancellableStatuses.includes(order.deliveryStatus)) {
+      return next(new ValidationError("Order cannot be cancelled after it has been packed."));
+    }
+
+    // Process refund via payment abstraction
+    const { processRefund } = await import('../utils/processRefund');
+    const refundResult = await processRefund({
+      id: order.id,
+      paymentMethod: order.paymentMethod,
+      paymentIntentId: order.paymentIntentId,
+      total: order.total,
+    });
+
+    // Update order status
+    await prisma.orders.update({
+      where: { id: orderId },
+      data: {
+        status: "Cancelled",
+        deliveryStatus: "Cancelled",
+        updatedAt: new Date(),
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Order cancelled successfully.",
+      refund: refundResult,
     });
   } catch (error) {
     return next(error);

@@ -276,6 +276,7 @@ model orders {
   total                   Float
   status                  String        @default("pending_payment")
   sessionId               String?
+  paymentIntentId         String?
   deliveryStatus          String?
   address                 String?
   paymentMethod           String?

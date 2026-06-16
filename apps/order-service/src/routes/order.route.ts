@@ -14,6 +14,7 @@ import {
   getAdminOrders,
   getSellerAbandonmentAnalytics,
   getAdminAbandonmentAnalytics,
+  cancelOrder,
 } from "../controllers/order.controller";
 import { isAdmin, isSeller } from "@packages/middleware/authorizeRoles";
 import { couponRateLimiter } from '../middleware/rateLimiter';
@@ -34,6 +35,7 @@ router.put(
   updateDeliveryStatus
 );
 router.put("/verify-coupon", isAuthenticated, couponRateLimiter, verifyCouponCode);
+router.put("/cancel-order/:orderId", isAuthenticated, cancelOrder);
 router.get("/get-user-orders", isAuthenticated, getUserOrders);
 router.get("/get-recent-orders", isAuthenticated, isAdmin, getRecentOrders);
 router.get ("/get-admin-orders",isAuthenticated,isAdmin,getAdminOrders)
