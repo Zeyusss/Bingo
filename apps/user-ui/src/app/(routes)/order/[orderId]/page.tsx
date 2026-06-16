@@ -1,8 +1,9 @@
 "use client";
 import axiosInstance from "apps/user-ui/src/utils/axiosInstance";
-import { Loader2 } from "lucide-react";
+import { Loader2, XCircle } from "lucide-react";
 import { useParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 
 const page = () => {
   const params = useParams();
@@ -10,6 +11,29 @@ const page = () => {
 
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
+
+  const canCancel =
+    order?.status === "Paid" &&
+    (!order?.deliveryStatus || order?.deliveryStatus === "Ordered");
+
+  const handleCancel = async () => {
+    if (!confirm("Are you sure you want to cancel this order? This cannot be undone.")) return;
+    try {
+      setCancelling(true);
+      await axiosInstance.put(`/order/api/cancel-order/${orderId}`);
+      toast.success("Order cancelled successfully.");
+      setOrder((prev: any) => ({
+        ...prev,
+        status: "Cancelled",
+        deliveryStatus: "Cancelled",
+      }));
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to cancel order.");
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -128,6 +152,22 @@ const page = () => {
           })}
         </div>
       </div>
+      {canCancel && (
+        <div className="mb-4">
+          <button
+            onClick={handleCancel}
+            disabled={cancelling}
+            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium disabled:opacity-50"
+          >
+            {cancelling ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <XCircle className="w-4 h-4" />
+            )}
+            {cancelling ? "Cancelling..." : "Cancel Order"}
+          </button>
+        </div>
+      )}
       <div className="mb-6 space-y-1 text-sm text-gray-700">
         <p>
           <span className="font-semibold">Payment Status</span>{" "}
