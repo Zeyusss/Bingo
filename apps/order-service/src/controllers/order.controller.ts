@@ -996,33 +996,12 @@ export const getUserOrders = async (
       },
     });
 
-    const ordersWithAddresses = await Promise.all(
-      orders.map(async (order) => {
-        let shippingAddress = null;
-        if (order.shippingAddressId) {
-          try {
-            shippingAddress = await prisma.address.findUnique({
-              where: { id: order.shippingAddressId },
-            });
-          } catch (error) {
-            console.error(
-              `Failed to fetch address for order ${order.id}:`,
-              error
-            );
-          }
-        }
-        const finalShippingAddress =
-          shippingAddress || order.shippingAddressSnapshot;
-        return {
-          ...order,
-          shippingAddress: finalShippingAddress,
-        };
-      })
-    );
-
-    res.status(201).json({
+    res.status(200).json({
       success: true,
-      orders: ordersWithAddresses,
+      orders: orders.map((order) => ({
+        ...order,
+        shippingAddress: order.shippingAddressSnapshot,
+      })),
     });
   } catch (error) {
     return next(error);
@@ -1056,23 +1035,23 @@ export const getRecentOrders = async (
     });
 
 
-    const ordersWithProducts = await Promise.all(
-      orders.map(async (order) => {
-        if (order.items.length > 0) {
-          const product = await prisma.products.findUnique({
-            where: { id: order.items[0].productId },
-            select: { id: true, title: true, slug: true },
-          });
-          return {
-            ...order,
-            items: order.items.map((item, index) => 
-              index === 0 ? { ...item, product } : item
-            ),
-          };
-        }
-        return order;
-      })
-    );
+    const productIds = orders
+      .filter((order) => order.items.length > 0)
+      .map((order) => order.items[0].productId);
+
+    const products = await prisma.products.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, title: true, slug: true },
+    });
+
+    const productMap = new Map(products.map((p) => [p.id, p]));
+
+    const ordersWithProducts = orders.map((order) => ({
+      ...order,
+      items: order.items.map((item, index) =>
+        index === 0 ? { ...item, product: productMap.get(item.productId) ?? null } : item
+      ),
+    }));
 
     res.json({ success: true, orders: ordersWithProducts });
   } catch (error) {
