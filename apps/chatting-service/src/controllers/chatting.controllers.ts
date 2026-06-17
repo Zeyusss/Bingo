@@ -68,83 +68,67 @@ export const newConversation = async (
 };
 
 // get user conv
-export const getUserConversations = async (
-  req: any,
-  res: Response,
-  next: NextFunction
-) => {
+export const getUserConversations = async (req: any, res: Response, next: NextFunction) => {
   try {
     const userId = req.user.id;
 
     const conversations = await prisma.conversationGroup.findMany({
-      where: {
-        participantIds: {
-          has: userId,
-        },
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
+      where: { participantIds: { has: userId } },
+      orderBy: { updatedAt: "desc" },
     });
+
+    const conversationIds = conversations.map((c) => c.id);
+
+    const [allParticipants, lastMessages] = await Promise.all([
+      prisma.participant.findMany({
+        where: { conversationId: { in: conversationIds }, sellerId: { not: null } },
+      }),
+      prisma.message.findMany({
+        where: { conversationId: { in: conversationIds } },
+        orderBy: { createdAt: "desc" },
+        distinct: ["conversationId"],
+      }),
+    ]);
+
+    const sellerIds = allParticipants.map((p) => p.sellerId).filter(Boolean) as string[];
+    const sellers = await prisma.sellers.findMany({
+      where: { id: { in: sellerIds } },
+      include: { shop: { include: { avatar: true } } },
+    });
+
+    const participantMap = new Map(allParticipants.map((p) => [p.conversationId, p]));
+    const sellerMap = new Map(sellers.map((s) => [s.id, s]));
+    const lastMessageMap = new Map(lastMessages.map((m) => [m.conversationId, m]));
+
+    const onlineChecks = await Promise.all(
+      allParticipants.map((p) => p.sellerId ? redis.get(`online:seller:${p.sellerId}`) : Promise.resolve(null))
+    );
+    const onlineMap = new Map(allParticipants.map((p, i) => [p.sellerId, !!onlineChecks[i]]));
+
     const responseData = await Promise.all(
       conversations.map(async (group) => {
-        const sellerParticipant = await prisma.participant.findFirst({
-          where: {
-            conversationId: group.id,
-            sellerId: { not: null },
-          },
-        });
-
-        let seller = null;
-        if (sellerParticipant?.sellerId) {
-          seller = await prisma.sellers.findUnique({
-            where: {
-              id: sellerParticipant.sellerId,
-            },
-            include: {
-              shop: {
-                include: {
-                  avatar: true,
-                },
-              },
-            },
-          });
-        }
-
-        const lastMessage = await prisma.message.findFirst({
-          where: {
-            conversationId: group.id,
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-        });
-
-        let isOnline = false;
-        if (sellerParticipant?.sellerId) {
-          const redisKey = `online:seller:${sellerParticipant.sellerId}`;
-          const redisResult = await redis.get(redisKey);
-          isOnline = !!redisResult;
-        }
-
+        const participant = participantMap.get(group.id);
+        const seller = participant?.sellerId ? sellerMap.get(participant.sellerId) : null;
+        const lastMessage = lastMessageMap.get(group.id);
+        const isOnline = participant?.sellerId ? (onlineMap.get(participant.sellerId) ?? false) : false;
         const unreadCount = await getUnseenCount("user", group.id);
 
         return {
           conversationId: group.id,
           seller: {
-              id: seller?.id || null,
+            id: seller?.id || null,
             name: seller?.shop?.name || "Unknown",
             isOnline,
-            lastSeenAt: sellerParticipant?.lastSeenAt ?? null,
+            lastSeenAt: participant?.lastSeenAt ?? null,
             avatar: seller?.shop?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756",
           },
-          lastMessage:
-            lastMessage?.content || "Say something to start a conversation",
+          lastMessage: lastMessage?.content || "Say something to start a conversation",
           lastMessageAt: lastMessage?.createdAt || group.updatedAt,
           unreadCount,
         };
       })
     );
+
     return res.status(200).json({ conversations: responseData });
   } catch (error) {
     return next(error);
@@ -153,61 +137,49 @@ export const getUserConversations = async (
 
 // get seller conv
 
-export const getSellerConversations = async (
-  req: any,
-  res: Response,
-  next: NextFunction
-) => {
+export const getSellerConversations = async (req: any, res: Response, next: NextFunction) => {
   try {
     const sellerId = req.seller.id;
 
     const conversations = await prisma.conversationGroup.findMany({
-      where: {
-        participantIds: {
-          has: sellerId,
-        },
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
+      where: { participantIds: { has: sellerId } },
+      orderBy: { updatedAt: "desc" },
     });
+
+    const conversationIds = conversations.map((c) => c.id);
+
+    const [allParticipants, lastMessages] = await Promise.all([
+      prisma.participant.findMany({
+        where: { conversationId: { in: conversationIds }, userId: { not: null } },
+      }),
+      prisma.message.findMany({
+        where: { conversationId: { in: conversationIds } },
+        orderBy: { createdAt: "desc" },
+        distinct: ["conversationId"],
+      }),
+    ]);
+
+    const userIds = allParticipants.map((p) => p.userId).filter(Boolean) as string[];
+    const users = await prisma.users.findMany({
+      where: { id: { in: userIds } },
+      include: { avatar: true },
+    });
+
+    const participantMap = new Map(allParticipants.map((p) => [p.conversationId, p]));
+    const userMap = new Map(users.map((u) => [u.id, u]));
+    const lastMessageMap = new Map(lastMessages.map((m) => [m.conversationId, m]));
+
+    const onlineChecks = await Promise.all(
+      allParticipants.map((p) => p.userId ? redis.get(`online:user:${p.userId}`) : Promise.resolve(null))
+    );
+    const onlineMap = new Map(allParticipants.map((p, i) => [p.userId, !!onlineChecks[i]]));
+
     const responseData = await Promise.all(
       conversations.map(async (group) => {
-        const userParticipant = await prisma.participant.findFirst({
-          where: {
-            conversationId: group.id,
-            userId: { not: null },
-          },
-        });
-
-        let user = null;
-        if (userParticipant?.userId) {
-          user = await prisma.users.findUnique({
-            where: {
-              id: userParticipant.userId,
-            },
-            include: {
-              avatar: true,
-            },
-          });
-        }
-
-        const lastMessage = await prisma.message.findFirst({
-          where: {
-            conversationId: group.id,
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-        });
-
-        let isOnline = false;
-        if (userParticipant?.userId) {
-          const redisKey = `online:user:${userParticipant.userId}`;
-          const redisResult = await redis.get(redisKey);
-          isOnline = !!redisResult;
-        }
-
+        const participant = participantMap.get(group.id);
+        const user = participant?.userId ? userMap.get(participant.userId) : null;
+        const lastMessage = lastMessageMap.get(group.id);
+        const isOnline = participant?.userId ? (onlineMap.get(participant.userId) ?? false) : false;
         const unreadCount = await getUnseenCount("seller", group.id);
 
         return {
@@ -216,16 +188,16 @@ export const getSellerConversations = async (
             id: user?.id || null,
             name: user?.name || "Unknown",
             isOnline,
-            lastSeenAt: userParticipant?.lastSeenAt ?? null,
+            lastSeenAt: participant?.lastSeenAt ?? null,
             avatar: user?.avatar?.url || "https://ik.imagekit.io/w7lwh7wre/profile.webp?updatedAt=1754240423756",
           },
-          lastMessage:
-            lastMessage?.content || "Say something to start a conversation",
+          lastMessage: lastMessage?.content || "Say something to start a conversation",
           lastMessageAt: lastMessage?.createdAt || group.updatedAt,
           unreadCount,
         };
       })
     );
+
     return res.status(200).json({ conversations: responseData });
   } catch (error) {
     return next(error);
@@ -266,8 +238,6 @@ export const fetchMessages = async (
       return next(new AuthError("Access denied to this conversation"));
     }
 
-    await clearUnseenCount("user", conversationId);
-
     const sellerParticipant = await prisma.participant.findFirst({
       where: {
         conversationId,
@@ -298,8 +268,13 @@ export const fetchMessages = async (
       where: { conversationId },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
-      take: pageSize,
+      take: pageSize + 1,
     });
+
+    const hasMore = messages.length > pageSize;
+    if (hasMore) messages.pop();
+
+    await clearUnseenCount("user", conversationId);
 
     return res.status(200).json({
       messages,
@@ -311,7 +286,7 @@ export const fetchMessages = async (
         lastSeenAt: sellerParticipant?.lastSeenAt ?? null,
       },
       currentPage: page,
-      hasMore: messages.length === pageSize,
+      hasMore,
     });
   } catch (error) {
     return next(error);
@@ -327,6 +302,11 @@ export const fetchSellerMessages = async (
   try {
     const sellerId = req.seller.id;
     const { conversationId } = req.params;
+
+    if (!/^[0-9a-fA-F]{24}$/.test(conversationId)) {
+      return res.status(400).json({ status: "error", message: "Invalid conversationId format" });
+    }
+
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = 10;
 
@@ -345,8 +325,6 @@ export const fetchSellerMessages = async (
     if (!conversation.participantIds.includes(sellerId)) {
       return next(new AuthError("Access denied to this conversation"));
     }
-
-    await clearUnseenCount("seller", conversationId);
 
     const userParticipant = await prisma.participant.findFirst({
       where: {
@@ -373,8 +351,13 @@ export const fetchSellerMessages = async (
       where: { conversationId },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
-      take: pageSize,
+      take: pageSize + 1,
     });
+
+    const hasMore = messages.length > pageSize;
+    if (hasMore) messages.pop();
+
+    await clearUnseenCount("seller", conversationId);
 
     return res.status(200).json({
       messages,
@@ -386,7 +369,7 @@ export const fetchSellerMessages = async (
         lastSeenAt: userParticipant?.lastSeenAt ?? null,
       },
       currentPage: page,
-      hasMore: messages.length === pageSize,
+      hasMore,
     });
   } catch (error) {
     return next(error);

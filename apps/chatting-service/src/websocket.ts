@@ -45,6 +45,11 @@ export async function createWebSocketServer(server: HttpServer) {
     connectedUsers.set(registeredUserId, ws);
     console.log(`registered websocket for userId:${registeredUserId}`);
 
+    let messageCount = 0;
+    const RATE_LIMIT = 30;
+    const RATE_WINDOW_MS = 60 * 1000;
+    setInterval(() => { messageCount = 0; }, RATE_WINDOW_MS);
+
     const isSeller = decoded.role === "seller";
     const redisKey = isSeller
       ? `online:seller:${rawUserId}`
@@ -77,6 +82,11 @@ export async function createWebSocketServer(server: HttpServer) {
     }, 60000);
 
     ws.on("message", async (rawMessage) => {
+      messageCount++;
+      if (messageCount > RATE_LIMIT) {
+        ws.send(JSON.stringify({ type: "ERROR", message: "Rate limit exceeded. Slow down." }));
+        return;
+      }
       try {
         const messageStr = rawMessage.toString();
         const data: IncomingMessage = JSON.parse(messageStr);
@@ -107,6 +117,20 @@ export async function createWebSocketServer(server: HttpServer) {
           console.warn("Invalid message format :", data);
           return;
         }
+
+        const conversation = await prisma.conversationGroup.findUnique({
+          where: { id: conversationId },
+        });
+        if (!conversation || !conversation.participantIds.includes(rawUserId)) {
+          console.warn(`Unauthorized message attempt by ${rawUserId} on conversation ${conversationId}`);
+          return;
+        }
+
+        if (!messageBody || messageBody.length > 2000) {
+          console.warn(`Message rejected: body missing or exceeds 2000 chars from ${rawUserId}`);
+          return;
+        }
+
         const now = new Date().toISOString();
         const messagePayload = {
           conversationId,
@@ -129,11 +153,6 @@ export async function createWebSocketServer(server: HttpServer) {
         const unseenKey = `${receiverKey}_${conversationId}`;
         const prevCount = unseenCounts.get(unseenKey) || 0;
         unseenCounts.set(unseenKey, prevCount + 1);
-
-        // Also increment in Redis
-        const receiverType = senderType === "user" ? "seller" : "user";
-        const redisKey = `unseen:${receiverType}_${conversationId}`;
-        await redis.incr(redisKey);
 
         const receiverSocket = connectedUsers.get(receiverKey);
         if (receiverSocket && receiverSocket.readyState === WebSocket.OPEN) {
