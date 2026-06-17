@@ -459,17 +459,11 @@ export const getShopProducts = async (
       take: limitNum,
     });
 
-    const allProducts = await prisma.products.findMany({
-      where: {
-        shopId: req?.seller?.shop?.id,
-      },
-      select: {
-        stock: true,
-      },
-    });
-
-    const inStockCount = allProducts.filter(p => p.stock > 0).length;
-    const outOfStockCount = allProducts.filter(p => p.stock <= 0).length;
+    const shopId = req?.seller?.shop?.id;
+    const [inStockCount, outOfStockCount] = await Promise.all([
+      prisma.products.count({ where: { shopId, stock: { gt: 0 } } }),
+      prisma.products.count({ where: { shopId, stock: { lte: 0 } } }),
+    ]);
 
     const totalPages = Math.ceil(totalProducts / limitNum);
     const hasNext = pageNum < totalPages;
@@ -1528,6 +1522,12 @@ export const getFilteredShops = async (
       case "name":
         orderBy = { name: "asc" };
         break;
+      case "rating":
+        orderBy = { ratings: "desc" };
+        break;
+      case "followers":
+        orderBy = { followers: { _count: "desc" } };
+        break;
       case "newest":
       default:
         orderBy = { createdAt: "desc" };
@@ -1588,16 +1588,6 @@ export const getFilteredShops = async (
           (shop.rating && shop.rating >= parsedMinRating)
         );
       });
-
-    if (sortBy === "rating") {
-      shopsWithRatings.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    } else if (sortBy === "followers") {
-      shopsWithRatings.sort(
-        (a, b) =>
-          ((b as any).followers?.length || 0) -
-          ((a as any).followers?.length || 0)
-      );
-    }
 
     const totalPages = Math.ceil(total / parsedLimit);
 
@@ -1668,21 +1658,14 @@ export const topShops = async (
   next: NextFunction
 ) => {
   try {
-    const orders = await prisma.orders.findMany({
-      select: { shopId: true, total: true },
+    const salesAgg = await prisma.orders.groupBy({
+      by: ['shopId'],
+      _sum: { total: true },
+      orderBy: { _sum: { total: 'desc' } },
+      take: 10,
+      where: { shopId: { not: null } },
     });
-
-    const salesByShop: Record<string, number> = {};
-    for (const order of orders) {
-      if (!order.shopId) continue;
-      salesByShop[order.shopId] =
-        (salesByShop[order.shopId] || 0) + (order.total || 0);
-    }
-
-    const topShopIds = Object.entries(salesByShop)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([shopId]) => shopId);
+    const topShopIds = salesAgg.map(s => s.shopId as string);
     const shops = await prisma.shops.findMany({
       where: {
         id: { in: topShopIds },
@@ -1699,19 +1682,19 @@ export const topShops = async (
       },
     });
 
+    const salesMap = Object.fromEntries(
+      salesAgg.map(s => [s.shopId, s._sum.total || 0])
+    );
     const enrichedShops = shops.map((shop) => {
       return {
         ...shop,
         avatar: shop.avatar?.url || DEFAULT_PROFILE_IMAGE,
         coverBanner: shop.coverBanner || DEFAULT_COVER_IMAGE,
         followersCount: shop._count.followers,
-        totalSales: salesByShop[shop.id] || 0,
+        totalSales: salesMap[shop.id] || 0,
       };
     });
-    const top10Shops = enrichedShops.sort(
-      (a, b) => b.totalSales - a.totalSales
-    );
-    return res.status(200).json({ shops: top10Shops });
+    return res.status(200).json({ shops: enrichedShops });
   } catch (error) {
     return next(error);
   }

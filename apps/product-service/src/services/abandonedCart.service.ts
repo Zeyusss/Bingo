@@ -1,12 +1,10 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '@packages/libs/prisma';
 import nodemailer from 'nodemailer';
 import ejs from 'ejs';
 import path from 'path';
 import dotenv from 'dotenv';
 
 dotenv.config();
-
-const prisma = new PrismaClient();
 
 
 const transporter = nodemailer.createTransport({
@@ -80,22 +78,12 @@ interface AbandonedCartData {
 
 export const getAbandonedCarts = async (hoursThreshold: number = 24): Promise<AbandonedCartData[]> => {
   try {
-    const thresholdDate = new Date();
-    thresholdDate.setHours(thresholdDate.getHours() - hoursThreshold);
-
-    
-    const now = new Date();
-    const localOffset = now.getTimezoneOffset() * 60000;
-    const localNow = new Date(now.getTime() - localOffset);
-    const localThresholdDate = new Date(localNow.getTime() - (hoursThreshold * 60 * 60 * 1000));
-
-
-
+    const thresholdDate = new Date(Date.now() - hoursThreshold * 60 * 60 * 1000);
 
     const abandonedCartItems = await prisma.cart_items.findMany({
       where: {
         updatedAt: {
-          lt: localThresholdDate
+          lt: thresholdDate
         }
       },
       include: {
@@ -271,30 +259,20 @@ export const processAbandonedCarts = async (): Promise<{ sent: number; errors: n
 };
 
 
-export const trackAbandonedCart = async (cartData: {
-  userId: string;
-  userEmail: string;
-  userName: string;
-  items: Array<{
-    productId: string;
-    quantity: number;
-    price: number;
-    productName: string;
-    productImage?: string;
-  }>;
-  totalAmount: number;
-}) => {
+export const trackAbandonedCart = async (userId: string, cartItems: any[]) => {
   try {
-    
-    console.log(`Abandoned cart tracked for user ${cartData.userId} with ${cartData.items.length} items`);
-    
-    return {
-      success: true,
-      message: 'Abandoned cart tracked successfully'
-    };
+    if (!userId || !cartItems || cartItems.length === 0) return { success: false };
+
+    await prisma.abandoned_carts.upsert({
+      where: { userId },
+      update: {},
+      create: { userId },
+    });
+
+    return { success: true };
   } catch (error) {
-    console.error('Error tracking abandoned cart:', error);
-    throw error;
+    console.error('trackAbandonedCart error:', error);
+    return { success: false };
   }
 };
 

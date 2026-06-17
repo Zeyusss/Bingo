@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 
 
-const requestCounts = new Map<string, { count: number; resetTime: number }>();
+const requestCounts = new Map<string, { count: number; resetTime: number; windowStart: number }>();
 
 interface RateLimitOptions {
   windowMs: number; 
@@ -18,22 +18,26 @@ export const createRateLimiter = (options: RateLimitOptions) => {
     skipSuccessfulRequests = false
   } = options;
 
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, data] of requestCounts.entries()) {
+      if (now - data.windowStart > windowMs) {
+        requestCounts.delete(key);
+      }
+    }
+  }, windowMs).unref();
+
   return (req: Request, res: Response, next: NextFunction) => {
     try {
       const clientId = `${req.ip || req.connection.remoteAddress}:${req.get('User-Agent') || 'unknown'}`;
       const now = Date.now();
       
-      for (const [key, data] of requestCounts.entries()) {
-        if (now > data.resetTime) {
-          requestCounts.delete(key);
-        }
-      }
-      
       let clientData = requestCounts.get(clientId);
       if (!clientData || now > clientData.resetTime) {
         clientData = {
           count: 0,
-          resetTime: now + windowMs
+          resetTime: now + windowMs,
+          windowStart: now,
         };
         requestCounts.set(clientId, clientData);
       }
@@ -55,7 +59,9 @@ export const createRateLimiter = (options: RateLimitOptions) => {
         });
       }
       
-      clientData.count++;
+      if (!skipSuccessfulRequests) {
+        clientData.count++;
+      }
       
       res.set({
         'X-RateLimit-Limit': maxRequests.toString(),
