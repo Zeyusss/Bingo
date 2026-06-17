@@ -113,7 +113,7 @@ const COUNTRY_COORDS: Record<string, { lat: number; lng: number }> = {
 
 export async function fetchShopRevenueData(
   sellerId: string,
-  period: "7d" | "30d" | "90d" = "30d"
+  period: "7d" | "30d" | "90d" = "30d",
 ) {
   const days = period === "7d" ? 7 : period === "30d" ? 30 : 90;
   const now = new Date();
@@ -138,15 +138,23 @@ export async function fetchShopRevenueData(
     select: { total: true, createdAt: true },
   });
 
-  const revenueByLabel = new Map(dataPoints.map(d => [d.label, 0]));
+  const revenueByLabel = new Map(dataPoints.map((d) => [d.label, 0]));
   for (const order of orders) {
-    const point = dataPoints.find(d => order.createdAt >= d.start && order.createdAt <= d.end);
+    const point = dataPoints.find(
+      (d) => order.createdAt >= d.start && order.createdAt <= d.end,
+    );
     if (point) {
-      revenueByLabel.set(point.label, (revenueByLabel.get(point.label) || 0) + (order.total || 0));
+      revenueByLabel.set(
+        point.label,
+        (revenueByLabel.get(point.label) || 0) + (order.total || 0),
+      );
     }
   }
 
-  const data = dataPoints.map(d => ({ x: d.label, y: revenueByLabel.get(d.label) || 0 }));
+  const data = dataPoints.map((d) => ({
+    x: d.label,
+    y: revenueByLabel.get(d.label) || 0,
+  }));
 
   return [
     {
@@ -240,10 +248,7 @@ export async function fetchShopStats(sellerId: string) {
   };
 }
 
-export async function fetchShopRecentOrders(
-  sellerId: string,
-  limit: number = 5
-) {
+export async function fetchShopRecentOrders(sellerId: string, limit = 5) {
   const shop = await prisma.shops.findUnique({
     where: { sellerId },
     select: { id: true },
@@ -334,7 +339,7 @@ export async function fetchShopWorldActivity(sellerId: string) {
   });
 
   const worldActivity = Object.entries(
-    shopAnalytics.countryStats as Record<string, number>
+    shopAnalytics.countryStats as Record<string, number>,
   )
     .filter(([country]) => COUNTRY_COORDS[country])
     .map(([country, visitors]) => {
@@ -351,7 +356,7 @@ export async function fetchShopWorldActivity(sellerId: string) {
         conversionRate:
           visitors > 0
             ? Math.round(
-                Math.min((countryOrders / visitors) * 100, 100) * 100
+                Math.min((countryOrders / visitors) * 100, 100) * 100,
               ) / 100
             : 0,
       };
@@ -390,11 +395,11 @@ export async function fetchShopVisitorAnalytics(sellerId: string) {
 
   const actualCountryTotal = Object.values(countryStats).reduce(
     (sum, count) => sum + count,
-    0
+    0,
   );
   const actualCityTotal = Object.values(cityStats).reduce(
     (sum, count) => sum + count,
-    0
+    0,
   );
 
   const countries = Object.entries(countryStats)
@@ -470,7 +475,7 @@ export async function fetchShopDeviceUsage(sellerId: string) {
   const deviceStats = shopAnalytics.deviceStats as Record<string, number>;
   const totalDevices = Object.values(deviceStats).reduce(
     (sum, count) => sum + count,
-    0
+    0,
   );
 
   const deviceCategories = {
@@ -559,11 +564,11 @@ export async function fetchShopTopSellingProducts(sellerId: string) {
     const items = orderItems.filter((item) => item.productId === product.id);
     const totalSold = items.reduce(
       (sum, item) => sum + (item.quantity || 0),
-      0
+      0,
     );
     const revenue = items.reduce(
       (sum, item) => sum + (item.price || 0) * (item.quantity || 0),
-      0
+      0,
     );
 
     return {

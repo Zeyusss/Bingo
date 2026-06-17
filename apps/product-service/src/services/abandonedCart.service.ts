@@ -76,7 +76,7 @@ interface AbandonedCartData {
 }
 
 
-export const getAbandonedCarts = async (hoursThreshold: number = 24): Promise<AbandonedCartData[]> => {
+export const getAbandonedCarts = async (hoursThreshold = 24): Promise<AbandonedCartData[]> => {
   try {
     const thresholdDate = new Date(Date.now() - hoursThreshold * 60 * 60 * 1000);
 
@@ -276,7 +276,7 @@ export const trackAbandonedCart = async (userId: string, cartItems: any[]) => {
   }
 };
 
-export const getAbandonedCartStats = async (hoursThreshold: number = 24) => {
+export const getAbandonedCartStats = async (hoursThreshold = 24) => {
   try {
 
     const abandonedCarts = await getAbandonedCarts(hoursThreshold);
