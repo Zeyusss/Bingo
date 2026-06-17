@@ -73,7 +73,7 @@ export const trackAbandonedCartController = async (req: Request, res: Response) 
       });
     }
 
-    const result = await trackAbandonedCart(cartData);
+    const result = await trackAbandonedCart(cartData.userId, cartData.items);
 
     return res.status(200).json({
       success: true,
@@ -116,13 +116,14 @@ export const getAllAbandonedCarts = async (req: Request, res: Response) => {
       case 'high-value':
         filteredCarts = filteredCarts.filter(cart => cart.totalAmount >= 100);
         break;
-      case 'recent':
+      case 'recent': {
         const last24Hours = new Date();
         last24Hours.setHours(last24Hours.getHours() - 24);
         filteredCarts = filteredCarts.filter(cart => 
           new Date(cart.lastUpdated) >= last24Hours
         );
         break;
+      }
       case 'multiple-items':
         filteredCarts = filteredCarts.filter(cart => cart.cartItems.length > 1);
         break;

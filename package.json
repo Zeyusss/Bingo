@@ -134,6 +134,7 @@
     "@types/react-dom": "19.0.0",
     "@types/react-slick": "^0.23.13",
     "@types/swagger-ui-express": "^4.1.8",
+    "@types/uuid": "^10.0.0",
     "@typescript-eslint/utils": "^8.40.0",
     "angular-eslint": "^21.2.0",
     "autoprefixer": "10.4.13",

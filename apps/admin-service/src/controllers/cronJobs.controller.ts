@@ -70,23 +70,25 @@ const getNextRunTime = (cronSchedule: string, jobId: string): Date => {
   let nextRun = new Date(now);
   
   switch (jobId) {
-    case 'abandoned_cart_daily_reminder':
+    case 'abandoned_cart_daily_reminder': {
       // Daily at 10:00 AM UTC
       nextRun.setUTCHours(10, 0, 0, 0);
       if (nextRun <= now) {
         nextRun.setUTCDate(nextRun.getUTCDate() + 1);
       }
       break;
-      
-    case 'abandoned_cart_followup_reminder':
+    }
+    
+    case 'abandoned_cart_followup_reminder': {
       // Every 3 days at 2:00 PM UTC
       nextRun.setUTCHours(14, 0, 0, 0);
       while (nextRun <= now) {
         nextRun.setUTCDate(nextRun.getUTCDate() + 3);
       }
       break;
-      
-    case 'abandoned_cart_weekly_cleanup':
+    }
+    
+    case 'abandoned_cart_weekly_cleanup': {
       // Weekly on Sunday at 3:00 AM UTC
       nextRun.setUTCHours(3, 0, 0, 0);
       // Find next Sunday
@@ -97,8 +99,9 @@ const getNextRunTime = (cronSchedule: string, jobId: string): Date => {
         nextRun.setUTCDate(nextRun.getUTCDate() + daysUntilNextSunday);
       }
       break;
-      
-    case 'abandoned_cart_monthly_cleanup':
+    }
+    
+    case 'abandoned_cart_monthly_cleanup': {
       // Monthly on 1st at 4:00 AM UTC
       nextRun.setUTCDate(1);
       nextRun.setUTCHours(4, 0, 0, 0);
@@ -106,6 +109,7 @@ const getNextRunTime = (cronSchedule: string, jobId: string): Date => {
         nextRun.setUTCMonth(nextRun.getUTCMonth() + 1);
       }
       break;
+    }
       
     case 'product_deletion_cleanup':
     case 'shop_deletion_processing':
@@ -141,7 +145,7 @@ const getJobStatus = async (jobId: string): Promise<{
     
     // Set realistic last run times based on job schedules
     switch (jobId) {
-      case 'abandoned_cart_daily_reminder':
+      case 'abandoned_cart_daily_reminder': {
         // Daily at 10:00 AM UTC - calculate last 10:00 AM
         const lastDaily = new Date(now);
         lastDaily.setUTCHours(10, 0, 0, 0);
@@ -152,8 +156,9 @@ const getJobStatus = async (jobId: string): Promise<{
         lastDuration = 2340; // ~2.3 seconds
         status = 'Success';
         break;
-        
-      case 'abandoned_cart_followup_reminder':
+      }
+      
+      case 'abandoned_cart_followup_reminder': {
         // Every 3 days at 2:00 PM UTC
         const lastFollowup = new Date(now);
         lastFollowup.setUTCHours(14, 0, 0, 0);
@@ -166,8 +171,9 @@ const getJobStatus = async (jobId: string): Promise<{
         lastDuration = 1850; // ~1.8 seconds
         status = 'Success';
         break;
-        
-      case 'abandoned_cart_weekly_cleanup':
+      }
+      
+      case 'abandoned_cart_weekly_cleanup': {
         // Weekly on Sunday at 3:00 AM UTC
         const lastWeekly = new Date(now);
         lastWeekly.setUTCHours(3, 0, 0, 0);
@@ -181,8 +187,9 @@ const getJobStatus = async (jobId: string): Promise<{
         lastDuration = 4200; // ~4.2 seconds
         status = 'Success';
         break;
-        
-      case 'abandoned_cart_monthly_cleanup':
+      }
+      
+      case 'abandoned_cart_monthly_cleanup': {
         // Monthly on 1st at 4:00 AM UTC
         const lastMonthly = new Date(now);
         lastMonthly.setUTCDate(1);
@@ -194,8 +201,9 @@ const getJobStatus = async (jobId: string): Promise<{
         lastDuration = 8500; // ~8.5 seconds
         status = 'Success';
         break;
-        
-      case 'product_deletion_cleanup':
+      }
+      
+      case 'product_deletion_cleanup': {
         // Hourly - last hour
         const lastHourly = new Date(now);
         lastHourly.setUTCMinutes(0, 0, 0);
@@ -203,8 +211,9 @@ const getJobStatus = async (jobId: string): Promise<{
         lastDuration = 650; // ~0.65 seconds
         status = 'Success';
         break;
-        
-      case 'shop_deletion_processing':
+      }
+      
+      case 'shop_deletion_processing': {
         // Hourly - last hour
         const lastShopHourly = new Date(now);
         lastShopHourly.setUTCMinutes(0, 0, 0);
@@ -212,6 +221,7 @@ const getJobStatus = async (jobId: string): Promise<{
         lastDuration = 890; // ~0.89 seconds
         status = 'Success';
         break;
+      }
         
       default:
         status = 'Pending';
