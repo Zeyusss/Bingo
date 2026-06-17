@@ -234,6 +234,12 @@ export const addNewAdmin = async (
   try {
     const { email, role } = req.body;
 
+    if (!email) return next(new ValidationError("Email is required"));
+    const VALID_ROLES = ["admin", "user", "seller"];
+    if (!role || !VALID_ROLES.includes(role)) {
+      return next(new ValidationError("Invalid role value"));
+    }
+
     const isUser = await prisma.users.findUnique({ where: { email } });
     if (!isUser) {
       return next(new ValidationError("Something went wrong!"));
@@ -246,7 +252,7 @@ export const addNewAdmin = async (
       },
     });
 
-    res.status(201).json({
+    res.status(200).json({
       success: true,
       updateRole,
     });
@@ -492,39 +498,24 @@ export const blockSeller = async (
 ) => {
   try {
     const { sellerId } = req.params;
-
     if (!/^[0-9a-fA-F]{24}$/.test(sellerId)) {
-      return res
-        .status(400)
-        .json({ status: "error", message: "Invalid sellerId format" });
+      return next(new ValidationError("Invalid seller ID format"));
     }
-
-    const seller = await prisma.sellers.findUnique({
-      where: { id: sellerId },
-      include: { shop: true },
-    });
+    const seller = await prisma.sellers.findUnique({ where: { id: sellerId } });
     if (!seller) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Seller not found" });
+      return next(new ValidationError("Seller not found"));
     }
-    await prisma.sellers.update({
+    const updatedSeller = await prisma.sellers.update({
       where: { id: sellerId },
-      data: { isDeleted: true, deletedAt: new Date() },
+      data: {
+        isBlocked: !seller.isBlocked,
+        blockedAt: !seller.isBlocked ? new Date() : null,
+      },
     });
-    if (seller.shop) {
-      await prisma.shops.update({
-        where: { id: seller.shop.id },
-        data: { isDeleted: true, deletedAt: new Date() },
-      });
-      await prisma.products.updateMany({
-        where: { shopId: seller.shop.id },
-        data: { isDeleted: true, deletedAt: new Date() },
-      });
-    }
     res.status(200).json({
       success: true,
-      message: "Seller, shop, and products soft deleted",
+      message: `Seller ${updatedSeller.isBlocked ? "blocked" : "unblocked"} successfully`,
+      seller: updatedSeller,
     });
   } catch (error) {
     return next(error);
@@ -1659,23 +1650,38 @@ export const getAllNotifications = async (
 
 // Mark notification as read
 export const markNotificationAsRead = async (
-  req: Request,
+  req: any,
   res: Response,
   next: NextFunction,
 ) => {
   try {
     const { notificationId } = req.params;
-
+    if (!/^[0-9a-fA-F]{24}$/.test(notificationId)) {
+      return next(new ValidationError("Invalid notification ID format"));
+    }
+    const adminId = req.user?.id;
+    const existing = await prisma.notifications.findUnique({
+      where: { id: notificationId },
+    });
+    if (!existing) {
+      return next(new ValidationError("Notification not found"));
+    }
+    if (existing.receiverId !== adminId) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Access denied" });
+    }
     const notification = await prisma.notifications.update({
       where: { id: notificationId },
       data: { status: "Read" },
     });
-
-    res.status(200).json({
-      success: true,
-      message: "Notification marked as read",
-      notification,
-    });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Notification marked as read",
+        notification,
+      });
   } catch (error) {
     return next(error);
   }
@@ -1939,50 +1945,7 @@ export const getAllSliders = async (
 
     // If no sliders exist, create some sample data
     if (sliders.length === 0) {
-      console.log("No sliders found, creating sample data...");
-
-      const sampleSliders = [
-        {
-          title: "Welcome to Our Store",
-          description: "Discover amazing products with great deals",
-          imageUrl:
-            "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=400&fit=crop",
-          linkUrl: "/products",
-          position: 0,
-          isActive: true,
-        },
-        {
-          title: "Summer Sale",
-          description: "Up to 50% off on selected items",
-          imageUrl:
-            "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&h=400&fit=crop",
-          linkUrl: "/sale",
-          position: 1,
-          isActive: true,
-        },
-        {
-          title: "New Arrivals",
-          description: "Check out our latest collection",
-          imageUrl:
-            "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800&h=400&fit=crop",
-          linkUrl: "/new-arrivals",
-          position: 2,
-          isActive: false,
-        },
-      ];
-
-      await prisma.sliders.createMany({
-        data: sampleSliders,
-      });
-
-      const newSliders = await prisma.sliders.findMany({
-        orderBy: { position: "asc" },
-      });
-
-      res.status(200).json({
-        success: true,
-        data: newSliders,
-      });
+      return res.status(200).json({ success: true, data: [] });
     } else {
       res.status(200).json({
         success: true,

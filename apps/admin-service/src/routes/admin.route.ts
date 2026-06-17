@@ -79,7 +79,7 @@ router.get(
 router.get("/get-all-products", isAuthenticated, isAdmin, getAllProducts);
 router.get("/get-all-events", isAuthenticated, isAdmin, getAllEvents);
 router.get("/get-all-admins", isAuthenticated, isAdmin, getAllAdmins);
-router.get("/get-new-admin", isAuthenticated, isAdmin, addNewAdmin);
+router.post("/add-new-admin", isAuthenticated, isAdmin, addNewAdmin);
 router.get("/get-all-users", isAuthenticated, isAdmin, getAllUsers);
 router.get("/get-all-sellers", isAuthenticated, isAdmin, getAllSellers);
 router.post("/sellers/:sellerId/block", isAuthenticated, isAdmin, blockSeller);
