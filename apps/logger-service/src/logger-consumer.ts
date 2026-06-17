@@ -46,23 +46,6 @@ class LogConsumerService {
             });
             
             await this.consumer.run({
-                eachMessage: async ({ message }) => {
-                    try {
-                        if (!message.value) return;
-                        
-                        const logData = JSON.parse(message.value.toString()) as LogMessage;
-                        
-                        
-                        if (this.isValidLogMessage(logData)) {
-                            this.addToQueue(logData);
-                        } else {
-                            console.warn('[LogConsumer] Invalid log message format:', logData);
-                        }
-                    } catch (error) {
-                        console.error('[LogConsumer] Error processing message:', error);
-                        
-                    }
-                },
                 eachBatch: async ({ batch, resolveOffset, heartbeat }) => {
                     
                     for (const message of batch.messages) {
@@ -200,9 +183,9 @@ class LogConsumerService {
                 client.send(JSON.stringify(payload));
             }
         } catch (error) {
-            console.error('[LogConsumer] Error sending logs to client:', error);
-           
-            clients.delete(client);
+            if (client.readyState !== WebSocket.OPEN) {
+                clients.delete(client);
+            }
         }
     }
 

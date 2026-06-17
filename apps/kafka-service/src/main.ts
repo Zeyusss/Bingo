@@ -11,36 +11,40 @@ const consumer = kafka.consumer({ groupId: "user-events-group" });
 
 const eventQueue: any[] = [];
 
+let isProcessing = false;
 const processQueue = async () => {
-  if (eventQueue.length === 0) return;
-
+  if (isProcessing || eventQueue.length === 0) return;
+  isProcessing = true;
   const events = [...eventQueue];
   eventQueue.length = 0;
-
-  for (const event of events) {
-    if (event.action === "shop_visit") {
-      // update shop analytics
+  try {
+    for (const event of events) {
+      if (event.action === "shop_visit") {
+        try {
+          await updateShopAnalytics(event);
+        } catch (error) {
+          console.error("Error processing shop analytics:", error);
+        }
+      }
+      const validActions = [
+        "add_to_wishlist",
+        "add_to_cart",
+        "product_view",
+        "remove_from_cart",
+        "remove_from_wishlist",
+        "purchase",
+      ];
+      if (!event.action || !validActions.includes(event.action)) {
+        continue;
+      }
       try {
-        await updateShopAnalytics(event);
+        await updateUserAnalytics(event);
       } catch (error) {
-        console.log("Error processing shop analytics:", error);
+        console.error("Error processing event:", error);
       }
     }
-    const validActions = [
-      "add_to_wishlist",
-      "add_to_cart",
-      "product_view",
-      "remove_from_cart",
-      "remove_from_wishlist",
-    ];
-    if (!event.action || !validActions.includes(event.action)) {
-      continue;
-    }
-    try {
-      await updateUserAnalytics(event);
-    } catch (error) {
-      console.log("Error processing event :", error);
-    }
+  } finally {
+    isProcessing = false;
   }
 };
 

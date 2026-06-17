@@ -25,10 +25,17 @@ wsServer.on("connection", (ws)=>{
 
 const server = http.createServer(app);
 
-server.on("upgrade",(request,socket,head)=>{
-  wsServer.handleUpgrade(request,socket,head, (ws)=>{
-    wsServer.emit("connection",ws,request)
-  })
+server.on("upgrade", (request, socket, head) => {
+  const url = new URL(request.url || "", `http://${request.headers.host}`);
+  const token = url.searchParams.get("token") || request.headers["x-internal-service-token"];
+  if (token !== process.env.INTERNAL_SERVICE_TOKEN) {
+    socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+    socket.destroy();
+    return;
+  }
+  wsServer.handleUpgrade(request, socket, head, (ws) => {
+    wsServer.emit("connection", ws, request);
+  });
 })
 
 server.listen(process.env.PORT || 6008 , ()=>{

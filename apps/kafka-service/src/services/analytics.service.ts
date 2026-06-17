@@ -24,7 +24,7 @@ export const updateUserAnalytics = async (event: any) => {
         timestamp: new Date(),
       });
     } else if (
-      ["add_to_cart", "add_to_wishlist"].includes(event.action) &&
+      ["add_to_cart", "add_to_wishlist", "purchase"].includes(event.action) &&
       !actionExisits
     ) {
       updatedActions.push({
@@ -58,7 +58,7 @@ export const updateUserAnalytics = async (event: any) => {
 
     // keep only  the last 100 actions (prevent storage overload)
     if (updatedActions.length > 100) {
-      updatedActions.shift();
+      updatedActions.splice(0, updatedActions.length - 100);
     }
     const extraFields: Record<string, any> = {};
 
@@ -94,7 +94,7 @@ export const updateUserAnalytics = async (event: any) => {
     // update product analytics
     await updateProductAnalytics(event);
   } catch (error) {
-    console.log("Error storing user Analytics:", error);
+    console.error("Error storing user Analytics:", error);
   }
 };
 
@@ -126,13 +126,13 @@ export const updateProductAnalytics = async (event: any) => {
         shopId: event.shopId || null,
         views: event.action === "product_view" ? 1 : 0,
         cartAdds: event.action === "add_to_cart" ? 1 : 0,
-        wishListAdds: event.action === " add_to_wishlist" ? 1 : 0,
+        wishListAdds: event.action === "add_to_wishlist" ? 1 : 0,
         purchases: event.action === "purchase" ? 1 : 0,
         lastViewedAt: new Date(),
       },
     });
   } catch (error) {
-    console.log("Error updating product analytics:", error);
+    console.error("Error updating product analytics:", error);
   }
 };
 
@@ -235,6 +235,6 @@ export const updateShopAnalytics = async (event: any) => {
       },
     });
   } catch (error) {
-    console.log("Error updating shop analytics:", error);
+    console.error("Error updating shop analytics:", error);
   }
 };
