@@ -68,3 +68,5 @@ apps/*/.env.*.local
 .angular
 
 __screenshots__/
+
+HANDOFF.md
