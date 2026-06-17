@@ -23,7 +23,7 @@ const DEFAULT_COVER_IMAGE =
 export const getCategories = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const config = await prisma.site_config.findFirst();
@@ -44,7 +44,7 @@ export const getCategories = async (
 export const createDiscountCodes = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const parsed = createDiscountCodesSchema.safeParse(req.body);
@@ -62,8 +62,8 @@ export const createDiscountCodes = async (
     if (isDiscountCodeExist) {
       return next(
         new ValidationError(
-          "Discount code already available please use a different code!"
-        )
+          "Discount code already available please use a different code!",
+        ),
       );
     }
 
@@ -89,7 +89,7 @@ export const createDiscountCodes = async (
 export const getDiscountCodes = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const discount_codes = await prisma.discount_codes.findMany({
@@ -110,7 +110,7 @@ export const getDiscountCodes = async (
 export const deleteDiscountCode = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     if (!req.seller) {
@@ -120,7 +120,9 @@ export const deleteDiscountCode = async (
     const { id } = req.params;
 
     if (!/^[0-9a-fA-F]{24}$/.test(id)) {
-      return res.status(400).json({ status: "error", message: "Invalid discount code id format" });
+      return res
+        .status(400)
+        .json({ status: "error", message: "Invalid discount code id format" });
     }
 
     const sellerId = req.seller?.id;
@@ -151,7 +153,7 @@ export const deleteDiscountCode = async (
 export const uploadProductImage = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { fileName } = req.body;
@@ -180,9 +182,9 @@ export const uploadProductImage = async (
 
 // delete product image
 export const deleteProductImage = async (
-  req: Request,
+  req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { fileId } = req.body;
@@ -191,7 +193,7 @@ export const deleteProductImage = async (
 
     const image = await prisma.images.findFirst({
       where: { file_id: fileId },
-      include: { products: { select: { shopId: true } } }
+      include: { products: { select: { shopId: true } } },
     });
 
     if (!image || image.products?.shopId !== shopId) {
@@ -213,7 +215,7 @@ export const deleteProductImage = async (
 export const createProduct = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     if (!req.seller?.shop?.id) {
@@ -266,7 +268,7 @@ export const createProduct = async (
     });
     if (slugChecking) {
       return next(
-        new ValidationError("Slug already exist! Please use a different slug!")
+        new ValidationError("Slug already exist! Please use a different slug!"),
       );
     }
 
@@ -277,9 +279,7 @@ export const createProduct = async (
         detailed_description,
         warranty,
         cashOnDelivery:
-          cash_on_delivery === undefined
-            ? undefined
-            : String(cash_on_delivery),
+          cash_on_delivery === undefined ? undefined : String(cash_on_delivery),
         slug,
         shopId: req.seller?.shop?.id,
         tags,
@@ -296,7 +296,8 @@ export const createProduct = async (
         sale_price: sale_price ?? regular_price,
         regular_price,
         custom_properties: (customProperties ?? {}) as Prisma.InputJsonValue,
-        custom_specifications: (custom_specifications ?? {}) as Prisma.InputJsonValue,
+        custom_specifications: (custom_specifications ??
+          {}) as Prisma.InputJsonValue,
         deletedAt: null,
         personalizationEnabled: Boolean(personalizationEnabled),
         personalizationInstructions,
@@ -316,16 +317,16 @@ export const createProduct = async (
         where: { shopId: req.seller?.shop?.id },
         include: {
           user: {
-            select: { id: true, name: true }
+            select: { id: true, name: true },
           },
           shop: {
-            select: { id: true, name: true }
-          }
-        }
+            select: { id: true, name: true },
+          },
+        },
       });
 
       // Create notifications for all followers
-      const notificationPromises = followers.map(follower => 
+      const notificationPromises = followers.map((follower) =>
         prisma.notifications.create({
           data: {
             title: "New Product Added",
@@ -334,12 +335,14 @@ export const createProduct = async (
             receiverId: follower.user.id,
             redirect_link: `/product/${slug}`,
           },
-        })
+        }),
       );
 
       await Promise.all(notificationPromises);
-      
-      console.log(`Sent ${followers.length} notifications for new product: ${title}`);
+
+      console.log(
+        `Sent ${followers.length} notifications for new product: ${title}`,
+      );
     } catch (notificationError) {
       console.error("Error sending follower notifications:", notificationError);
       // Don't fail the product creation if notifications fail
@@ -358,7 +361,7 @@ export const createProduct = async (
 export const getShopProducts = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const {
@@ -390,19 +393,19 @@ export const getShopProducts = async (
         { tags: { has: search } },
         { brand: { contains: search, mode: "insensitive" } },
       ];
-      
+
       whereClause.OR = searchConditions;
     }
 
     const statusMapping: { [key: string]: string } = {
       active: "Active",
-      pending: "Pending", 
+      pending: "Pending",
       draft: "Draft",
       Active: "Active",
       Pending: "Pending",
-      Draft: "Draft"
+      Draft: "Draft",
     };
-    
+
     if (status !== "all" && statusMapping[status as string]) {
       whereClause.status = statusMapping[status as string];
     }
@@ -418,7 +421,7 @@ export const getShopProducts = async (
     }
 
     const sortFieldMapping: { [key: string]: string } = {
-      name: "title", 
+      name: "title",
       title: "title",
       createdAt: "createdAt",
       updatedAt: "updatedAt",
@@ -426,13 +429,12 @@ export const getShopProducts = async (
       stock: "stock",
       category: "category",
       status: "status",
-      ratings: "ratings"
+      ratings: "ratings",
     };
 
     const actualSortField = sortFieldMapping[sortBy as string] || "createdAt";
     const orderBy: any = {};
     orderBy[actualSortField] = sortOrder === "asc" ? "asc" : "desc";
-
 
     const totalProducts = await prisma.products.count({
       where: whereClause,
@@ -479,7 +481,7 @@ export const getShopProducts = async (
     };
 
     const summary = {
-      totalProducts: allProducts.length,
+      totalProducts: products.length,
       inStockCount,
       outOfStockCount,
     };
@@ -499,11 +501,11 @@ export const getShopProducts = async (
 export const getSellerProductCategories = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const sellerId = req?.seller?.shop?.id;
-    
+
     if (!sellerId) {
       return next(new AuthError("Seller not authenticated"));
     }
@@ -516,12 +518,12 @@ export const getSellerProductCategories = async (
       select: {
         category: true,
       },
-      distinct: ['category'],
+      distinct: ["category"],
     });
 
     const uniqueCategories = categories
-      .map(p => p.category)
-      .filter(category => category && category.trim() !== '')
+      .map((p) => p.category)
+      .filter((category) => category && category.trim() !== "")
       .sort();
 
     res.status(200).json({
@@ -537,12 +539,14 @@ export const getSellerProductCategories = async (
 export const deleteProduct = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { productId } = req.params;
     if (!/^[0-9a-fA-F]{24}$/.test(productId)) {
-      return res.status(400).json({ status: "error", message: "Invalid productId format" });
+      return res
+        .status(400)
+        .json({ status: "error", message: "Invalid productId format" });
     }
     const sellerId = req.seller?.shop?.id;
 
@@ -582,12 +586,14 @@ export const deleteProduct = async (
 export const updateProduct = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { productId } = req.params;
     if (!/^[0-9a-fA-F]{24}$/.test(productId)) {
-      return res.status(400).json({ status: "error", message: "Invalid productId format" });
+      return res
+        .status(400)
+        .json({ status: "error", message: "Invalid productId format" });
     }
     const {
       title,
@@ -640,8 +646,8 @@ export const updateProduct = async (
       }
       return next(
         new NotFoundError(
-          "Product not found or you don't have permission to update it"
-        )
+          "Product not found or you don't have permission to update it",
+        ),
       );
     }
 
@@ -667,12 +673,18 @@ export const updateProduct = async (
             ? tags
             : tags.split(",").map((tag: string) => tag.trim())
           : existingProduct.tags,
-        starting_date: starting_date !== undefined 
-          ? (starting_date ? new Date(starting_date) : null)
-          : existingProduct.starting_date,
-        ending_date: ending_date !== undefined 
-          ? (ending_date ? new Date(ending_date) : null)
-          : existingProduct.ending_date,
+        starting_date:
+          starting_date !== undefined
+            ? starting_date
+              ? new Date(starting_date)
+              : null
+            : existingProduct.starting_date,
+        ending_date:
+          ending_date !== undefined
+            ? ending_date
+              ? new Date(ending_date)
+              : null
+            : existingProduct.ending_date,
         updatedAt: new Date(),
       },
     });
@@ -692,12 +704,14 @@ export const updateProduct = async (
 export const restoreProduct = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { productId } = req.params;
     if (!/^[0-9a-fA-F]{24}$/.test(productId)) {
-      return res.status(400).json({ status: "error", message: "Invalid productId format" });
+      return res
+        .status(400)
+        .json({ status: "error", message: "Invalid productId format" });
     }
     const sellerId = req.seller?.shop?.id;
 
@@ -736,7 +750,7 @@ export const restoreProduct = async (
 export const getAllProducts = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -816,7 +830,7 @@ export const getAllProducts = async (
 export const getAllEvents = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -873,7 +887,7 @@ export const getAllEvents = async (
 export const getProductDetails = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { slug } = req.params;
@@ -903,7 +917,7 @@ export const getProductDetails = async (
 export const getProductReviews = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -911,7 +925,9 @@ export const getProductReviews = async (
     const skip = (page - 1) * limit;
 
     if (!/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
-      return res.status(400).json({ status: "error", message: "Invalid product id format" });
+      return res
+        .status(400)
+        .json({ status: "error", message: "Invalid product id format" });
     }
 
     const [reviews, total] = await Promise.all([
@@ -953,7 +969,7 @@ export const getProductReviews = async (
 export const getUserProductReview = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const productsId = req.params.id;
@@ -993,14 +1009,14 @@ export const getUserProductReview = async (
 export const createProductReview = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { productId, rating, reviews } = req.body;
 
     if (!productId || !rating || !reviews) {
       return next(
-        new ValidationError("Product ID, rating, and review are required!")
+        new ValidationError("Product ID, rating, and review are required!"),
       );
     }
 
@@ -1011,7 +1027,7 @@ export const createProductReview = async (
 
     if (!req.user?.id) {
       return next(
-        new AuthError("Only authenticated users can create reviews.")
+        new AuthError("Only authenticated users can create reviews."),
       );
     }
 
@@ -1045,7 +1061,7 @@ export const createProductReview = async (
 
     if (!hasPurchased) {
       return next(
-        new ValidationError("You can only review products you have purchased.")
+        new ValidationError("You can only review products you have purchased."),
       );
     }
 
@@ -1057,7 +1073,9 @@ export const createProductReview = async (
     });
 
     if (existingReview) {
-      return next(new ValidationError("You have already reviewed this product."));
+      return next(
+        new ValidationError("You have already reviewed this product."),
+      );
     }
 
     const review = await prisma.productReviews.create({
@@ -1093,7 +1111,7 @@ export const createProductReview = async (
 export const deleteProductReview = async (
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { reviewId } = req.body;
@@ -1104,7 +1122,7 @@ export const deleteProductReview = async (
 
     if (!req.user?.id) {
       return next(
-        new AuthError("Only authenticated users can delete reviews.")
+        new AuthError("Only authenticated users can delete reviews."),
       );
     }
 
@@ -1118,8 +1136,8 @@ export const deleteProductReview = async (
     if (!review) {
       return next(
         new ValidationError(
-          "Review not found or you don't have permission to delete it."
-        )
+          "Review not found or you don't have permission to delete it.",
+        ),
       );
     }
 
@@ -1142,7 +1160,7 @@ export const deleteProductReview = async (
 export const getFilteredProducts = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const {
@@ -1230,7 +1248,7 @@ export const getFilteredProducts = async (
 export const getFilteredEvents = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const {
@@ -1320,7 +1338,7 @@ export const getFilteredEvents = async (
 export const getTodaysDeals = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const {
@@ -1472,7 +1490,7 @@ export const getTodaysDeals = async (
 export const getFilteredShops = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     let {
@@ -1502,15 +1520,16 @@ export const getFilteredShops = async (
       filters.country = { in: country };
     }
 
-   
-    if (notFollowed === 'true' && userId) {
+    if (notFollowed === "true" && userId) {
       if (!/^[0-9a-fA-F]{24}$/.test(userId as string)) {
-        return res.status(400).json({ status: "error", message: "Invalid userId format" });
+        return res
+          .status(400)
+          .json({ status: "error", message: "Invalid userId format" });
       }
       filters.followers = {
         none: {
-          userId: userId as string
-        }
+          userId: userId as string,
+        },
       };
     }
 
@@ -1542,8 +1561,8 @@ export const getFilteredShops = async (
           followers: true,
           reviews: {
             select: {
-              rating: true
-            }
+              rating: true,
+            },
           },
           avatar: {
             select: {
@@ -1553,15 +1572,15 @@ export const getFilteredShops = async (
           },
           _count: {
             select: {
-              products: true
-            }
-          }
+              products: true,
+            },
+          },
         },
         skip,
         take: parsedLimit,
         orderBy,
       }),
-      prisma.shops.count({ where: filters })
+      prisma.shops.count({ where: filters }),
     ]);
 
     const shopsWithRatings = allShops
@@ -1571,7 +1590,7 @@ export const getFilteredShops = async (
           shopReviews.length > 0
             ? shopReviews.reduce(
                 (sum: number, review: any) => sum + review.rating,
-                0
+                0,
               ) / shopReviews.length
             : 0;
 
@@ -1608,7 +1627,7 @@ export const getFilteredShops = async (
 export const searchProducts = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const query = req.query.q as string;
@@ -1655,17 +1674,17 @@ export const searchProducts = async (
 export const topShops = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const salesAgg = await prisma.orders.groupBy({
-      by: ['shopId'],
+      by: ["shopId"],
       _sum: { total: true },
-      orderBy: { _sum: { total: 'desc' } },
+      orderBy: { _sum: { total: "desc" } },
       take: 10,
-      where: { shopId: { not: null } },
+      where: { shopId: { not: undefined } },
     });
-    const topShopIds = salesAgg.map(s => s.shopId as string);
+    const topShopIds = salesAgg.map((s) => s.shopId as string);
     const shops = await prisma.shops.findMany({
       where: {
         id: { in: topShopIds },
@@ -1683,7 +1702,7 @@ export const topShops = async (
     });
 
     const salesMap = Object.fromEntries(
-      salesAgg.map(s => [s.shopId, s._sum.total || 0])
+      salesAgg.map((s) => [s.shopId, s._sum?.total ?? 0]),
     );
     const enrichedShops = shops.map((shop) => {
       return {
@@ -1703,7 +1722,7 @@ export const topShops = async (
 export const getCategoriesWithCount = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const config = await prisma.site_config.findFirst();
@@ -1724,7 +1743,7 @@ export const getCategoriesWithCount = async (
           name: category,
           count,
         };
-      })
+      }),
     );
     return res.status(200).json({
       categories: categoryCounts,
@@ -1737,7 +1756,7 @@ export const getCategoriesWithCount = async (
 export const getBestSellersByCategory = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const category = req.query.category as string;
@@ -1772,7 +1791,7 @@ export const getBestSellersByCategory = async (
 export const getBrandsShowcase = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const brands = await prisma.shops.findMany({
@@ -1804,7 +1823,7 @@ export const getBrandsShowcase = async (
 export const getThreeProducts = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const products = await prisma.products.findMany({
@@ -1835,7 +1854,7 @@ export const getThreeProducts = async (
 export const getColorsWithCount = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const products = await prisma.products.findMany({
@@ -1865,14 +1884,13 @@ export const getColorsWithCount = async (
         name: getColorName(colorValue),
         code: getColorCode(colorValue),
         count: count,
-      })
+      }),
     );
     res.status(200).json({ colors: colorsWithCount });
   } catch (error) {
     return next(error);
   }
 };
-
 
 const getColorName = (hexCode: string): string => {
   if (!hexCode.startsWith("#")) {
@@ -1901,60 +1919,60 @@ const getColorName = (hexCode: string): string => {
       return brightness > 200
         ? "Light Orange"
         : brightness > 80
-        ? "Orange"
-        : "Dark Orange";
+          ? "Orange"
+          : "Dark Orange";
     } else if (b > g + 30) {
       return brightness > 200
         ? "Light Pink"
         : brightness > 80
-        ? "Pink"
-        : "Dark Pink";
+          ? "Pink"
+          : "Dark Pink";
     } else {
       return brightness > 200
         ? "Light Red"
         : brightness > 80
-        ? "Red"
-        : "Dark Red";
+          ? "Red"
+          : "Dark Red";
     }
   } else if (g >= r && g >= b) {
     if (r > b + 30) {
       return brightness > 200
         ? "Light Yellow"
         : brightness > 80
-        ? "Yellow"
-        : "Dark Yellow";
+          ? "Yellow"
+          : "Dark Yellow";
     } else if (b > r + 30) {
       return brightness > 200
         ? "Light Teal"
         : brightness > 80
-        ? "Teal"
-        : "Dark Teal";
+          ? "Teal"
+          : "Dark Teal";
     } else {
       return brightness > 200
         ? "Light Green"
         : brightness > 80
-        ? "Green"
-        : "Dark Green";
+          ? "Green"
+          : "Dark Green";
     }
   } else {
     if (r > g + 30) {
       return brightness > 200
         ? "Light Purple"
         : brightness > 80
-        ? "Purple"
-        : "Dark Purple";
+          ? "Purple"
+          : "Dark Purple";
     } else if (g > r + 30) {
       return brightness > 200
         ? "Light Cyan"
         : brightness > 80
-        ? "Cyan"
-        : "Dark Cyan";
+          ? "Cyan"
+          : "Dark Cyan";
     } else {
       return brightness > 200
         ? "Light Blue"
         : brightness > 80
-        ? "Blue"
-        : "Dark Blue";
+          ? "Blue"
+          : "Dark Blue";
     }
   }
 };
@@ -1993,7 +2011,7 @@ const getColorCode = (colorName: string): string => {
 export const getNewProducts = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { category, limit = 10 } = req.query;
@@ -2047,7 +2065,7 @@ function calculateSimilarity(str1: string, str2: string): number {
         matrix[i][j] = Math.min(
           matrix[i - 1][j - 1] + 1,
           matrix[i][j - 1] + 1,
-          matrix[i - 1][j] + 1
+          matrix[i - 1][j] + 1,
         );
       }
     }
@@ -2087,7 +2105,7 @@ function expandQueryWithSynonyms(query: string): string[] {
 export const searchAdvanced = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const {
@@ -2173,7 +2191,7 @@ export const searchAdvanced = async (
 
           const titleSimilarity = calculateSimilarity(
             product.title.toLowerCase(),
-            searchQuery.toLowerCase()
+            searchQuery.toLowerCase(),
           );
           if (titleSimilarity >= 70) score += titleSimilarity * 3;
 
@@ -2200,23 +2218,23 @@ export const searchAdvanced = async (
     switch (sortBy) {
       case "price_low":
         scoredProducts.sort(
-          (a, b) => (a.sale_price || 0) - (b.sale_price || 0)
+          (a, b) => (a.sale_price || 0) - (b.sale_price || 0),
         );
         break;
       case "price_high":
         scoredProducts.sort(
-          (a, b) => (b.sale_price || 0) - (a.sale_price || 0)
+          (a, b) => (b.sale_price || 0) - (a.sale_price || 0),
         );
         break;
       case "newest":
         scoredProducts.sort(
           (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         );
         break;
       case "popular":
         scoredProducts.sort(
-          (a, b) => (b.totalSales || 0) - (a.totalSales || 0)
+          (a, b) => (b.totalSales || 0) - (a.totalSales || 0),
         );
         break;
       case "rating":
@@ -2225,7 +2243,7 @@ export const searchAdvanced = async (
       default:
         if (searchQuery.trim()) {
           scoredProducts.sort(
-            (a, b) => (b as any).relevanceScore - (a as any).relevanceScore
+            (a, b) => (b as any).relevanceScore - (a as any).relevanceScore,
           );
         }
     }
@@ -2234,7 +2252,7 @@ export const searchAdvanced = async (
     const totalPages = Math.ceil(totalCount / limitNum);
 
     const cleanProducts = scoredProducts.map(
-      ({ relevanceScore, ...product }: any) => product
+      ({ relevanceScore, ...product }: any) => product,
     );
 
     res.status(200).json({
@@ -2270,7 +2288,7 @@ const CACHE_TTL = 5 * 60 * 1000;
 export const getSearchSuggestions = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { q, limit = 10 } = req.query;
@@ -2457,7 +2475,7 @@ export const getSearchSuggestions = async (
 export const getPopularSearches = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const popularSearches = [
@@ -2484,7 +2502,7 @@ export const getPopularSearches = async (
 export const getSearchFilters = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const predefinedCategories = [
@@ -2591,7 +2609,7 @@ export const getSearchFilters = async (
 export const getTrendingProducts = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const {
