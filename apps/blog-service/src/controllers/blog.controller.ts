@@ -33,8 +33,8 @@ export const createBlog = async (
     if (!sellerId) {
       throw new AuthError("Unauthorized: Not a seller");
     }
-    if (!title || !content) {
-      throw new BadRequestError("Title and content are required");
+    if (!title?.trim() || !content?.trim()) {
+      return res.status(400).json({ status: "error", message: "Title and content are required and cannot be empty" });
     }
 
     const blog = await prisma.blog.create({
@@ -89,6 +89,13 @@ export const updateBlog = async (
     }
     if (blog.status !== BlogStatus.Accepted) {
       throw new ForbiddenError("Only Accepted blogs can be updated");
+    }
+
+    if (title !== undefined && !title.trim()) {
+      return res.status(400).json({ status: "error", message: "Title cannot be empty or whitespace" });
+    }
+    if (content !== undefined && !content.trim()) {
+      return res.status(400).json({ status: "error", message: "Content cannot be empty or whitespace" });
     }
 
     const updatedBlog = await prisma.blog.update({
@@ -153,9 +160,7 @@ export const getMyBlogs = async (
   next: NextFunction
 ) => {
   try {
-    console.log("reqqqqqqqqqqqqqqqqqqqqqq", req);
     const sellerId = req.seller?.id;
-    console.log("sellerrrr", sellerId);
     if (!sellerId) {
       throw new AuthError("Unauthorized: Not a seller");
     }
@@ -421,11 +426,16 @@ export const getAllPublishedBlogs = async (
   next: NextFunction
 ) => {
   try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+
     const blogs = await prisma.blog.findMany({
       where: {
         status: BlogStatus.Accepted,
         isDeleted: false,
       },
+      skip: (page - 1) * limit,
+      take: limit + 1,
       include: {
         author: {
           select: {
@@ -474,9 +484,15 @@ export const getAllPublishedBlogs = async (
       orderBy: { createdAt: "desc" },
     });
 
+    const hasMore = blogs.length > limit;
+    if (hasMore) blogs.pop();
+
     return res.json({
       success: true,
       data: blogs.map(formatBlogResponse),
+      page,
+      limit,
+      hasMore,
     });
   } catch (error) {
      return next(error);
