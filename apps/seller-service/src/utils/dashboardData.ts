@@ -126,25 +126,27 @@ export async function fetchShopRevenueData(
     };
   });
 
-  const data = await Promise.all(
-    dataPoints.map(async (d) => {
-      const orders = await prisma.orders.findMany({
-        where: {
-          createdAt: {
-            gte: d.start,
-            lte: d.end,
-          },
-          status: "Paid",
-          shop: {
-            sellerId: sellerId,
-          },
-        },
-        select: { total: true },
-      });
-      const total = orders.reduce((sum, o) => sum + (o.total || 0), 0);
-      return { x: d.label, y: total };
-    })
-  );
+  const startDate = dataPoints[0].start;
+  const endDate = dataPoints[dataPoints.length - 1].end;
+
+  const orders = await prisma.orders.findMany({
+    where: {
+      createdAt: { gte: startDate, lte: endDate },
+      status: "Paid",
+      shop: { sellerId },
+    },
+    select: { total: true, createdAt: true },
+  });
+
+  const revenueByLabel = new Map(dataPoints.map(d => [d.label, 0]));
+  for (const order of orders) {
+    const point = dataPoints.find(d => order.createdAt >= d.start && order.createdAt <= d.end);
+    if (point) {
+      revenueByLabel.set(point.label, (revenueByLabel.get(point.label) || 0) + (order.total || 0));
+    }
+  }
+
+  const data = dataPoints.map(d => ({ x: d.label, y: revenueByLabel.get(d.label) || 0 }));
 
   return [
     {

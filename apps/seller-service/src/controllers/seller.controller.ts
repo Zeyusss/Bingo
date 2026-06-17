@@ -72,6 +72,10 @@ export const deleteShop = async (
           deletedAt,
         },
       }),
+      prisma.products.updateMany({
+        where: { shopId: seller.shop.id, isDeleted: false },
+        data: { isDeleted: true },
+      }),
     ]);
 
     const deletionDateString = deletedAt.toLocaleDateString();
@@ -132,6 +136,10 @@ export const restoreShop = async (
           isDeleted: false, 
           deletedAt: null, 
         },
+      }),
+      prisma.products.updateMany({
+        where: { shopId: seller.shop.id, isDeleted: true },
+        data: { isDeleted: false },
       }),
     ]);
     return res.status(200).json({
@@ -623,32 +631,32 @@ const dateFrom = req.query.dateFrom as string;
     ]);
 
 
-    const allEventProducts = await prisma.products.findMany({
-      where: {
-        starting_date: {
-          not: null,
+    const shopId = req.params.id!;
+    const now2 = new Date();
+
+    const [activeEvents, upcomingEvents, endedEvents] = await Promise.all([
+      prisma.products.count({
+        where: {
+          shopId,
+          starting_date: { not: null, lte: now2 },
+          ending_date: { not: null, gte: now2 },
         },
-        shopId: req.params.id!,
-      },
-      select: {
-        starting_date: true,
-        ending_date: true,
-      },
-    });
+      }),
+      prisma.products.count({
+        where: {
+          shopId,
+          starting_date: { not: null, gt: now2 },
+        },
+      }),
+      prisma.products.count({
+        where: {
+          shopId,
+          ending_date: { not: null, lt: now2 },
+        },
+      }),
+    ]);
 
-    const activeEvents = allEventProducts.filter(
-      (product) =>
-        new Date(product.starting_date!) <= now &&
-        new Date(product.ending_date!) >= now
-    ).length;
-
-    const upcomingEvents = allEventProducts.filter(
-      (product) => new Date(product.starting_date!) > now
-    ).length;
-
-    const endedEvents = allEventProducts.filter(
-      (product) => new Date(product.ending_date!) < now
-    ).length;
+    const totalEvents = activeEvents + upcomingEvents + endedEvents;
 
     res.status(200).json({
       success: true,
@@ -662,7 +670,7 @@ const dateFrom = req.query.dateFrom as string;
         hasPrev: page > 1,
       },
       summary: {
-        totalEvents: allEventProducts.length,
+        totalEvents,
         activeEvents,
         upcomingEvents,
         endedEvents,
@@ -1079,13 +1087,12 @@ export const createShopReview = async (
       },
     });
 
-    const allReviews = await prisma.shopReviws.findMany({
+    const agg = await prisma.shopReviws.aggregate({
       where: { shopsId: shopId },
+      _avg: { rating: true },
+      _count: { rating: true },
     });
-
-    const averageRating =
-      allReviews.reduce((sum, review) => sum + review.rating, 0) /
-      allReviews.length;
+    const averageRating = agg._count.rating > 0 ? (agg._avg.rating ?? 0) : 0;
 
     await prisma.shops.update({
       where: { id: shopId },
@@ -1191,15 +1198,12 @@ export const deleteShopReview = async (
       where: { id: reviewId },
     });
 
-    const allReviews = await prisma.shopReviws.findMany({
+    const agg = await prisma.shopReviws.aggregate({
       where: { shopsId: review.shopsId },
+      _avg: { rating: true },
+      _count: { rating: true },
     });
-
-    const averageRating =
-      allReviews.length > 0
-        ? allReviews.reduce((sum, review) => sum + review.rating, 0) /
-          allReviews.length
-        : 0;
+    const averageRating = agg._count.rating > 0 ? (agg._avg.rating ?? 0) : 0;
 
     await prisma.shops.update({
       where: { id: review.shopsId },

@@ -49,6 +49,11 @@ cron.schedule("0 * * * *", async () => {
                         }
                     });
 
+                    await prisma.products.updateMany({
+                        where: { shopId: shop.id, isDeleted: false },
+                        data: { isDeleted: true },
+                    });
+
                     console.log(`Successfully blocked seller ${shop.sellerId} for shop ${shop.name} (ID: ${shop.id})`);
                 } catch (error) {
                     console.error(`Error blocking seller for shop ${shop.id}:`, error);
