@@ -54,7 +54,7 @@ export const userRegistration = async (
     validateRegistrationData(req.body, "user");
 
     const startTime = Date.now();
-    const existiongUser = await prisma.users.findUnique({
+    const existingUser = await prisma.users.findUnique({
       where: { email },
     });
     const dbQueryTime = Date.now() - startTime;
@@ -67,7 +67,7 @@ export const userRegistration = async (
       },
     );
 
-    if (existiongUser) {
+    if (existingUser) {
       await requestLogger.warning(
         "User registration failed: Email already exists",
         {
@@ -516,12 +516,11 @@ export const userResetPassword = async (
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await consumePasswordResetGrant("user", email);
     await prisma.users.update({
       where: { email },
       data: { password: hashedPassword },
     });
-
-    await consumePasswordResetGrant("user", email);
 
     return res.status(200).json({
       status: "success",
@@ -1044,12 +1043,11 @@ export const sellerResetPassword = async (
       );
     }
     const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await consumePasswordResetGrant("seller", email);
     await prisma.sellers.update({
       where: { email },
       data: { password: hashedPassword },
     });
-
-    await consumePasswordResetGrant("seller", email);
 
     return res.status(200).json({
       status: "success",

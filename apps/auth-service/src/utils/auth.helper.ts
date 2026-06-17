@@ -89,13 +89,15 @@ export const verifyUserRegistrationOtp = async (email: string, otp: string) => {
     await redis.del(`otp:${email}`,failedAttemptsKey);
 }
 
-export const sendOtp = async (email: string,name:string, template:string) => {
-const otp = crypto.randomInt(1000, 9999).toString();
-await sendEmail(email, 'Your OTP Code', template, { otp, name });
-await redis.set(`otp:${email}`, otp, 'EX', 300); 
-await redis.set(`otp_cooldown:${email}`, 'true', 'EX', 60); 
-
-}
+export const sendOtp = async (email: string, name: string, template: string) => {
+  const otp = crypto.randomInt(1000, 9999).toString();
+  const sent = await sendEmail(email, 'Your OTP Code', template, { otp, name });
+  if (!sent) {
+    throw new ValidationError('Failed to send OTP email. Please try again later.');
+  }
+  await redis.set(`otp:${email}`, otp, 'EX', 300);
+  await redis.set(`otp_cooldown:${email}`, 'true', 'EX', 60);
+};
 
 
 export const handleForgetPassword = async (req: any, res: any, next: NextFunction, userType: "user" | "seller") => {

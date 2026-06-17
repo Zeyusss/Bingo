@@ -46,19 +46,19 @@ const router: Router = express.Router();
 router.post("/user-registration", userRegistration);
 router.post("/verify-user", verifyUserRegistrationOtp);
 router.post("/login-user", loginRateLimiter, userLogin);
-router.post("/refresh-token",refreshToken);
+router.post("/refresh-token", loginRateLimiter, refreshToken);
 router.get("/logged-in-user",isAuthenticated,getUser);
-router.post("/forget-password-user", userForgetPassword);
+router.post("/forget-password-user", loginRateLimiter, userForgetPassword);
 router.post("/reset-password-user", userResetPassword);
-router.post("/verify-password-user", verifyUserForgetPasswordOtp);
+router.post("/verify-password-user", loginRateLimiter, verifyUserForgetPasswordOtp);
 router.post("/seller-registration", registerSeller);
 router.post("/verify-seller", verifySeller);
 router.post("/create-shop", isAuthenticated, isSeller, createShop);
 router.post("/create-stripe-link", isAuthenticated, isSeller, createStripeConnectLink);
 router.post("/login-seller", loginRateLimiter, loginSeller);
 router.get("/logged-in-seller",isAuthenticated,isSeller,getSeller)
-router.post("/forget-password-seller", sellerForgetPassword);
-router.post("/verify-password-seller", verifySellerForgetPasswordOtp);
+router.post("/forget-password-seller", loginRateLimiter, sellerForgetPassword);
+router.post("/verify-password-seller", loginRateLimiter, verifySellerForgetPasswordOtp);
 router.post("/reset-password-seller", sellerResetPassword);
 router.get("/shipping-addresses",isAuthenticated,getUserAddresses)
 router.post("/add-address",isAuthenticated,addUserAddress)
