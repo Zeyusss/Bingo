@@ -1,1 +1,8 @@
- 
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "../../dist/packages/middleware",
+    "declaration": true
+  },
+  "include": ["**/*.ts"]
+}

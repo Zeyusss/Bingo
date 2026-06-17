@@ -1,4 +1,5 @@
 import * as jwt from "jsonwebtoken";
+import prisma from "@packages/libs/prisma";
 
 export interface DecodedAccessToken {
   id: string;
@@ -33,5 +34,32 @@ export function verifyAccessToken(
 
   const decoded = jwt.verify(token, secret) as DecodedAccessToken;
   if (!decoded?.id || !decoded?.role) throw new Error("Invalid token payload");
+  return decoded;
+}
+
+export async function verifyAccessTokenWithDb(
+  cookieHeader?: string,
+  authHeader?: string
+): Promise<DecodedAccessToken> {
+  const decoded = verifyAccessToken(cookieHeader, authHeader);
+
+  if (decoded.role === "seller") {
+    const seller = await prisma.sellers.findUnique({
+      where: { id: decoded.id },
+      select: { isDeleted: true, isBlocked: true },
+    });
+    if (!seller || seller.isDeleted || seller.isBlocked) {
+      throw new Error("Seller account is inactive or blocked");
+    }
+  } else if (decoded.role === "user") {
+    const user = await prisma.users.findUnique({
+      where: { id: decoded.id },
+      select: { isDeleted: true, isBlocked: true },
+    });
+    if (!user || user.isDeleted || user.isBlocked) {
+      throw new Error("User account is inactive or blocked");
+    }
+  }
+
   return decoded;
 }

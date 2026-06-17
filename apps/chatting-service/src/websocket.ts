@@ -2,7 +2,7 @@ import redis from "@packages/libs/redis";
 import { Server as HttpServer } from "http";
 import { kafka } from "@packages/utils/kafka";
 import prisma from "@packages/libs/prisma";
-import { verifyAccessToken } from "@packages/middleware/verify-access-token";
+import { verifyAccessTokenWithDb } from "@packages/middleware/verify-access-token";
 import { WebSocketServer, WebSocket } from "ws";
 
 const producer = kafka.producer();
@@ -27,7 +27,7 @@ export async function createWebSocketServer(server: HttpServer) {
 
     let decoded;
     try {
-      decoded = verifyAccessToken(
+      decoded = await verifyAccessTokenWithDb(
         request.headers.cookie,
         request.headers.authorization as string
       );
