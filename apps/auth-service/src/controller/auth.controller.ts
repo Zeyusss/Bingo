@@ -155,7 +155,7 @@ export const verifyUserRegistrationOtp = async (
       },
     });
 
-    await sendEmail(email, 'Welcome to Bingo!', 'user-welcome-mail', { name });
+    await sendEmail(email, "Welcome to Bingo!", "user-welcome-mail", { name });
 
     return res.status(200).json({
       status: "success",
@@ -637,7 +637,12 @@ export const createShop = async (
     const shop = await prisma.shops.create({
       data: shopData,
     });
-    await sendEmail(req.seller.email, 'Shop Created - Next Steps', 'shop-created-mail', { name: req.seller.name, shopName: shop.name });
+    await sendEmail(
+      req.seller.email,
+      "Shop Created - Next Steps",
+      "shop-created-mail",
+      { name: req.seller.name, shopName: shop.name },
+    );
     return res.status(201).json({
       status: "success",
       message: "Shop created successfully",
@@ -1339,7 +1344,7 @@ export const getProfilePictureEligibility = async (
 
     let canChange = true;
     let daysRemaining = 0;
-    let lastChanged = user.avatarLastChanged;
+    const lastChanged = user.avatarLastChanged;
 
     if (user.avatarLastChanged) {
       const now = new Date();
@@ -1544,7 +1549,7 @@ export const updateUserProfilePhone = async (
       return next(new ValidationError("Phone number is required"));
     }
 
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    const phoneRegex = /^[+]?[1-9][\d]{0,15}$/;
     if (!phoneRegex.test(phone)) {
       return next(new ValidationError("Invalid phone number format"));
     }
@@ -1587,7 +1592,7 @@ export const updateUserProfile = async (
       return res.status(400).json({ message: "Name and phone are required" });
     }
 
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    const phoneRegex = /^[+]?[1-9][\d]{0,15}$/;
     if (!phoneRegex.test(phone)) {
       return res.status(400).json({ message: "Invalid phone number format" });
     }
