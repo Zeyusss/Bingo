@@ -168,7 +168,7 @@ export const uploadProductImage = async (
 
     const response = await imagekit.upload({
       file: fileName,
-      fileName: `product-${Date.now()}.jpg`,
+      fileName: `product-${Date.now()}.webp`,
       folder: "/products",
     });
     res.status(201).json({

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useCreateBlog, useUploadBlogImage } from "../../../../../hooks/useBlogs";
 import RichTextEditor from "../../../../../shared/components/RichTextEditor";
+import { convertToWebP } from "../../../../../utils/convertToWebP";
 
 const CreateBlogPage = () => {
   const [title, setTitle] = useState("");
@@ -98,18 +99,8 @@ const CreateBlogPage = () => {
     if (file) {
       setIsUploadingImage(true);
       try {
-        const reader = new FileReader();
-        const base64Promise = new Promise<string>((resolve) => {
-          reader.onloadend = () => {
-            const result = reader.result as string;
-            
-            const base64Data = result.split(',')[1];
-            resolve(base64Data);
-          };
-          reader.readAsDataURL(file);
-        });
-
-        const base64Data = await base64Promise;
+        const webpDataUrl = await convertToWebP(file);
+        const base64Data = webpDataUrl.split(',')[1];
         const uploadResult = await uploadImage.mutateAsync({
           file: base64Data,
           fileName: file.name,

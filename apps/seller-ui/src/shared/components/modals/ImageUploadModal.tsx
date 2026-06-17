@@ -2,6 +2,7 @@
 import React, { useState, useRef } from "react";
 import { X, Upload, Loader2 } from "lucide-react";
 import axiosInstance from "../../../utils/axiosInstance";
+import { convertToWebP } from "../../../utils/convertToWebP";
 
 interface ImageUploadModalProps {
   isOpen: boolean;
@@ -53,13 +54,8 @@ const ImageUploadModal = ({ isOpen, onClose, editType, onUploadSuccess }: ImageU
     setError(null);
     
     try {
-      // Convert file to base64
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(selectedFile);
-      });
+      // Convert to WebP before upload
+      const base64 = await convertToWebP(selectedFile);
       
       // Upload to ImageKit
       const uploadResponse = await axiosInstance.post("/seller/api/upload-image", {

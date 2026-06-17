@@ -14,6 +14,7 @@ import {
   Loader2
 } from 'lucide-react';
 import axiosInstance from '../../utils/axiosInstance';
+import { convertToWebP } from "../../utils/convertToWebP";
 
 interface RichTextEditorProps {
   value: string;
@@ -46,21 +47,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     setIsUploadingImage(true);
     
     try {
-      
-      const reader = new FileReader();
-      const base64Promise = new Promise<string>((resolve) => {
-        reader.onloadend = () => {
-          const result = reader.result as string;
-          
-          const base64Data = result.split(',')[1];
-          resolve(base64Data);
-        };
-        reader.readAsDataURL(file);
-      });
+      const webpDataUrl = await convertToWebP(file);
+      const base64Data = webpDataUrl.split(',')[1];
 
-      const base64Data = await base64Promise;
-      
-      
       const response = await axiosInstance.post('/blogs/upload-image', {
         file: base64Data,
         fileName: `blog-content-${Date.now()}-${file.name}`,

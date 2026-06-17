@@ -1255,7 +1255,7 @@ export const uploadUserImage = async (
       });
     }
 
-    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.\-_]/g, "_").replace(/\.[^.]+$/, "") + ".webp";
 
     if (!isValidImageBase64(imageData)) {
       return res.status(400).json({

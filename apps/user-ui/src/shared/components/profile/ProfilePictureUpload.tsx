@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { X, Upload, Loader2, Camera, AlertTriangle, CheckCircle } from "lucide-react";
 import axiosInstance from "../../../utils/axiosInstance";
+import { convertToWebP } from "apps/user-ui/src/utils/convertToWebP";
 import Image from "next/image";
 
 interface ProfilePictureUploadProps {
@@ -91,13 +92,7 @@ const ProfilePictureUpload = ({
     
     try {
       
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(selectedFile);
-      });
-      
+      const base64 = await convertToWebP(selectedFile);
       
       const uploadResponse = await axiosInstance.post("/api/upload-user-image", {
         file: base64,

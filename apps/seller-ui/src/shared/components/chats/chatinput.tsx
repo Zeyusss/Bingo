@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import React, { useState } from 'react'
 import {Send,ImageIcon,Smile, Loader2} from "lucide-react";
 import axiosInstance from 'apps/seller-ui/src/utils/axiosInstance';
+import { convertToWebP } from "apps/seller-ui/src/utils/convertToWebP";
 
 const EmojiPicker = dynamic(
     ()=>import("emoji-picker-react").then((mod)=>mod.default as React.FC<PickerProps>),
@@ -42,33 +43,21 @@ const ChatInput = ({onSendMessage,message,setMessage,onSendImage}:{
         setIsUploading(true);
         
         try {
-            const reader = new FileReader();
-            reader.onload = async () => {
-                try {
-                    const base64 = reader.result as string;
-                    
-                    const response = await axiosInstance.post('/seller/api/upload-image', {
-                        file: base64,
-                        fileName: `chat_${Date.now()}_${file.name}`,
-                        folder: '/chat-images'
-                    });
-
-                    if (response.data.success && onSendImage) {
-                        onSendImage(response.data.url);
-                    }
-                } catch (error) {
-                    console.error('Image upload failed:', error);
-                    alert('Failed to upload image. Please try again.');
-                } finally {
-                    setIsUploading(false);
-                    e.target.value = '';
-                }
-            };
-            reader.readAsDataURL(file);
+            const base64 = await convertToWebP(file);
+            const response = await axiosInstance.post('/seller/api/upload-image', {
+                file: base64,
+                fileName: `chat_${Date.now()}_${file.name}`,
+                folder: '/chat-images'
+            });
+            if (response.data.success && onSendImage) {
+                onSendImage(response.data.url);
+            }
         } catch (error) {
-            console.error('Error reading file:', error);
-            alert('Failed to process image. Please try again.');
+            console.error('Image upload failed:', error);
+            alert('Failed to upload image. Please try again.');
+        } finally {
             setIsUploading(false);
+            e.target.value = '';
         }
     }
   return (

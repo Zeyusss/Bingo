@@ -2176,9 +2176,10 @@ export const uploadSliderImage = async (
     }
 
     // Upload to ImageKit using base64
+    const baseName = (fileName || `slider_${Date.now()}`).replace(/[^a-zA-Z0-9.\-_]/g, "_").replace(/\.[^.]+$/, "");
     const uploadResponse = await imagekit.upload({
       file: file,
-      fileName: fileName || `slider_${Date.now()}`,
+      fileName: `${baseName}.webp`,
       folder: folder || "/sliders",
     });
 

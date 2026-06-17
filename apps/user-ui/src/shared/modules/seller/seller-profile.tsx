@@ -7,6 +7,7 @@ type ShopData = Omit<PrismaShop, "avatar"> & {
   avatar?: string | { url: string } | null;
 };
 import axiosInstance from "apps/user-ui/src/utils/axiosInstance";
+import { convertToWebP } from "apps/user-ui/src/utils/convertToWebP";
 import {
   Calendar,
   Clock,
@@ -67,31 +68,25 @@ const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>, type: "
   const file = e.target.files?.[0];
   if (!file) return;
 
-  const reader = new FileReader();
-  reader.onloadend = async () => {
-    const base64 = reader.result as string;
-    try {
-      const uploadRes = await axiosInstance.post("/seller/api/upload-image", {
-        file: base64,
-        fileName: `${type}-${Date.now()}`,
-        folder: "shops",
-      });
+  try {
+    const base64 = await convertToWebP(file);
+    const uploadRes = await axiosInstance.post("/seller/api/upload-image", {
+      file: base64,
+      fileName: `${type}-${Date.now()}`,
+      folder: "shops",
+    });
 
-      const imageUrl = uploadRes.data.url;
+    const imageUrl = uploadRes.data.url;
 
+    await axiosInstance.post("/seller/api/update-image", {
+      imageUrl,
+      editType: type,
+    });
 
-      await axiosInstance.post("/seller/api/update-image", {
-        imageUrl,
-        editType: type,
-      });
-
-      queryClient.invalidateQueries(); 
-    } catch (err) {
-      console.error("Image upload or update failed", err);
-    }
-  };
-
-  reader.readAsDataURL(file);
+    queryClient.invalidateQueries();
+  } catch (err) {
+    console.error("Image upload or update failed", err);
+  }
 };
 
   useEffect(() => {

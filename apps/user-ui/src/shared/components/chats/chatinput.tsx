@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import {Send,ImageIcon,Smile,Loader2} from "lucide-react";
 import axiosInstance from "apps/user-ui/src/utils/axiosInstance";
 import { isProtected } from "apps/user-ui/src/utils/protected";
+import { convertToWebP } from "apps/user-ui/src/utils/convertToWebP";
 
 const EmojiPicker = dynamic(
     ()=>import("emoji-picker-react").then((mod)=>mod.default as React.FC<PickerProps>),
@@ -47,14 +48,8 @@ const ChatInput = ({onSendMessage,message,setMessage,onSendImage}:{
         setUploadError(null);
 
         try {
-            // Convert file to base64
-            const base64 = await new Promise<string>((resolve) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result as string);
-                reader.readAsDataURL(file);
-            });
+            const base64 = await convertToWebP(file);
 
-            // Upload to backend
             const response = await axiosInstance.post(
                 '/api/upload-user-image',
                 {

@@ -7,6 +7,7 @@ import { Input } from "../shared/components/ui/input";
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription, ModalFooter } from "../shared/components/ui/modal";
 import axiosInstance from "../utils/axiosInstance";
 import { toast } from "react-hot-toast";
+import { convertToWebP } from "../utils/convertToWebP";
 
 interface Slider {
   id: string;
@@ -243,12 +244,7 @@ const SliderManagement = () => {
       const previewUrl = URL.createObjectURL(file);
       setImageUpload(prev => ({ ...prev, previewUrl }));
       
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      const base64 = await convertToWebP(file);
       
       const response = await axiosInstance.post('/admin/api/sliders/upload-image', {
         file: base64,

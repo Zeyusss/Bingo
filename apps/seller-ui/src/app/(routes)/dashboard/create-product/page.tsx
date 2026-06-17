@@ -21,6 +21,7 @@ import Image from "next/image";
 import { enhancements } from "apps/seller-ui/src/utils/AI.Enhancements";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import { convertToWebP } from "apps/seller-ui/src/utils/convertToWebP";
 
 interface UploadedImage {
   fileId: string;
@@ -151,20 +152,11 @@ const Page = () => {
     }
   };
 
-  const convertFileToBase64 = (file: File) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
-    });
-  };
-
   const handleImageChange = async (file: File | null, index: number) => {
     if (!file) return;
     setPictureUploadingLoader(true);
     try {
-      const fileName = await convertFileToBase64(file);
+      const fileName = await convertToWebP(file);
       const response = await axiosInstance.post(
         "/product/api/upload-product-image",
         { fileName }
